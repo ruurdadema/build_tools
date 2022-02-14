@@ -13,6 +13,7 @@ class Config(Enum):
 
 class CMake:
     def __init__(self):
+        self._architecture = None
         self._num_parallel = None
         self._build_config = Config(Config.release)
         self._path_to_source = None
@@ -43,12 +44,20 @@ class CMake:
         self._num_parallel = str(num_parallel)
         return self
 
+    def architecture(self, architecture):
+        self._architecture = architecture
+        return self
+
     def build(self):
         cmd = ['cmake']
 
         if self._generator:
             cmd.append('-G')
             cmd.append(self._generator)
+
+        if self._architecture:
+            cmd.append('-A')
+            cmd.append(self._architecture)
 
         if self._path_to_build:
             cmd.append('-B')
