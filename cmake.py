@@ -3,12 +3,18 @@
 import subprocess
 import os
 from collections import OrderedDict
+from enum import Enum
+
+
+class Config(Enum):
+    release = 'Release'
+    debug = 'Debug'
 
 
 class CMake:
     def __init__(self):
         self._num_parallel = None
-        self._build_config = None
+        self._build_config = Config(Config.release)
         self._path_to_source = None
         self._path_to_build = None
         self._generator = None
@@ -29,7 +35,7 @@ class CMake:
         self._options[key] = value
         return self
 
-    def build_config(self, build_config):
+    def build_config(self, build_config: Config):
         self._build_config = build_config
         return self
 
@@ -49,7 +55,7 @@ class CMake:
             cmd.append(self._path_to_build)
 
         if self._build_config:
-            self.option('CMAKE_BUILD_TYPE', self._build_config)
+            self.option('CMAKE_BUILD_TYPE', self._build_config.value)
 
         for key, value in self._options.items():
             cmd.append('-D' + key + '=' + value)
@@ -71,7 +77,7 @@ class CMake:
 
         if self._build_config:
             cmd.append('--config')
-            cmd.append(self._build_config)
+            cmd.append(self._build_config.value)
 
         if self._num_parallel:
             cmd.append('--parallel')
