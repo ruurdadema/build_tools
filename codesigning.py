@@ -1,7 +1,16 @@
 #!/usr/bin/env python3 -u
 import argparse
+import json
 import subprocess
 import re
+import sys
+import time
+import requests
+
+
+def call(cmd: []):
+    print('\n' + ' '.join(cmd))
+    subprocess.call(cmd)
 
 
 def sign_file(file, codesign_identity=None, development_team=None, organization=None):
@@ -14,18 +23,76 @@ def sign_file(file, codesign_identity=None, development_team=None, organization=
         codesign_identity = result[0]
 
     if codesign_identity is None:
-        raise 'Failed to find a code signing identity'
+        raise Exception('Failed to find a code signing identity')
 
     print('Signing file \"{}\" with identity \"{}\"'.format(file, codesign_identity))
 
-    subprocess.call(['codesign',
-                     '--force',
-                     '--timestamp',
-                     '--options=runtime',
-                     '-s', codesign_identity,
-                     file])
+    call(['codesign', '--force', '--timestamp', '--options=runtime', '-s', codesign_identity, file])
+    call(['codesign', '-dvvv', file])
 
-    subprocess.call(['codesign', '-vv', '-d', file])
+
+def get_notarization_log_json(url):
+    print('Download log from: {}'.format(url))
+    r = requests.get(url)
+    return r.json()
+
+
+def get_notarization_status(request_uuid, username, password, timeout_seconds=30):
+    while True:
+        output = subprocess.check_output(['xcrun',
+                                          'altool',
+                                          '--notarization-info', request_uuid,
+                                          '--username', username,
+                                          '--password', password])
+
+        print(output.decode())
+
+        result = {}
+
+        for line in output.decode().splitlines():
+            split = line.split(': ')
+            if len(split) > 1:
+                result[split[0].strip()] = split[1].strip()
+            elif len(split) > 0:
+                result[split[0].strip()] = 'no_value'
+
+        # Remove empty keys
+        result = {k: v for k, v in result.items() if k}
+
+        if not result['No errors getting notarization info.'] == 'no_value':
+            raise Exception('Failed to get notarization status')
+
+        if result['Status'] == 'in progress':
+            time.sleep(timeout_seconds)
+        else:
+            print('Notarization status Message: {}'.format(result['Status Message']))
+            print(json.dumps(get_notarization_log_json(result['LogFileURL']), indent=4))
+            if result['Status'] == 'invalid':
+                raise Exception('Notarization failed')
+            elif result['Status'] == 'success':
+                break
+
+
+def notarize_file(primary_bundle_id, username, password, team_id, file):
+    print('\nSend notarization request for file: {}'.format(file))
+
+    output = subprocess.check_output(['xcrun',
+                                      'altool',
+                                      '--notarize-app',
+                                      '--primary-bundle-id', primary_bundle_id,
+                                      '--username', username,
+                                      '--password', password,
+                                      '--asc-provider', team_id,
+                                      '--file', file])
+
+    m = re.match("(?P<status>.+) '(?P<file>.+)'.*\nRequestUUID = (?P<request_uuid>.+)\n", output.decode())
+
+    if not m.group('status') == 'No errors uploading':
+        raise Exception('Failed to upload notarization request')
+
+    get_notarization_status(m.group('request_uuid'), username, password)
+
+    call(['spctl', '--assess', '--verbose', file])
 
 
 def get_codesigning_developer_id_application_identities(organization=None, team=None):
