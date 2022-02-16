@@ -92,6 +92,9 @@ def notarize_file(primary_bundle_id, username, password, team_id, file):
 
     get_notarization_status(m.group('request_uuid'), username, password)
 
+    print('Staple:')
+    subprocess.call(['xcrun', 'stapler', 'staple', file])
+
     call(['spctl', '--assess', '--verbose', file])
 
 
@@ -103,11 +106,11 @@ def get_codesigning_developer_id_application_identities(organization=None, team=
         match = re.search(r'.+\d+\) (\w+) "Developer ID Application: (.+) \((.+)\)"', line.decode())
 
         if match:
-            # If an organization was specified, we only add this identity if it matches this organization.
+            # If an organization was specified, only add this identity if it matches this organization.
             if organization and organization != match.groups()[1]:
                 continue
 
-            # If team was specified, we only add this identity if it matches this team.
+            # If team was specified, only add this identity if it matches this team.
             if team and team != match.groups()[2]:
                 continue
 
