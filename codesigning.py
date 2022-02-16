@@ -95,7 +95,7 @@ def notarize_file(primary_bundle_id, username, password, team_id, file):
     print('Staple:')
     subprocess.call(['xcrun', 'stapler', 'staple', file])
 
-    call(['spctl', '--assess', '--verbose', file])
+    call(['spctl', '-a', '-vvv', '-t', 'install', file])
 
 
 def get_codesigning_developer_id_application_identities(organization=None, team=None):
