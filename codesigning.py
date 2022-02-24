@@ -10,7 +10,7 @@ import requests
 
 def call(cmd: []):
     print('\n' + ' '.join(cmd))
-    subprocess.call(cmd)
+    subprocess.run(cmd, check=True)
 
 
 def sign_file(file, codesign_identity=None, development_team=None, organization=None):
@@ -93,7 +93,7 @@ def notarize_file(primary_bundle_id, username, password, team_id, file):
     get_notarization_status(m.group('request_uuid'), username, password)
 
     print('Staple:')
-    subprocess.call(['xcrun', 'stapler', 'staple', file])
+    subprocess.run(['xcrun', 'stapler', 'staple', file], check=True)
 
     call(['spctl', '-a', '-vvv', '-t', 'install', file])
 
@@ -120,4 +120,4 @@ def get_codesigning_developer_id_application_identities(organization=None, team=
 
 
 def print_codesigning_identities():
-    subprocess.call(['security', 'find-identity', '-p', 'codesigning', '-v'])
+    subprocess.run(['security', 'find-identity', '-p', 'codesigning', '-v'], check=True)

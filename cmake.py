@@ -76,7 +76,7 @@ class CMake:
         print('Invoke CMake configure command: \"{}\"'.format(' '.join(cmd)))
 
         # Configure
-        subprocess.call(cmd)
+        subprocess.run(cmd, check=True)
 
         cmd = ['cmake']
 
@@ -95,4 +95,4 @@ class CMake:
         print('Invoke CMake build command: \"{}\"'.format(' '.join(cmd)))
 
         # Configure
-        subprocess.call(cmd)
+        subprocess.run(cmd, check=True)
