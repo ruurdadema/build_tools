@@ -19,6 +19,7 @@ class CMake:
         self._path_to_source = None
         self._path_to_build = None
         self._generator = None
+        self._targets = []
         self._options = OrderedDict()
 
     def path_to_build(self, path_to_build):
@@ -46,6 +47,10 @@ class CMake:
 
     def architecture(self, architecture):
         self._architecture = architecture
+        return self
+
+    def target(self, target):
+        self._targets.append(target)
         return self
 
     def build(self):
@@ -91,6 +96,10 @@ class CMake:
         if self._num_parallel:
             cmd.append('--parallel')
             cmd.append(self._num_parallel)
+
+        for target in self._targets:
+            cmd.append('--target')
+            cmd.append(target)
 
         print('Invoke CMake build command: \"{}\"'.format(' '.join(cmd)))
 
