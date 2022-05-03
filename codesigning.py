@@ -27,8 +27,9 @@ def sign_file(file, codesign_identity=None, development_team=None, organization=
 
     print('Signing file \"{}\" with identity \"{}\"'.format(file, codesign_identity))
 
-    call(['codesign', '--force', '--timestamp', '--options=runtime', '-s', codesign_identity, file])
-    call(['codesign', '-dvvv', file])
+    subprocess.run(['codesign', '--force', '--timestamp', '--options=runtime', '-s', codesign_identity, file],
+                   check=True)
+    subprocess.run(['codesign', '-dvvv', file], check=True)
 
 
 def get_notarization_log_json(url):
