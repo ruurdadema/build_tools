@@ -31,12 +31,14 @@ import time
 import requests
 
 
-def call(cmd: []):
-    print('\n' + ' '.join(cmd))
-    subprocess.run(cmd, check=True)
-
-
 def sign_file(file, codesign_identity=None, development_team=None, organization=None):
+    """
+    Signs given file.
+    :param file: The file to sign.
+    :param codesign_identity: (Optional) the codesign identity to use. If none give, one will be selected automatically.
+    :param development_team: (Optional) the development team to use when searching a codesign identity.
+    :param organization: (Optional) the organization to specify when searching a codesign identity.
+    """
     if codesign_identity is None:
         result = get_codesigning_developer_id_application_identities(team=development_team,
                                                                      organization=organization)[0]
@@ -56,12 +58,24 @@ def sign_file(file, codesign_identity=None, development_team=None, organization=
 
 
 def get_notarization_log_json(url):
+    """
+    Downloads the notarization log form given url.
+    :param url: THe url to download from.
+    :return: The log encoded as json.
+    """
     print('Download log from: {}'.format(url))
     r = requests.get(url)
     return r.json()
 
 
-def get_notarization_status(request_uuid, username, password, timeout_seconds=30):
+def get_notarization_status(request_uuid, username, password, wait_time_seconds=30):
+    """
+    Gets the notarization status, and keeps trying until the package was approved or denied, or when an error occurred.
+    :param request_uuid: The uuid for the request (Apple provided).
+    :param username: The username for the request.
+    :param password: The password for the request.
+    :param wait_time_seconds: Amount of seconds to wait between each call.
+    """
     while True:
         output = subprocess.check_output(['xcrun',
                                           'altool',
@@ -87,7 +101,7 @@ def get_notarization_status(request_uuid, username, password, timeout_seconds=30
             raise Exception('Failed to get notarization status')
 
         if result['Status'] == 'in progress':
-            time.sleep(timeout_seconds)
+            time.sleep(wait_time_seconds)
         else:
             print('Notarization status Message: {}'.format(result['Status Message']))
             print(json.dumps(get_notarization_log_json(result['LogFileURL']), indent=4))
@@ -98,6 +112,14 @@ def get_notarization_status(request_uuid, username, password, timeout_seconds=30
 
 
 def notarize_file(primary_bundle_id, username, password, team_id, file):
+    """
+    Notarizes given file (which ust be a container, pkg, dmg, zip).
+    :param primary_bundle_id: The bundle ID to sign with.
+    :param username: The username for signing.
+    :param password: The password for signing.
+    :param team_id: The team ID.
+    :param file: The file to notarize.
+    """
     print('\nSend notarization request for file: {}'.format(file))
 
     output = subprocess.check_output(['xcrun',
@@ -119,10 +141,16 @@ def notarize_file(primary_bundle_id, username, password, team_id, file):
     print('Staple:')
     subprocess.run(['xcrun', 'stapler', 'staple', file], check=True)
 
-    call(['spctl', '-a', '-vvv', '-t', 'install', file])
+    subprocess.run(['spctl', '-a', '-vvv', '-t', 'install', file], check=True)
 
 
 def get_codesigning_developer_id_application_identities(organization=None, team=None):
+    """
+    Finds most optimal codesign identity available on the current system, based on optionally given parameters.
+    :param organization: Specifies the organization of the codesign id.
+    :param team: Specifies the team of the codesign id.
+    :return: The codesign id, or None if no (matching) codesign id was found.
+    """
     lines = subprocess.check_output(['security', 'find-identity', '-p', 'codesigning', '-v']).splitlines()
     ids = []
 
@@ -144,4 +172,7 @@ def get_codesigning_developer_id_application_identities(organization=None, team=
 
 
 def print_codesigning_identities():
+    """
+    Prints the available code sign identities.
+    """
     subprocess.run(['security', 'find-identity', '-p', 'codesigning', '-v'], check=True)
