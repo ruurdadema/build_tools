@@ -24,8 +24,10 @@
 
 import subprocess
 import os
+import pathlib
 from collections import OrderedDict
 from enum import Enum
+from pathlib import Path
 
 
 class Config(Enum):
@@ -44,11 +46,11 @@ class CMake:
         self._targets = []
         self._options = OrderedDict()
 
-    def path_to_build(self, path_to_build: str):
+    def path_to_build(self, path_to_build: Path):
         self._path_to_build = path_to_build
         return self
 
-    def path_to_source(self, path_to_source):
+    def path_to_source(self, path_to_source: Path):
         self._path_to_source = path_to_source
 
     def generator(self, generator):
@@ -88,7 +90,7 @@ class CMake:
 
         if self._path_to_build:
             cmd.append('-B')
-            cmd.append(self._path_to_build)
+            cmd.append(str(self._path_to_build))
 
         if self._build_config:
             self.option('CMAKE_BUILD_TYPE', self._build_config.value)
@@ -98,7 +100,7 @@ class CMake:
 
         if self._path_to_source:
             cmd.append('-S')
-            cmd.append(self._path_to_source)
+            cmd.append(str(self._path_to_source))
 
         print('Invoke CMake configure command: \"{}\"'.format(' '.join(cmd)))
 
@@ -109,7 +111,7 @@ class CMake:
 
         if self._path_to_build:
             cmd.append('--build')
-            cmd.append(self._path_to_build)
+            cmd.append(str(self._path_to_build))
 
         if self._build_config:
             cmd.append('--config')

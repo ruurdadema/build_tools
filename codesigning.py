@@ -29,9 +29,10 @@ import re
 import sys
 import time
 import requests
+from pathlib import Path
 
 
-def sign_file(file, codesign_identity=None, development_team=None, organization=None):
+def sign_file(file: Path, codesign_identity=None, development_team=None, organization=None):
     """
     Signs given file.
     :param file: The file to sign.
@@ -52,9 +53,9 @@ def sign_file(file, codesign_identity=None, development_team=None, organization=
 
     print('Signing file \"{}\" with identity \"{}\"'.format(file, codesign_identity))
 
-    subprocess.run(['codesign', '--force', '--timestamp', '--options=runtime', '-s', codesign_identity, file],
-                   check=True)
-    subprocess.run(['codesign', '-dvvv', file], check=True)
+    subprocess.run(
+        ['codesign', '--force', '--timestamp', '--options=runtime', '--verbose', '-s', codesign_identity, file],
+        check=True)
 
 
 def get_notarization_log_json(url):
