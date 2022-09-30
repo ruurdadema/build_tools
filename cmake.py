@@ -44,7 +44,7 @@ class CMake:
         self._targets = []
         self._options = OrderedDict()
 
-    def path_to_build(self, path_to_build):
+    def path_to_build(self, path_to_build: str):
         self._path_to_build = path_to_build
         return self
 
