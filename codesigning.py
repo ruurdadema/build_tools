@@ -32,13 +32,14 @@ import requests
 from pathlib import Path
 
 
-def sign_file(file: Path, codesign_identity=None, development_team=None, organization=None):
+def sign_file(file: Path, codesign_identity=None, development_team=None, organization=None, entitlements_file=None):
     """
     Signs given file.
     :param file: The file to sign.
     :param codesign_identity: (Optional) the codesign identity to use. If none give, one will be selected automatically.
     :param development_team: (Optional) the development team to use when searching a codesign identity.
     :param organization: (Optional) the organization to specify when searching a codesign identity.
+    :param entitlements_file: An optional entitlements file used for signing
     """
     if codesign_identity is None:
         result = get_codesigning_developer_id_application_identities(team=development_team,
@@ -53,9 +54,14 @@ def sign_file(file: Path, codesign_identity=None, development_team=None, organiz
 
     print('Signing file \"{}\" with identity \"{}\"'.format(file, codesign_identity))
 
-    subprocess.run(
-        ['codesign', '--force', '--timestamp', '--options=runtime', '--verbose', '-s', codesign_identity, file],
-        check=True)
+    cmd = ['codesign']
+
+    if entitlements_file:
+        cmd += ['--entitlements', entitlements_file]
+
+    cmd += ['--force', '--timestamp', '--options=runtime', '--verbose', '-s', codesign_identity, file]
+
+    subprocess.run(cmd, check=True)
 
 
 def get_notarization_log_json(url):
