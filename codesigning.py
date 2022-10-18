@@ -64,6 +64,18 @@ def sign_file(file: Path, codesign_identity=None, development_team=None, organiz
     subprocess.run(cmd, check=True)
 
 
+def verify_signature(file, check_notarization=False):
+    """
+    Verifies signature and optionally notarization
+    :param file: The file to check
+    :param check_notarization: True to check notarization status
+    :return: True if ok, or false if not ok.
+    """
+    subprocess.run(['codesign', '--entitlements', '-', '-d', file], check=True)
+    if check_notarization:
+        subprocess.run(['spctl', '--assess', '--verbose', file], check=True)
+
+
 def get_notarization_log_json(url):
     """
     Downloads the notarization log form given url.
