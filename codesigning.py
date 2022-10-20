@@ -71,7 +71,7 @@ def verify_signature(file, check_notarization=False):
     :param check_notarization: True to check notarization status
     :return: True if ok, or false if not ok.
     """
-    subprocess.run(['codesign', '--entitlements', '-', '-d', file], check=True)
+    subprocess.run(['codesign', '-vv', '--deep', '--entitlements', '--strict', file], check=True)
     if check_notarization:
         subprocess.run(['spctl', '--assess', '--verbose', file], check=True)
 
