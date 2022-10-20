@@ -73,7 +73,7 @@ def verify_signature(file, check_notarization=False):
     """
     subprocess.run(['codesign', '-vv', '--deep', '--entitlements', '--strict', file], check=True)
     if check_notarization:
-        subprocess.run(['spctl', '--assess', '--verbose', file], check=True)
+        subprocess.run(['spctl', '--assess', '-vvv', '-t', 'install', file], check=True)
 
 
 def get_notarization_log_json(url):
@@ -160,7 +160,7 @@ def notarize_file(primary_bundle_id, username, password, team_id, file):
     print('Staple:')
     subprocess.run(['xcrun', 'stapler', 'staple', file], check=True)
 
-    subprocess.run(['spctl', '-a', '-vvv', '-t', 'install', file], check=True)
+    verify_signature(file, check_notarization=True)
 
 
 def get_codesigning_developer_id_application_identities(organization=None, team=None):
