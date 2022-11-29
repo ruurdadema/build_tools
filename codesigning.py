@@ -64,14 +64,20 @@ def sign_file(file: Path, codesign_identity=None, development_team=None, organiz
     subprocess.run(cmd, check=True)
 
 
-def verify_signature(file, check_notarization=False):
+def verify_signature(file: Path, check_notarization=False):
     """
     Verifies signature and optionally notarization
     :param file: The file to check
     :param check_notarization: True to check notarization status
     :return: True if ok, or false if not ok.
     """
-    subprocess.run(['codesign', '-vv', '--deep', '--entitlements', '--strict', file], check=True)
+
+    if file.suffix == '.pkg':
+        # Note: codesign does not work with .pkg files...
+        subprocess.run(['pkgutil', '--check-signature', file], check=True)
+    else:
+        subprocess.run(['codesign', '-vv', '--deep', '--entitlements', '--strict', file], check=True)
+
     if check_notarization:
         subprocess.run(['spctl', '--assess', '-vvv', '-t', 'install', file], check=True)
 
