@@ -82,64 +82,9 @@ def verify_signature(file: Path, check_notarization=False):
         subprocess.run(['spctl', '--assess', '-vvv', '-t', 'install', file], check=True)
 
 
-def get_notarization_log_json(url):
-    """
-    Downloads the notarization log form given url.
-    :param url: THe url to download from.
-    :return: The log encoded as json.
-    """
-    print('Download log from: {}'.format(url))
-    r = requests.get(url)
-    return r.json()
-
-
-def get_notarization_status(request_uuid, username, password, wait_time_seconds=30):
-    """
-    Gets the notarization status, and keeps trying until the package was approved or denied, or when an error occurred.
-    :param request_uuid: The uuid for the request (Apple provided).
-    :param username: The username for the request.
-    :param password: The password for the request.
-    :param wait_time_seconds: Amount of seconds to wait between each call.
-    """
-    while True:
-        output = subprocess.check_output(['xcrun',
-                                          'altool',
-                                          '--notarization-info', request_uuid,
-                                          '--username', username,
-                                          '--password', password])
-
-        print(output.decode())
-
-        result = {}
-
-        for line in output.decode().splitlines():
-            split = line.split(': ')
-            if len(split) > 1:
-                result[split[0].strip()] = split[1].strip()
-            elif len(split) > 0:
-                result[split[0].strip()] = 'no_value'
-
-        # Remove empty keys
-        result = {k: v for k, v in result.items() if k}
-
-        if not result['No errors getting notarization info.'] == 'no_value':
-            raise Exception('Failed to get notarization status')
-
-        if result['Status'] == 'in progress':
-            time.sleep(wait_time_seconds)
-        else:
-            print('Notarization status Message: {}'.format(result['Status Message']))
-            print(json.dumps(get_notarization_log_json(result['LogFileURL']), indent=4))
-            if result['Status'] == 'invalid':
-                raise Exception('Notarization failed')
-            elif result['Status'] == 'success':
-                break
-
-
-def notarize_file(primary_bundle_id, username, password, team_id, file):
+def notarize_file(username, password, team_id, file):
     """
     Notarizes given file (which ust be a container, pkg, dmg, zip).
-    :param primary_bundle_id: The bundle ID to sign with.
     :param username: The username for signing.
     :param password: The password for signing.
     :param team_id: The team ID.
@@ -147,21 +92,9 @@ def notarize_file(primary_bundle_id, username, password, team_id, file):
     """
     print('\nSend notarization request for file: {}'.format(file))
 
-    output = subprocess.check_output(['xcrun',
-                                      'altool',
-                                      '--notarize-app',
-                                      '--primary-bundle-id', primary_bundle_id,
-                                      '--username', username,
-                                      '--password', password,
-                                      '--asc-provider', team_id,
-                                      '--file', file])
-
-    m = re.match("(?P<status>.+) '(?P<file>.+)'.*\nRequestUUID = (?P<request_uuid>.+)\n", output.decode())
-
-    if not m.group('status') == 'No errors uploading':
-        raise Exception('Failed to upload notarization request')
-
-    get_notarization_status(m.group('request_uuid'), username, password)
+    subprocess.run(
+        ['xcrun', 'notarytool', 'submit', file, '--apple-id', username, '--password', password, '--team-id', team_id,
+         '--no-progress', '--wait'], check=True)
 
     print('Staple:')
     subprocess.run(['xcrun', 'stapler', 'staple', file], check=True)
