@@ -92,9 +92,21 @@ def notarize_file(username, password, team_id, file):
     """
     print('\nSend notarization request for file: {}'.format(file))
 
-    subprocess.run(
-        ['xcrun', 'notarytool', 'submit', file, '--apple-id', username, '--password', password, '--team-id', team_id,
-         '--no-progress', '--wait'], check=True)
+    completed_process = subprocess.run(['xcrun', 'notarytool', 'submit', file, '-f', 'json',
+                                        '--apple-id', username,
+                                        '--password', password,
+                                        '--team-id', team_id,
+                                        '--no-progress', '--wait'], check=True, capture_output=True)
+
+    j = json.loads(completed_process.stdout)
+
+    subprocess.run(['xcrun', 'notarytool', 'log', j['id'],
+                    '--apple-id', username,
+                    '--password', password,
+                    '--team-id', team_id], check=True)
+
+    if j['status'] != 'Accepted':
+        raise Exception('Notarization failed. Please review the logs above.')
 
     print('Staple:')
     subprocess.run(['xcrun', 'stapler', 'staple', file], check=True)
