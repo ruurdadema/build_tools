@@ -32,6 +32,7 @@ from pathlib import Path
 
 class Config(Enum):
     release = 'Release'
+    release_with_debug_info = 'RelWithDebInfo'
     debug = 'Debug'
 
 
