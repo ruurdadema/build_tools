@@ -78,7 +78,7 @@ class CMake:
         self._targets.append(target)
         return self
 
-    def build(self):
+    def configure(self):
         cmd = ['cmake']
 
         if self._generator:
@@ -108,6 +108,7 @@ class CMake:
         # Configure
         subprocess.run(cmd, check=True)
 
+    def build(self):
         cmd = ['cmake']
 
         if self._path_to_build:
@@ -128,5 +129,5 @@ class CMake:
 
         print('Invoke CMake build command: \"{}\"'.format(' '.join(cmd)))
 
-        # Configure
+        # Build
         subprocess.run(cmd, check=True)
