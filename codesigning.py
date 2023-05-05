@@ -90,6 +90,19 @@ def notarize_file(username, password, team_id, file):
     :param team_id: The team ID.
     :param file: The file to notarize.
     """
+
+    if not username:
+        raise Exception('Notarization failed. Invalid username.')
+
+    if not password:
+        raise Exception('Notarization failed. Invalid password.')
+
+    if not team_id:
+        raise Exception('Notarization failed. Invalid team id.')
+
+    if not file:
+        raise Exception('Notarization failed. Invalid file.')
+
     print('\nSend notarization request for file: {}'.format(file))
 
     completed_process = subprocess.run(['xcrun', 'notarytool', 'submit', file, '-f', 'json',
