@@ -27,7 +27,7 @@ class ProductBuilder:
         self._title = title
         self._components = []
 
-    def add_component(self, path: Path, install_location: Path, identifier: str, title: str, must_close: [str] = []):
+    def add_component(self, path: Path, install_location: Path, identifier: str, title: str, must_close=None):
         """
         Adds a component to the installer
         :param path: The path to the app bundle.
@@ -37,8 +37,9 @@ class ProductBuilder:
         :param must_close: A list of application bundle ids that must be closed before installing this component.
         :return:
         """
+        if must_close is None:
+            must_close = []
         self._components.append(ProductBuilder.Component(path, install_location, identifier, title, must_close))
-        print(self._components[-1])
 
     def build(self, output_path: Path, developer_id_installer: str):
         """
@@ -56,6 +57,14 @@ class ProductBuilder:
         # Note: BundleIsRelocatable is set to true by default which might result in the installer updating the same
         # package in another location than specified by install_location.
         # See https://apple.stackexchange.com/a/219144/324251 for more details.
+
+        # Build the components
+        for component in self._components:
+            subprocess.run(['pkgbuild',
+                            '--component', component.path,
+                            '--identifier', component.identifier,
+                            '--install-location', component.install_location,
+                            component.tmp_file.name], check=True)
 
         installer_gui_script = ElementTree.Element('installer-gui-script', {'minSpecVersion': '1'})
 
