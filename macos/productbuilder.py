@@ -4,6 +4,8 @@ from pathlib import Path
 
 import xml.etree.ElementTree as ElementTree
 
+debug = False
+
 
 class ProductBuilder:
     """
@@ -124,8 +126,9 @@ class ProductBuilder:
         tree = ElementTree.ElementTree(installer_gui_script)
         tree.write(distribution_tmp_file.name, encoding="UTF-8", xml_declaration=True)
 
-        with open(distribution_tmp_file.name, 'r') as f:
-            print(f.read())
+        if debug:
+            with open(distribution_tmp_file.name, 'r') as f:
+                print(f.read())
 
         cmd = ['productbuild']
 
