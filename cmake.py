@@ -59,7 +59,7 @@ class CMake:
         return self
 
     def option(self, key, value):
-        self._options[key] = value
+        self._options[key] = str(value)
         return self
 
     def build_config(self, build_config: Config):
