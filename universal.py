@@ -80,7 +80,7 @@ def lipo(input_base_path_x86_64: Path, input_base_path_arm64: Path, output_base_
 def lipo_app_bundle(input_base_path_x86_64: Path, input_base_path_arm64: Path, output_base_path: Path, app_name: str,
                     app_bundle_extension: str = '.app'):
     """
-    Copies and lipos and app bundle. Assumes standard macOS folder structure (ie. MyApp.app/Contents/MacOS/MyApp)
+    Copies and lipos and app bundle. Assumes standard macOS folder structure (i.e. MyApp.app/Contents/MacOS/MyApp)
     :param input_base_path_x86_64: Path to x86_64 bundle.
     :param input_base_path_arm64: Path to arm64 bundle.
     :param output_base_path: Path to output directory.
@@ -91,7 +91,15 @@ def lipo_app_bundle(input_base_path_x86_64: Path, input_base_path_arm64: Path, o
     app_bundle = Path(app_name + app_bundle_extension)
     shutil.copytree(input_base_path_x86_64 / app_bundle, output_base_path / app_bundle, symlinks=True,
                     dirs_exist_ok=True)
-    lipo(input_base_path_x86_64, input_base_path_arm64, output_base_path, app_bundle / 'Contents' / 'MacOS' / app_name)
+
+    path_to_binary = app_bundle / 'Contents' / 'MacOS' / app_name
+
+    if app_bundle_extension.endswith('.dSYM'):
+        path_to_binary = app_bundle / 'Contents' / 'Resources' / 'DWARF' / app_name
+
+    lipo(input_base_path_x86_64, input_base_path_arm64, output_base_path, path_to_binary)
+
+    return output_base_path / app_bundle
 
 
 def lipo_glob(input_base_path_x86_64: Path, input_base_path_arm64: Path, output_base_path: Path, glob_pattern):
