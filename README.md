@@ -1,27 +1,27 @@
-# build-tools
-Tools for helping with building, packing &amp; signing software products
+# Build Tools
 
-## Code signing steps
+Tools for helping with building, packing &amp; signing software products because as devs we already suffer enough.
 
-1. Sign app or plugin.
+## CMake
 
+Allows to invoke CMake from a python script.
 
-    codesign -s "Developer ID Application: YOURCOMPANY (TEAM_ID)" "path-to-file" --timestamp
+## macOS
 
+### Universal binaries
 
-2. Pack products into .pkg or .dmg.
+Facilities for working with universal binaries on macOS.
 
-3. Notarize.
+### Signing
 
-    
-    xcrun altool --notarize-app -f "path-to-packed-file.pkg" --primary-bundle-id APP_BUNDLE_ID --username "DEVELOPER_EMAIL" --password "APP_SPECIFIC_PASSWORD"
+Facilities for code signing on both macOS and Windows.
 
-4. Wait for email with confirmation from Apple, and then staple.
+### ProductBuilder (creating installers) 
 
-    
-    xcrun stapler staple "PATH_TO_FILE.PKG"
+A simple tool for creating installers on macOS using product builder.
 
-5. Check.
+## Windows
 
+### Innosetup
 
-    spctl -a -vvv -t install "PATH_TO_FILE.PKG"
+A simple tool for generating and building Innosetup scripts.
