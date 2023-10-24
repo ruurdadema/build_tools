@@ -113,7 +113,6 @@ class ProductBuilder:
             choice = ElementTree.Element('choice', {'id': component.identifier})
             choice.set('title', component.title)
             choice.set('visible', 'true')
-            choice.set('selected', 'true')
 
             pkg_ref = ElementTree.Element('pkg-ref', {'id': component.identifier})
             choice.append(pkg_ref)
