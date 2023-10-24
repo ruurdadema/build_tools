@@ -48,6 +48,7 @@ class ProductBuilder:
 
     def __init__(self, title=None):
         self._title = title
+        self._license = None
         self._components = []
 
     def add_component(self, path: Path, install_location: Path, identifier: str, title: str, must_close=None):
@@ -63,6 +64,14 @@ class ProductBuilder:
         if must_close is None:
             must_close = []
         self._components.append(ProductBuilder.Component(path, install_location, identifier, title, must_close))
+
+    def add_license(self, path: Path):
+        """
+        Adds a license to the installer
+        :param path: The path to the license file.
+        :return:
+        """
+        self._license = path
 
     def build(self, output_path: Path, developer_id_installer: str):
         """
@@ -90,6 +99,16 @@ class ProductBuilder:
                             component.tmp_file.name], check=True)
 
         installer_gui_script = ElementTree.Element('installer-gui-script', {'minSpecVersion': '1'})
+
+        # Title
+        title = ElementTree.Element('title')
+        title.text = self._title
+        installer_gui_script.append(title)
+
+        # License
+        if self._license is not None:
+            license_file = ElementTree.Element('license', {'file': str(self._license)})
+            installer_gui_script.append(license_file)
 
         installer_gui_script_options = ElementTree.Element('options')
         installer_gui_script_options.set('customize', 'always')
