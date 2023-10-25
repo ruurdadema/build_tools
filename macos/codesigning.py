@@ -109,7 +109,10 @@ def notarize_file(username, password, team_id, file):
                                         '--apple-id', username,
                                         '--password', password,
                                         '--team-id', team_id,
-                                        '--no-progress', '--wait'], check=True, capture_output=True)
+                                        '--no-progress', '--wait'], check=False, capture_output=True)
+
+    if completed_process.returncode != 0:
+        raise Exception('Notarization failed: {}'.format(completed_process.stderr.decode('utf-8')))
 
     j = json.loads(completed_process.stdout)
 
