@@ -74,6 +74,7 @@ class InnoSetup:
         self._app_publisher_url = None
         self._license_file = None
         self._build_path = Path()
+        self._installer_file_name = None
         self._appid = None
         self._appname = appname
         self._appversion = appversion
@@ -140,6 +141,7 @@ class InnoSetup:
         """
         self._build_path = generate_path
         self._build_path.mkdir(parents=True, exist_ok=True)
+        self._installer_file_name = installer_file_name
 
         script = ''
         script += '[Setup]\n'
@@ -239,7 +241,7 @@ class InnoSetup:
         # Create installer package
         subprocess.run([inno_setup_path, self._generated_iss_file, '/O' + str(build_path)], check=True)
 
-        return self
+        return build_path / (self._installer_file_name + '.exe')
 
     def _has_at_least_one_file_with_default_destination(self):
         """
