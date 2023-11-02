@@ -83,6 +83,7 @@ class InnoSetup:
         self._run = []
         self._files = []
         self._install_delete = []
+        self._signtool_command = None
 
     def set_appid(self, appid: str):
         """
@@ -126,6 +127,13 @@ class InnoSetup:
         """
         self._set_allowed_to_change_destination = should_be_enabled
 
+    def set_signtool_command(self, command: str):
+        """
+        Sets the signtool command to use to sign the installer and uninstaller
+        :param command: The command to use for signing.
+        """
+        self._signtool_command = command
+
     def add_file(self, file: File):
         """
         Add given file to the installer.
@@ -150,6 +158,11 @@ class InnoSetup:
             script += '; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.\n'
             script += '; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)\n'
             script += 'AppId={{{{{}}}\n'.format(self._appid)
+
+        # Signtool
+        if self._signtool_command:
+            script += 'SignTool=signtool $f\n'
+            script += 'SignedUninstaller=yes\n'
 
         # AppName
         script += 'AppName={}\n'.format(self._appname)
@@ -238,8 +251,11 @@ class InnoSetup:
 
         inno_setup_path = 'C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe'
 
+        cmd = [inno_setup_path, self._generated_iss_file, '/O' + str(build_path)]
+        cmd += ['/Ssigntool={} $f'.format(self._signtool_command)]
+
         # Create installer package
-        subprocess.run([inno_setup_path, self._generated_iss_file, '/O' + str(build_path)], check=True)
+        subprocess.run(cmd, check=True)
 
         return build_path / (self._installer_file_name + '.exe')
 
