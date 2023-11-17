@@ -34,7 +34,7 @@ class InnoSetup:
             Initialise this File instance
             :param source: The source file to represent.
             """
-            self.source = source
+            self.source = source.resolve()
             self.excludes = ['*.pdb', '*.ilk']
             self.type = type
             self.destination = None
