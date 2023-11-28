@@ -71,7 +71,7 @@ class ProductBuilder:
         :param path: The path to the license file.
         :return:
         """
-        self._license = path
+        self._license = path.resolve()
 
     def build(self, output_path: Path, developer_id_installer: str):
         """
