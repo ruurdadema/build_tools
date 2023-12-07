@@ -295,7 +295,10 @@ def _generate_file_entry(file: InnoSetup.File):
         parts.append('Excludes: "{}"'.format(','.join(file.excludes)))
 
     # DestDir
-    parts.append('DestDir: "{}"'.format(destination))
+    if file.source.is_file():
+        parts.append('DestDir: "{}"'.format(destination))
+    elif file.source.is_dir():
+        parts.append('DestDir: "{}\\{}"'.format(destination, file.source.name))
 
     # Flags
     flags = 'ignoreversion'
