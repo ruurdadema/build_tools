@@ -52,7 +52,7 @@ class ProductBuilder:
             self.tmp_file = tempfile.NamedTemporaryFile()
             self.scripts = scripts.resolve() if scripts else None
 
-    def __init__(self, title=None):
+    def __init__(self, title):
         self._title = title
         self._license = None
         self._components = []
