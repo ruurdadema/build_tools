@@ -38,26 +38,30 @@ class ProductBuilder:
         Represents a component in an installer
         """
 
-        def __init__(self, path: Path, install_location: Path, identifier: str, title: str, must_close: [str],
-                     scripts: Path):
+        def __init__(self, path: Path | None, install_location: Path | None, identifier: str, title: str,
+                     must_close: [str], scripts: Path | None):
+
+            if path and not install_location:
+                raise Exception('Need install_location when specifying path')
+
             self.path = path
             self.install_location = install_location
             self.identifier = identifier
             self.title = title
             self.must_close = must_close
             self.tmp_file = tempfile.NamedTemporaryFile()
-            self.scripts = scripts
+            self.scripts = scripts.resolve() if scripts else None
 
     def __init__(self, title=None):
         self._title = title
         self._license = None
         self._components = []
 
-    def add_component(self, path: Path, install_location: Path, identifier: str, title: str, must_close=None,
-                      scripts: Path = None):
+    def add_component(self, path_to_bundle: Path | None, install_location: Path | None, identifier: str, title: str,
+                      must_close=None, scripts: Path = None):
         """
         Adds a component to the installer
-        :param path: The path to the app bundle.
+        :param path_to_bundle: The path to the app bundle. Can be None in which case the --nopayload flag will be added. This requires scripts to be a valid path.
         :param install_location: The local to install the bundle to.
         :param identifier: The identifier of the component.
         :param title: The title of the component.
@@ -68,7 +72,7 @@ class ProductBuilder:
         if must_close is None:
             must_close = []
         self._components.append(
-            ProductBuilder.Component(path, install_location, identifier, title, must_close, scripts.resolve()))
+            ProductBuilder.Component(path_to_bundle, install_location, identifier, title, must_close, scripts))
 
     def add_license(self, path: Path):
         """
@@ -97,10 +101,15 @@ class ProductBuilder:
 
         # Build the components
         for component in self._components:
-            cmd = ['pkgbuild',
-                   '--component', component.path,
-                   '--identifier', component.identifier,
-                   '--install-location', component.install_location]
+            cmd = ['pkgbuild', '--identifier', component.identifier]
+
+            if component.path:
+                cmd += ['--component', component.path]
+            else:
+                cmd += ['--nopayload']
+
+            if component.install_location:
+                cmd += ['--install-location', component.install_location]
 
             if component.scripts:
                 cmd += ['--scripts', component.scripts]
@@ -189,5 +198,7 @@ class ProductBuilder:
         cmd += ['--sign', developer_id_installer]
         cmd += ['--timestamp']
         cmd += [str(output_path)]
+
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
         subprocess.run(cmd, check=True)
