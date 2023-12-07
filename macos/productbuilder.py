@@ -38,20 +38,23 @@ class ProductBuilder:
         Represents a component in an installer
         """
 
-        def __init__(self, path: Path, install_location: Path, identifier: str, title: str, must_close: [str]):
+        def __init__(self, path: Path, install_location: Path, identifier: str, title: str, must_close: [str],
+                     scripts: Path):
             self.path = path
             self.install_location = install_location
             self.identifier = identifier
             self.title = title
             self.must_close = must_close
             self.tmp_file = tempfile.NamedTemporaryFile()
+            self.scripts = scripts
 
     def __init__(self, title=None):
         self._title = title
         self._license = None
         self._components = []
 
-    def add_component(self, path: Path, install_location: Path, identifier: str, title: str, must_close=None):
+    def add_component(self, path: Path, install_location: Path, identifier: str, title: str, must_close=None,
+                      scripts: Path = None):
         """
         Adds a component to the installer
         :param path: The path to the app bundle.
@@ -59,11 +62,13 @@ class ProductBuilder:
         :param identifier: The identifier of the component.
         :param title: The title of the component.
         :param must_close: A list of application bundle ids that must be closed before installing this component.
+        :param scripts: Path to a directory containing scripts which should be added to the installer.
         :return:
         """
         if must_close is None:
             must_close = []
-        self._components.append(ProductBuilder.Component(path, install_location, identifier, title, must_close))
+        self._components.append(
+            ProductBuilder.Component(path, install_location, identifier, title, must_close, scripts.resolve()))
 
     def add_license(self, path: Path):
         """
@@ -92,11 +97,17 @@ class ProductBuilder:
 
         # Build the components
         for component in self._components:
-            subprocess.run(['pkgbuild',
-                            '--component', component.path,
-                            '--identifier', component.identifier,
-                            '--install-location', component.install_location,
-                            component.tmp_file.name], check=True)
+            cmd = ['pkgbuild',
+                   '--component', component.path,
+                   '--identifier', component.identifier,
+                   '--install-location', component.install_location]
+
+            if component.scripts:
+                cmd += ['--scripts', component.scripts]
+
+            cmd += [component.tmp_file.name]
+
+            subprocess.run(cmd, check=True)
 
         installer_gui_script = ElementTree.Element('installer-gui-script', {'minSpecVersion': '1'})
 
