@@ -29,7 +29,7 @@ class InnoSetup:
     """
 
     class File:
-        def __init__(self, source: Path):
+        def __init__(self, source: Path, external=False):
             """
             Initialise this File instance
             :param source: The source file to represent.
@@ -38,6 +38,7 @@ class InnoSetup:
             self.excludes = ['*.pdb', '*.ilk']
             self.type = type
             self.destination = None
+            self.external = external
 
         def set_custom_destination(self, destination: Path):
             """
@@ -279,9 +280,32 @@ def _generate_file_entry(file: InnoSetup.File):
 
     destination = file.destination if file.destination else "{app}"
 
+    parts = []
+
+    # Source
     if file.source.is_file():
-        return 'Source: "{}"; Excludes: "{}"; DestDir: "{}"; Flags: ignoreversion'.format(
-            file.source, ','.join(file.excludes), destination)
+        parts.append('Source: "{}"'.format(file.source))
     elif file.source.is_dir():
-        return 'Source: "{}\*"; Excludes: "{}"; DestDir: "{}\\{}"; Flags: ignoreversion recursesubdirs createallsubdirs'.format(
-            file.source, ','.join(file.excludes), destination, file.source.name)
+        parts.append('Source: "{}\\*"'.format(file.source))
+    else:
+        raise Exception('Source is not a file and not a directory?')
+
+    # Excludes
+    if not file.external:
+        parts.append('Excludes: "{}"'.format(','.join(file.excludes)))
+
+    # DestDir
+    parts.append('DestDir: "{}"'.format(destination))
+
+    # Flags
+    flags = 'ignoreversion'
+
+    if file.source.is_dir():
+        flags += ' recursesubdirs createallsubdirs'
+
+    if file.external:
+        flags += ' external'
+
+    parts.append('Flags: {}'.format(flags))
+
+    return '; '.join(parts)
