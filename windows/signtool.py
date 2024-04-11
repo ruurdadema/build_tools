@@ -72,3 +72,6 @@ def signtool_test(cert_thumbprint: str):
 
     signtool_sign(cert_thumbprint, tmp_file)
     signtool_verify(tmp_file)
+
+    print('Signing test succeeded')
+    
