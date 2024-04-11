@@ -1,6 +1,9 @@
 import glob
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
+from uuid import uuid4
 
 
 def signtool_get_path():
@@ -37,6 +40,7 @@ def signtool_sign(cert_thumbprint: str, file: Path):
     """
     cmd = signtool_get_sign_command(cert_thumbprint)
     cmd += [str(file)]
+    print('Sign command: ' + ' '.join(cmd))
     subprocess.run(cmd, check=True)
 
 
@@ -46,5 +50,25 @@ def signtool_verify(file: Path):
     :param file:
     :return:
     """
-    subprocess.run([signtool_get_path(), 'verify', '/v', '/pa', str(file)], check=True)
+    cmd = [str(signtool_get_path()), 'verify', '/v', '/pa', str(file)]
+    print('Verify command: ' + ' '.join(cmd))
+    subprocess.run(cmd, check=True)
 
+
+def signtool_test(cert_thumbprint: str):
+    """
+    Tests if signing a dummy executable is possible with given cert thumbprint.
+    """
+    rundll32 = shutil.which('rundll32')  # Using rundll32 as dummy exe
+
+    print('Using rundll32 as dummy exe: {}'.format(rundll32))
+
+    tmp_dir = tempfile.gettempdir()
+    tmp_file = Path(tmp_dir) / str(uuid4())
+
+    print('Temp file: {}'.format(tmp_file))
+
+    shutil.copy2(rundll32, tmp_file)
+
+    signtool_sign(cert_thumbprint, tmp_file)
+    signtool_verify(tmp_file)
