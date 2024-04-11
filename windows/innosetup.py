@@ -253,7 +253,9 @@ class InnoSetup:
         inno_setup_path = 'C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe'
 
         cmd = [inno_setup_path, self._generated_iss_file, '/O' + str(build_path)]
-        cmd += ['/Ssigntool={} $f'.format(self._signtool_command)]
+
+        if self._signtool_command:
+            cmd += ['/Ssigntool={} $f'.format(self._signtool_command)]
 
         # Create installer package
         subprocess.run(cmd, check=True)
