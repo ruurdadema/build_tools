@@ -70,8 +70,11 @@ def signtool_test(cert_thumbprint: str):
 
     shutil.copy2(rundll32, tmp_file)
 
-    signtool_sign(cert_thumbprint, tmp_file)
-    signtool_verify(tmp_file)
+    try:
+        signtool_sign(cert_thumbprint, tmp_file)
+        signtool_verify(tmp_file)
+    finally:
+        print('Removing: {}'.format(tmp_file))
+        tmp_file.unlink()
 
     print('Signing test succeeded')
-    
