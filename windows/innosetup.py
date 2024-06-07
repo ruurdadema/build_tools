@@ -39,6 +39,7 @@ class InnoSetup:
             self.type = type
             self.destination = None
             self.external = external
+            self.add_to_start_menu = False
 
         def set_custom_destination(self, destination: Path):
             """
@@ -61,6 +62,12 @@ class InnoSetup:
             :return:
             """
             self.excludes = excludes
+
+        def set_add_to_start_menu(self, should_be_added: bool):
+            """
+            Sets a flag which will make InnoSetup add this file to the start menu.
+            """
+            self.add_to_start_menu = should_be_added
 
     def __init__(self, appname: str, app_publisher: str, appversion: str):
         """
@@ -231,6 +238,18 @@ class InnoSetup:
             # InstallDelete
             for e in self._install_delete:
                 script += 'Type: filesandordirs; Name: "{}"\n'.format(e)
+
+        script += '\n'
+
+        # Icons
+        script += '[Icons]\n'
+
+        for file in self._files:
+            if not file.add_to_start_menu:
+                continue
+            script += f'Name: "{{group}}\\{file.source.stem}"; Filename: "{{app}}\\{file.source.name}"; WorkingDir: "{{app}}"'
+
+        script += '\n'
 
         # Generate the iss file
         generated_iss_file = self._build_path / Path(self._appname).with_suffix('.iss')
