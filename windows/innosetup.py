@@ -40,6 +40,7 @@ class InnoSetup:
             self.destination = None
             self.external = external
             self.add_to_start_menu = False
+            self.add_to_desktop = False
 
         def set_custom_destination(self, destination: Path):
             """
@@ -68,6 +69,12 @@ class InnoSetup:
             Sets a flag which will make InnoSetup add this file to the start menu.
             """
             self.add_to_start_menu = should_be_added
+
+        def set_add_to_desktop(self, should_be_added: bool):
+            """
+            Sets a flag which will make InnoSetup add this file to the desktop.
+            """
+            self.add_to_desktop = should_be_added
 
     def __init__(self, appname: str, app_publisher: str, appversion: str):
         """
@@ -159,6 +166,7 @@ class InnoSetup:
         self._build_path.mkdir(parents=True, exist_ok=True)
         self._installer_file_name = installer_file_name
 
+        # Setup
         script = ''
         script += '[Setup]\n'
 
@@ -209,6 +217,9 @@ class InnoSetup:
         script += 'Compression=lzma\n'
         script += 'SolidCompression=yes\n'
 
+        # Icons
+        script += 'AllowNoIcons=yes\n'
+
         # Style
         script += 'WizardStyle=modern\n'
 
@@ -241,13 +252,20 @@ class InnoSetup:
 
         script += '\n'
 
+        # Tasks
+        script += '[Tasks]\n'
+        if self._should_ask_to_create_desktop_icon():
+            script += 'Name: desktopicon; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"\n'
+        script += '\n'
+
         # Icons
         script += '[Icons]\n'
 
         for file in self._files:
-            if not file.add_to_start_menu:
-                continue
-            script += f'Name: "{{group}}\\{file.source.stem}"; Filename: "{{app}}\\{file.source.name}"; WorkingDir: "{{app}}"'
+            if file.add_to_start_menu:
+                script += f'Name: "{{group}}\\{file.source.stem}"; Filename: "{{app}}\\{file.source.name}"; WorkingDir: "{{app}}"\n'
+            if file.add_to_desktop:
+                script += f'Name: "{{commondesktop}}\\{file.source.stem}"; Filename: "{{app}}\\{file.source.name}"; WorkingDir: "{{app}}"; Tasks: desktopicon\n'
 
         script += '\n'
 
@@ -287,6 +305,12 @@ class InnoSetup:
         """
         for file in self._files:
             if not file.destination:
+                return True
+        return False
+
+    def _should_ask_to_create_desktop_icon(self):
+        for file in self._files:
+            if file.add_to_desktop:
                 return True
         return False
 
