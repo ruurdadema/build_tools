@@ -41,6 +41,7 @@ class InnoSetup:
             self.external = external
             self.add_to_start_menu = False
             self.add_to_desktop = False
+            self.run_after_install = False
 
         def set_custom_destination(self, destination: Path):
             """
@@ -75,6 +76,12 @@ class InnoSetup:
             Sets a flag which will make InnoSetup add this file to the desktop.
             """
             self.add_to_desktop = should_be_added
+
+        def set_run_after_install(self, should_run_after_install: bool):
+            """
+            Sets a flag which will make InnoSetup give the user the option to run this file after install.
+            """
+            self.run_after_install = should_run_after_install
 
     def __init__(self, appname: str, app_publisher: str, appversion: str):
         """
@@ -166,7 +173,7 @@ class InnoSetup:
         self._build_path.mkdir(parents=True, exist_ok=True)
         self._installer_file_name = installer_file_name
 
-        # Setup
+        # [Setup]
         script = ''
         script += '[Setup]\n'
 
@@ -228,13 +235,13 @@ class InnoSetup:
 
         script += '\n'
 
-        # Languages
+        # [Languages]
         script += '[Languages]\n'
         script += 'Name: "english"; MessagesFile: "compiler:Default.isl"\n'
 
         script += '\n'
 
-        # Files
+        # [Files]
         script += '[Files]\n'
 
         for file in self._files:
@@ -252,13 +259,13 @@ class InnoSetup:
 
         script += '\n'
 
-        # Tasks
+        # [Tasks]
         script += '[Tasks]\n'
         if self._should_ask_to_create_desktop_icon():
             script += 'Name: desktopicon; Description: "Create a &desktop icon"; GroupDescription: "Additional icons:"\n'
         script += '\n'
 
-        # Icons
+        # [Icons]
         script += '[Icons]\n'
 
         for file in self._files:
@@ -266,6 +273,18 @@ class InnoSetup:
                 script += f'Name: "{{group}}\\{file.source.stem}"; Filename: "{{app}}\\{file.source.name}"; WorkingDir: "{{app}}"\n'
             if file.add_to_desktop:
                 script += f'Name: "{{commondesktop}}\\{file.source.stem}"; Filename: "{{app}}\\{file.source.name}"; WorkingDir: "{{app}}"; Tasks: desktopicon\n'
+
+        script += '\n'
+
+        # [Run]
+        script += '[Run]\n'
+
+        for file in self._files:
+            if file.run_after_install:
+                dst = f'{{app}}\\{file.source.name}'
+                if file.destination:
+                    dst = f'{file.destination}\\{file.source.name}'
+                script += f'Filename: "{dst}"; Description: "Run {file.source.stem}"; Flags: postinstall shellexec skipifsilent'
 
         script += '\n'
 
