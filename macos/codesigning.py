@@ -82,13 +82,15 @@ def verify_signature(file: Path, check_notarization=False):
         subprocess.run(['spctl', '--assess', '-vvv', '-t', 'install', file], check=True)
 
 
-def notarize_file(username, password, team_id, file):
+def notarize_file(username, password, team_id, file, staple=True):
     """
     Notarizes given file (which ust be a container, pkg, dmg, zip).
     :param username: The username for signing.
     :param password: The password for signing.
     :param team_id: The team ID.
     :param file: The file to notarize.
+    :param staple: True to staple the ticket to the file, or false to not staple in which case an internet connection is
+    needed to verify the notarization.
     """
 
     if not username:
@@ -124,8 +126,9 @@ def notarize_file(username, password, team_id, file):
     if j['status'] != 'Accepted':
         raise Exception('Notarization failed. Please review the logs above.')
 
-    print('Staple:')
-    subprocess.run(['xcrun', 'stapler', 'staple', file], check=True)
+    if staple:
+        print('Staple:')
+        subprocess.run(['xcrun', 'stapler', 'staple', file], check=True)
 
     verify_signature(file, check_notarization=True)
 
