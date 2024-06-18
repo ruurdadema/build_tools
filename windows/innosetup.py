@@ -284,7 +284,7 @@ class InnoSetup:
                 dst = f'{{app}}\\{file.source.name}'
                 if file.destination:
                     dst = f'{file.destination}\\{file.source.name}'
-                script += f'Filename: "{dst}"; Description: "Run {file.source.stem}"; Flags: postinstall shellexec skipifsilent'
+                script += f'Filename: "{dst}"; Description: "Run {file.source.stem}"; Flags: postinstall shellexec skipifsilent\n'
 
         script += '\n'
 
