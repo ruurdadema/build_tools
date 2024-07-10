@@ -38,8 +38,8 @@ class ProductBuilder:
         Represents a component in an installer
         """
 
-        def __init__(self, path: Path | None, install_location: Path | None, identifier: str, title: str,
-                     must_close: [str], scripts: Path | None):
+        def __init__(self, path: Path, install_location: Path, identifier: str, title: str,
+                     must_close: [str], scripts: Path):
 
             if path and not install_location:
                 raise Exception('Need install_location when specifying path')
@@ -57,7 +57,7 @@ class ProductBuilder:
         self._license = None
         self._components = []
 
-    def add_component(self, path_to_bundle: Path | None, install_location: Path | None, identifier: str, title: str,
+    def add_component(self, path_to_bundle: Path, install_location: Path, identifier: str, title: str,
                       must_close=None, scripts: Path = None):
         """
         Adds a component to the installer
