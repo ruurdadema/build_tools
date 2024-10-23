@@ -46,6 +46,7 @@ class CMake:
         self._generator = None
         self._targets = []
         self._options = OrderedDict()
+        self._env = None
 
     def path_to_build(self, path_to_build: Path):
         self._path_to_build = path_to_build
@@ -78,6 +79,10 @@ class CMake:
         self._targets.append(target)
         return self
 
+    def env(self, env):
+        self._env = env
+        return self
+
     def configure(self):
         cmd = ['cmake']
 
@@ -106,7 +111,7 @@ class CMake:
         print('Invoke CMake configure command: \"{}\"'.format(' '.join(cmd)))
 
         # Configure
-        subprocess.run(cmd, check=True)
+        subprocess.run(cmd, check=True, env=self._env)
 
     def build(self):
         cmd = ['cmake']
@@ -130,4 +135,4 @@ class CMake:
         print('Invoke CMake build command: \"{}\"'.format(' '.join(cmd)))
 
         # Build
-        subprocess.run(cmd, check=True)
+        subprocess.run(cmd, check=True, env=self._env)
