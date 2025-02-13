@@ -1,20 +1,21 @@
 cmake_minimum_required(VERSION 3.22)
 
 include(submodules/ravennakit/submodules/build_tools/cmake/git_version.cmake)
+include(submodules/ravennakit/cmake/helpers.cmake)
 
 project(ravennakit_diagnostics VERSION ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH} LANGUAGES C CXX)
 
-#######################
-# Project definitions #
-#######################
+#####################
+# Project variables #
+#####################
 
-set(PROJECT_COMPANY_NAME "Sound on Digital")
-set(PROJECT_PRODUCT_NAME "RAVENNAKIT Diagnostics")
-set(PROJECT_BUNDLE_ID "com.soundondigital.ravennakit-diagnostics")
-set(PROJECT_URL "https://soundondigital.com/")
-set(PROJECT_SUPPORT_URL "https://soundondigital.com/support/")
-set(PROJECT_EMAIL "support@soundondigital.com")
-set(PLUGIN_MANUFACTURER_CODE "SonD")
+add_project_variable(PROJECT_COMPANY_NAME "Sound on Digital")
+add_project_variable(PROJECT_PRODUCT_NAME "RAVENNAKIT Diagnostics")
+add_project_variable(PROJECT_BUNDLE_ID "com.soundondigital.ravennakit-diagnostics")
+add_project_variable(PROJECT_URL "https://soundondigital.com/")
+add_project_variable(PROJECT_SUPPORT_URL "https://soundondigital.com/support/")
+add_project_variable(PROJECT_EMAIL "support@soundondigital.com")
+add_project_variable(PROJECT_VERSION_STRING ${GIT_DESCRIBE_VERSION})
 
 ##########################
 # Compiler configuration #

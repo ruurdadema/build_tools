@@ -10,8 +10,8 @@ public:
     // We inject these as compile definitions from the CMakeLists.txt
     // If you've enabled the juce header with `juce_generate_juce_header(<thisTarget>)`
     // you could `#include <JuceHeader.h>` and use `ProjectInfo::projectName` etc. instead.
-    const juce::String getApplicationName() override       { return "RAVENNA Monitor"; }
-    const juce::String getApplicationVersion() override    { return "0.1.0"; }
+    const juce::String getApplicationName() override       { return PROJECT_PRODUCT_NAME; }
+    const juce::String getApplicationVersion() override    { return PROJECT_VERSION_STRING; }
     bool moreThanOneInstanceAllowed() override             { return true; }
 
     //==============================================================================
