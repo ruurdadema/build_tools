@@ -2,18 +2,15 @@
 
 #include "ravennakit/core/tracy.hpp"
 
-//==============================================================================
 MainComponent::MainComponent()
 {
     setSize (600, 400);
 }
 
-//==============================================================================
 void MainComponent::paint (juce::Graphics& g)
 {
     TRACY_ZONE_SCOPED;
 
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
 
     g.setFont (juce::FontOptions (16.0f));
@@ -21,9 +18,4 @@ void MainComponent::paint (juce::Graphics& g)
     g.drawText ("Hello World!", getLocalBounds(), juce::Justification::centred, true);
 }
 
-void MainComponent::resized()
-{
-    // This is called when the MainComponent is resized.
-    // If you add any child components, this is where you should
-    // update their positions.
-}
+void MainComponent::resized() {}
