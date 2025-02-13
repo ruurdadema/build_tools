@@ -1,0 +1,52 @@
+# Generated from CLion C/C++ Code Style settings
+BasedOnStyle: Microsoft
+AccessModifierOffset: -4
+TabWidth: 4
+UseTab: Never
+PointerAlignment: Left
+AllowShortLambdasOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeParens: NonEmptyParentheses
+Cpp11BracedListStyle: false
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: Always
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterObjCDeclaration: true
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: false
+  IndentBraces: false
+  AfterCaseLabel: true
+BreakConstructorInitializers: AfterColon
+BreakInheritanceList: AfterColon
+BreakStringLiterals: true
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+AllowAllArgumentsOnNextLine: false
+AllowAllConstructorInitializersOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AlignAfterOpenBracket: AlwaysBreak
+BinPackArguments: false
+BinPackParameters: false
+FixNamespaceComments: true
+ColumnLimit: 120
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+AlwaysBreakTemplateDeclarations: Yes
+PenaltyBreakAssignment: 1000
+PenaltyBreakComment: 10
+IndentPPDirectives: AfterHash
+---
+Language: Proto
+UseTab: Never
+TabWidth: 4
+IndentWidth: 4
+ContinuationIndentWidth: 4
+...

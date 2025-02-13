@@ -1,0 +1,6 @@
+[submodule "submodules/JUCE"]
+	path = submodules/JUCE
+	url = https://github.com/juce-framework/JUCE.git
+[submodule "submodules/ravennakit"]
+	path = submodules/ravennakit
+	url = git@bitbucket.org:soundondigital/ravennakit.git
