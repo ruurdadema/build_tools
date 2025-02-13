@@ -3,15 +3,15 @@ cmake_minimum_required(VERSION 3.22)
 include(submodules/ravennakit/submodules/build_tools/cmake/git_version.cmake)
 include(submodules/ravennakit/cmake/helpers.cmake)
 
-project(ravennakit_diagnostics VERSION ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH} LANGUAGES C CXX)
+project(ravennakit_juce_demo VERSION ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH} LANGUAGES C CXX)
 
 #####################
 # Project variables #
 #####################
 
 add_project_variable(PROJECT_COMPANY_NAME "Sound on Digital")
-add_project_variable(PROJECT_PRODUCT_NAME "RAVENNAKIT Diagnostics")
-add_project_variable(PROJECT_BUNDLE_ID "com.soundondigital.ravennakit-diagnostics")
+add_project_variable(PROJECT_PRODUCT_NAME "RAVENNAKIT JUCE Demo")
+add_project_variable(PROJECT_BUNDLE_ID "com.soundondigital.ravennakit-juce-demo")
 add_project_variable(PROJECT_URL "https://soundondigital.com/")
 add_project_variable(PROJECT_SUPPORT_URL "https://soundondigital.com/support/")
 add_project_variable(PROJECT_EMAIL "support@soundondigital.com")
@@ -66,31 +66,31 @@ set(JUCE_COMMON_TARGET_DEFINITIONS
         JUCE_ASIO=1
 )
 
-juce_add_gui_app(ravennakit_diagnostics
+juce_add_gui_app(ravennakit_juce_demo
         PRODUCT_NAME ${PROJECT_PRODUCT_NAME}
         COMPANY_NAME ${PROJECT_COMPANY_NAME}
         BUNDLE_ID ${PROJECT_BUNDLE_ID}
 )
 
-target_sources(ravennakit_diagnostics PRIVATE
+target_sources(ravennakit_juce_demo PRIVATE
         source/Main.cpp
         source/MainComponent.h
         source/MainComponent.cpp
 )
 
-target_compile_definitions(ravennakit_diagnostics PUBLIC
+target_compile_definitions(ravennakit_juce_demo PUBLIC
         ${JUCE_COMMON_TARGET_DEFINITIONS}
-        PRODUCT_NAME="$<TARGET_PROPERTY:ravennakit_diagnostics,JUCE_PRODUCT_NAME>"
+        PRODUCT_NAME="$<TARGET_PROPERTY:ravennakit_juce_demo,JUCE_PRODUCT_NAME>"
 )
 
 if (WIN32)
-    target_compile_definitions(ravennakit_diagnostics PRIVATE
+    target_compile_definitions(ravennakit_juce_demo PRIVATE
             _CRT_SECURE_NO_WARNINGS
             WIN32_LEAN_AND_MEAN
     )
 endif ()
 
-target_link_libraries(ravennakit_diagnostics
+target_link_libraries(ravennakit_juce_demo
         PUBLIC
         juce::juce_recommended_warning_flags
         juce::juce_recommended_config_flags
