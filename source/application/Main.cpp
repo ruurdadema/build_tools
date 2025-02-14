@@ -73,6 +73,11 @@ public:
             centreWithSize (getWidth(), getHeight());
         }
 
+        ~MainWindow() override
+        {
+            setLookAndFeel (nullptr);
+        }
+
         void closeButtonPressed() override
         {
             getInstance()->systemRequestedQuit();

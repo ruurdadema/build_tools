@@ -12,14 +12,10 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class HorizontalMenu : public juce::Component
-{
+class SendersComponent : public juce::Component {
 public:
-    HorizontalMenu();
+    SendersComponent();
+
     void paint (juce::Graphics& g) override;
     void resized() override;
-
-private:
-    juce::HyperlinkButton receiversButton_;
-    juce::HyperlinkButton sendersButton_;
 };

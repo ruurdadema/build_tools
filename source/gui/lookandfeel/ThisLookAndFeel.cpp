@@ -12,5 +12,9 @@
 
 ThisLookAndFeel::ThisLookAndFeel()
 {
+    // ResizableWindow
     setColour (juce::ResizableWindow::backgroundColourId, juce::Colour (0xFF1A1A1E));
+
+    // HyperLinkButton
+    setColour (juce::HyperlinkButton::ColourIds::textColourId, juce::Colour (0xFF27BAFD));
 }

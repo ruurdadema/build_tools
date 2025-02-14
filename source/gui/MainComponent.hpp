@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "HorizontalMenu.hpp"
+#include "widgets/HorizontalMenu.hpp"
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
@@ -24,6 +24,9 @@ public:
 
 private:
     HorizontalMenu menu_;
-    juce::HyperlinkButton button_;
+    std::unique_ptr<Component> content_;
+
+    void showContent (std::unique_ptr<Component> content);
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
