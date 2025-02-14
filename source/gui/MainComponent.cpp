@@ -10,17 +10,17 @@
 
 #include "MainComponent.hpp"
 
-#include "ReceiversComponent.hpp"
-#include "SendersComponent.hpp"
 #include "ravennakit/core/tracy.hpp"
+#include "receivers/ReceiversMainComponent.hpp"
+#include "senders/SendersMainComponent.hpp"
 
 MainComponent::MainComponent()
 {
     menu_.addItem ("Receivers", "receivers", [this] {
-        showContent (std::make_unique<ReceiversComponent>());
+        showContent (std::make_unique<ReceiversMainComponent>());
     });
     menu_.addItem ("Senders", "senders", [this] {
-        showContent (std::make_unique<SendersComponent>());
+        showContent (std::make_unique<SendersMainComponent>());
     });
     addAndMakeVisible (menu_);
 }

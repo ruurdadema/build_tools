@@ -10,10 +10,22 @@
 
 #pragma once
 
+#include "DiscoveredStreamsContainer.hpp"
+#include "StreamsContainer.hpp"
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class ReceiversComponent : public juce::Component {
+class ReceiversMainComponent : public juce::Component {
 public:
+    ReceiversMainComponent();
+
     void paint (juce::Graphics& g) override;
     void resized() override;
+
+private:
+    DiscoveredStreamsContainer discoveredStreamsContainer_;
+    juce::Viewport leftViewport_;
+
+    StreamsContainer streamsContainer_;
+    juce::Viewport rightViewport_;
 };

@@ -8,17 +8,17 @@
  * Copyright (c) 2025 Owllab. All rights reserved.
  */
 
-#include "SendersComponent.hpp"
+#include "SendersMainComponent.hpp"
 
-SendersComponent::SendersComponent() {}
+SendersMainComponent::SendersMainComponent() {}
 
-void SendersComponent::paint (juce::Graphics& g)
+void SendersMainComponent::paint (juce::Graphics& g)
 {
     g.drawRect (getLocalBounds());
     g.drawText ("Senders", getLocalBounds(), juce::Justification::centred);
 }
 
-void SendersComponent::resized()
+void SendersMainComponent::resized()
 {
     Component::resized();
 }

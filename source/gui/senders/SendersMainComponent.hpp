@@ -12,9 +12,9 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class SendersComponent : public juce::Component {
+class SendersMainComponent : public juce::Component {
 public:
-    SendersComponent();
+    SendersMainComponent();
 
     void paint (juce::Graphics& g) override;
     void resized() override;

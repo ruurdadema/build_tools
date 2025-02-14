@@ -15,4 +15,11 @@
 class ThisLookAndFeel : public juce::LookAndFeel_V4 {
 public:
     ThisLookAndFeel();
+
+    void drawButtonBackground (
+        juce::Graphics&,
+        juce::Button&,
+        const juce::Colour& backgroundColour,
+        bool shouldDrawButtonAsHighlighted,
+        bool shouldDrawButtonAsDown) override;
 };
