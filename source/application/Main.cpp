@@ -1,11 +1,22 @@
+/*
+* Owllab License Agreement
+ *
+ * This software is provided by Owllab and may not be used, copied, modified,
+ * merged, published, distributed, sublicensed, or sold without a valid and
+ * explicit agreement with Owllab.
+ *
+ * Copyright (c) 2025 Owllab. All rights reserved.
+ */
+
 #include <memory>
 
 #include "gui/MainComponent.hpp"
+#include "gui/lookandfeel/ThisLookAndFeel.hpp"
 
-class GuiAppApplication final : public juce::JUCEApplication
+class Application final : public juce::JUCEApplication
 {
 public:
-    GuiAppApplication() = default;
+    Application() = default;
 
     const juce::String getApplicationName() override
     {
@@ -25,12 +36,14 @@ public:
     void initialise (const juce::String& commandLine) override
     {
         std::ignore = commandLine;
-        mainWindow = std::make_unique<MainWindow> (getApplicationName());
+        mainWindow_ = std::make_unique<MainWindow> (getApplicationName());
+        mainWindow_->setVisible (true);
+        mainWindow_->centreWithSize (1200, 800);
     }
 
     void shutdown() override
     {
-        mainWindow.reset();
+        mainWindow_.reset();
     }
 
     void systemRequestedQuit() override
@@ -52,12 +65,12 @@ public:
                 juce::Desktop::getInstance().getDefaultLookAndFeel().findColour (backgroundColourId),
                 allButtons)
         {
+            setLookAndFeel (&lookAndFeel_);
             setUsingNativeTitleBar (true);
             setContentOwned (new MainComponent(), true);
 
             setResizable (true, true);
             centreWithSize (getWidth(), getHeight());
-            setVisible (true);
         }
 
         void closeButtonPressed() override
@@ -66,11 +79,12 @@ public:
         }
 
     private:
+        ThisLookAndFeel lookAndFeel_;
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
 
 private:
-    std::unique_ptr<MainWindow> mainWindow;
+    std::unique_ptr<MainWindow> mainWindow_;
 };
 
-START_JUCE_APPLICATION (GuiAppApplication)
+START_JUCE_APPLICATION (Application)

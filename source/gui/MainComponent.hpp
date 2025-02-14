@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "HorizontalMenu.hpp"
+
 #include <juce_gui_extra/juce_gui_extra.h>
 
 class MainComponent final : public juce::Component
@@ -21,5 +23,7 @@ public:
     void resized() override;
 
 private:
+    HorizontalMenu menu_;
+    juce::HyperlinkButton button_;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };
