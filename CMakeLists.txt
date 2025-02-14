@@ -72,16 +72,15 @@ juce_add_gui_app(ravennakit_juce_demo
         BUNDLE_ID ${PROJECT_BUNDLE_ID}
 )
 
-target_sources(ravennakit_juce_demo PRIVATE
-        source/Main.cpp
-        source/MainComponent.h
-        source/MainComponent.cpp
-)
+file(GLOB_RECURSE SOURCE_FILES source/*.hpp source/*.cpp)
 
-target_compile_definitions(ravennakit_juce_demo PUBLIC
-        ${JUCE_COMMON_TARGET_DEFINITIONS}
-        PRODUCT_NAME="$<TARGET_PROPERTY:ravennakit_juce_demo,JUCE_PRODUCT_NAME>"
-)
+message(STATUS "Source files: ${SOURCE_FILES}")
+
+target_sources(ravennakit_juce_demo PRIVATE ${SOURCE_FILES})
+
+target_include_directories(ravennakit_juce_demo PRIVATE source)
+
+target_compile_definitions(ravennakit_juce_demo PUBLIC ${JUCE_COMMON_TARGET_DEFINITIONS})
 
 if (WIN32)
     target_compile_definitions(ravennakit_juce_demo PRIVATE
