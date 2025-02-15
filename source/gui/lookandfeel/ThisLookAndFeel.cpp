@@ -29,6 +29,8 @@ ThisLookAndFeel::ThisLookAndFeel()
 
     // TextEditor
     setColour (juce::TextEditor::ColourIds::backgroundColourId, juce::Colour (0xFF2C2C31));
+    setColour (juce::TextEditor::ColourIds::outlineColourId, juce::Colour (0xFF6B6B6B));
+    setColour (juce::TextEditor::ColourIds::focusedOutlineColourId, juce::Colour (0xFF6B6B6B));
 
     // CaretComponent
     setColour (juce::CaretComponent::ColourIds::caretColourId, juce::Colour (0xFF27BAFD));
