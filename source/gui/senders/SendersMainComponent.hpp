@@ -10,12 +10,17 @@
 
 #pragma once
 
+#include "application/ApplicationContext.hpp"
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
 class SendersMainComponent : public juce::Component {
 public:
-    SendersMainComponent();
+    explicit SendersMainComponent(ApplicationContext& context);
 
     void paint (juce::Graphics& g) override;
     void resized() override;
+
+private:
+    ApplicationContext& context_;
 };

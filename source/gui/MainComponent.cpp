@@ -14,13 +14,13 @@
 #include "receivers/ReceiversMainComponent.hpp"
 #include "senders/SendersMainComponent.hpp"
 
-MainComponent::MainComponent()
+MainComponent::MainComponent (ApplicationContext& context) : context_ (context)
 {
     menu_.addItem ("Receivers", "receivers", [this] {
-        showContent (std::make_unique<ReceiversMainComponent>());
+        showContent (std::make_unique<ReceiversMainComponent>(context_));
     });
     menu_.addItem ("Senders", "senders", [this] {
-        showContent (std::make_unique<SendersMainComponent>());
+        showContent (std::make_unique<SendersMainComponent>(context_));
     });
     addAndMakeVisible (menu_);
 }

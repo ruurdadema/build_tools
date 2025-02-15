@@ -10,7 +10,7 @@
 
 #include "SendersMainComponent.hpp"
 
-SendersMainComponent::SendersMainComponent() {}
+SendersMainComponent::SendersMainComponent (ApplicationContext& context) : context_ (context) {}
 
 void SendersMainComponent::paint (juce::Graphics& g)
 {

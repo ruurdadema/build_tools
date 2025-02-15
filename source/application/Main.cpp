@@ -1,5 +1,5 @@
 /*
-* Owllab License Agreement
+ * Owllab License Agreement
  *
  * This software is provided by Owllab and may not be used, copied, modified,
  * merged, published, distributed, sublicensed, or sold without a valid and
@@ -36,7 +36,7 @@ public:
     void initialise (const juce::String& commandLine) override
     {
         std::ignore = commandLine;
-        mainWindow_ = std::make_unique<MainWindow> (getApplicationName());
+        mainWindow_ = std::make_unique<MainWindow> (getApplicationName(), context_);
         mainWindow_->setVisible (true);
         mainWindow_->centreWithSize (1200, 800);
     }
@@ -59,7 +59,7 @@ public:
     class MainWindow final : public juce::DocumentWindow
     {
     public:
-        explicit MainWindow (const juce::String& name) :
+        explicit MainWindow (const juce::String& name, ApplicationContext& context) :
             DocumentWindow (
                 name,
                 juce::Desktop::getInstance().getDefaultLookAndFeel().findColour (backgroundColourId),
@@ -67,7 +67,7 @@ public:
         {
             setLookAndFeel (&lookAndFeel_);
             setUsingNativeTitleBar (true);
-            setContentOwned (new MainComponent(), true);
+            setContentOwned (new MainComponent (context), true);
 
             setResizable (true, true);
             centreWithSize (getWidth(), getHeight());
@@ -89,6 +89,7 @@ public:
     };
 
 private:
+    ApplicationContext context_;
     std::unique_ptr<MainWindow> mainWindow_;
 };
 

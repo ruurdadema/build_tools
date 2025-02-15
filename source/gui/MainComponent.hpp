@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "application/ApplicationContext.hpp"
 #include "widgets/HorizontalMenu.hpp"
 
 #include <juce_gui_extra/juce_gui_extra.h>
@@ -17,12 +18,13 @@
 class MainComponent final : public juce::Component
 {
 public:
-    MainComponent();
+    explicit MainComponent(ApplicationContext& context);
 
     void paint (juce::Graphics&) override;
     void resized() override;
 
 private:
+    ApplicationContext& context_;
     HorizontalMenu menu_;
     std::unique_ptr<Component> content_;
 

@@ -10,7 +10,7 @@
 
 #include "ReceiversMainComponent.hpp"
 
-ReceiversMainComponent::ReceiversMainComponent()
+ReceiversMainComponent::ReceiversMainComponent (ApplicationContext& context) : context_ (context)
 {
     leftViewport_.setViewedComponent (&discoveredStreamsContainer_, false);
     addAndMakeVisible (leftViewport_);
@@ -19,9 +19,7 @@ ReceiversMainComponent::ReceiversMainComponent()
     addAndMakeVisible (rightViewport_);
 }
 
-void ReceiversMainComponent::paint (juce::Graphics& g)
-{
-}
+void ReceiversMainComponent::paint (juce::Graphics&) {}
 
 void ReceiversMainComponent::resized()
 {
@@ -29,9 +27,9 @@ void ReceiversMainComponent::resized()
     leftViewport_.setBounds (b.removeFromLeft (b.getWidth() / 4));
     rightViewport_.setBounds (b);
 
-    discoveredStreamsContainer_.setSize(leftViewport_.getWidth() - 10, 10);
+    discoveredStreamsContainer_.setSize (leftViewport_.getWidth() - 10, 10);
     discoveredStreamsContainer_.resizeBasedOnContent();
 
-    streamsContainer_.setSize(rightViewport_.getWidth() - 10, 10);
+    streamsContainer_.setSize (rightViewport_.getWidth() - 10, 10);
     streamsContainer_.resizeBasedOnContent();
 }

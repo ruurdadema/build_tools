@@ -12,17 +12,19 @@
 
 #include "DiscoveredStreamsContainer.hpp"
 #include "StreamsContainer.hpp"
+#include "application/ApplicationContext.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
 class ReceiversMainComponent : public juce::Component {
 public:
-    ReceiversMainComponent();
+    explicit ReceiversMainComponent(ApplicationContext& context);
 
     void paint (juce::Graphics& g) override;
     void resized() override;
 
 private:
+    ApplicationContext& context_;
     DiscoveredStreamsContainer discoveredStreamsContainer_;
     juce::Viewport leftViewport_;
 
