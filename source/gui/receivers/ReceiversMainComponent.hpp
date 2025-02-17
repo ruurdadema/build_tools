@@ -24,7 +24,6 @@ public:
     void resized() override;
 
 private:
-    ApplicationContext& context_;
     DiscoveredStreamsContainer discoveredStreamsContainer_;
     juce::Viewport leftViewport_;
 

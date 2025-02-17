@@ -12,11 +12,15 @@
 
 #include "gui/MainComponent.hpp"
 #include "gui/lookandfeel/ThisLookAndFeel.hpp"
+#include "ravennakit/core/system.hpp"
 
 class Application final : public juce::JUCEApplication
 {
 public:
-    Application() = default;
+    Application()
+    {
+        rav::system::do_system_checks();
+    }
 
     const juce::String getApplicationName() override
     {
@@ -35,6 +39,8 @@ public:
 
     void initialise (const juce::String& commandLine) override
     {
+        rav::log::set_level_from_env();
+
         std::ignore = commandLine;
         mainWindow_ = std::make_unique<MainWindow> (getApplicationName(), context_);
         mainWindow_->setVisible (true);

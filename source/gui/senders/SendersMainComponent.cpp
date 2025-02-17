@@ -10,7 +10,10 @@
 
 #include "SendersMainComponent.hpp"
 
-SendersMainComponent::SendersMainComponent (ApplicationContext& context) : context_ (context) {}
+SendersMainComponent::SendersMainComponent (ApplicationContext& context)
+{
+    std::ignore = context;
+}
 
 void SendersMainComponent::paint (juce::Graphics& g)
 {

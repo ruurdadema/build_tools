@@ -10,26 +10,34 @@
 
 #pragma once
 
+#include "application/ApplicationContext.hpp"
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class DiscoveredStreamsContainer : public juce::Component
+class DiscoveredStreamsContainer : public juce::Component, public rav::ravenna_node::subscriber
 {
 public:
-    DiscoveredStreamsContainer();
+    explicit DiscoveredStreamsContainer (ApplicationContext& context);
+    ~DiscoveredStreamsContainer() override;
 
     void paint (juce::Graphics& g) override;
     void resized() override;
 
     void resizeBasedOnContent();
 
+    // rav::ravenna_node::subscriber overrides
+    void ravenna_session_discovered (const rav::dnssd::dnssd_browser::service_resolved& event) override;
+
 private:
     static constexpr int kRowHeight = 60;
     static constexpr int kMargin = 10;
 
+    ApplicationContext& context_;
+
     class Row : public Component
     {
     public:
-        Row(const juce::String& stream_name, const juce::String& stream_description);
+        Row(const juce::String& streamName, const juce::String& streamDescription);
         void resized() override;
         void paint (juce::Graphics& g) override;
 

@@ -10,8 +10,10 @@
 
 #include "DiscoveredStreamsContainer.hpp"
 
-DiscoveredStreamsContainer::DiscoveredStreamsContainer()
+DiscoveredStreamsContainer::DiscoveredStreamsContainer (ApplicationContext& context) : context_ (context)
 {
+    context_.getRavennaNode().subscribe (this);
+
     for (auto i = 0; i < 10; ++i)
     {
         auto* row = rows_.add (std::make_unique<Row> ("Stream " + juce::String (i + 1), "Stream hostname"));
@@ -19,9 +21,12 @@ DiscoveredStreamsContainer::DiscoveredStreamsContainer()
     }
 }
 
-void DiscoveredStreamsContainer::paint (juce::Graphics&)
+DiscoveredStreamsContainer::~DiscoveredStreamsContainer()
 {
+    context_.getRavennaNode().unsubscribe (this);
 }
+
+void DiscoveredStreamsContainer::paint (juce::Graphics&) {}
 
 void DiscoveredStreamsContainer::resized()
 {
@@ -38,9 +43,14 @@ void DiscoveredStreamsContainer::resizeBasedOnContent()
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
 }
 
-DiscoveredStreamsContainer::Row::Row (const juce::String& stream_name, const juce::String& stream_description) :
-    streamName_ (stream_name, stream_name),
-    streamDescription_ (stream_description, stream_description)
+void DiscoveredStreamsContainer::ravenna_session_discovered (const rav::dnssd::dnssd_browser::service_resolved& event)
+{
+    RAV_TRACE ("Stream discovered: {}", event.description.to_string());
+}
+
+DiscoveredStreamsContainer::Row::Row (const juce::String& streamName, const juce::String& streamDescription) :
+    streamName_ (streamName, streamName),
+    streamDescription_ (streamDescription, streamDescription)
 {
     streamName_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (streamName_);
