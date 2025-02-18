@@ -12,18 +12,12 @@
 
 DiscoveredStreamsContainer::DiscoveredStreamsContainer (ApplicationContext& context) : context_ (context)
 {
-    context_.getRavennaNode().subscribe (this);
-
-    for (auto i = 0; i < 10; ++i)
-    {
-        auto* row = rows_.add (std::make_unique<Row> ("Stream " + juce::String (i + 1), "Stream hostname"));
-        addAndMakeVisible (row);
-    }
+    context_.getRavennaNode().subscribe_to_browser (this);
 }
 
 DiscoveredStreamsContainer::~DiscoveredStreamsContainer()
 {
-    context_.getRavennaNode().unsubscribe (this);
+    context_.getRavennaNode().unsubscribe_from_browser (this);
 }
 
 void DiscoveredStreamsContainer::paint (juce::Graphics&) {}
@@ -45,22 +39,62 @@ void DiscoveredStreamsContainer::resizeBasedOnContent()
 
 void DiscoveredStreamsContainer::ravenna_session_discovered (const rav::dnssd::dnssd_browser::service_resolved& event)
 {
-    RAV_TRACE ("Stream discovered: {}", event.description.to_string());
+    executor_.callAsync ([this, desc = event.description] {
+        for (auto* row : rows_)
+        {
+            if (row->getSessionName() == juce::StringRef (desc.name))
+            {
+                row->update (desc);
+                return;
+            }
+        }
+
+        auto* row = rows_.add (std::make_unique<Row> (desc));
+        RAV_ASSERT (row != nullptr, "Failed to create row");
+        addAndMakeVisible (row);
+        resizeBasedOnContent();
+    });
 }
 
-DiscoveredStreamsContainer::Row::Row (const juce::String& streamName, const juce::String& streamDescription) :
-    streamName_ (streamName, streamName),
-    streamDescription_ (streamDescription, streamDescription)
+void DiscoveredStreamsContainer::ravenna_session_removed (const rav::dnssd::dnssd_browser::service_removed& event)
 {
-    streamName_.setJustificationType (juce::Justification::topLeft);
-    addAndMakeVisible (streamName_);
+    executor_.callAsync ([this, name = event.description.name] {
+        for (auto i = 0; i < rows_.size(); ++i)
+        {
+            if (rows_.getUnchecked (i)->getSessionName() == juce::StringRef(name))
+            {
+                rows_.remove (i);
+                resizeBasedOnContent();
+                return;
+            }
+        }
+    });
+}
 
-    streamDescription_.setJustificationType (juce::Justification::topLeft);
-    streamDescription_.setColour (juce::Label::textColourId, juce::Colours::grey);
-    addAndMakeVisible (streamDescription_);
+DiscoveredStreamsContainer::Row::Row (const rav::dnssd::service_description& serviceDescription)
+{
+    sessionName_.setText (serviceDescription.name, juce::dontSendNotification);
+    sessionName_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (sessionName_);
+
+    description_.setText (serviceDescription.host_target, juce::dontSendNotification);
+    description_.setJustificationType (juce::Justification::topLeft);
+    description_.setColour (juce::Label::textColourId, juce::Colours::grey);
+    addAndMakeVisible (description_);
 
     startButton_.setButtonText ("Play");
     addAndMakeVisible (startButton_);
+}
+
+juce::String DiscoveredStreamsContainer::Row::getSessionName() const
+{
+    return sessionName_.getText();
+}
+
+void DiscoveredStreamsContainer::Row::update (const rav::dnssd::service_description& serviceDescription)
+{
+    sessionName_.setText (serviceDescription.name, juce::dontSendNotification);
+    description_.setText (serviceDescription.host_target, juce::dontSendNotification);
 }
 
 void DiscoveredStreamsContainer::Row::resized()
@@ -68,8 +102,8 @@ void DiscoveredStreamsContainer::Row::resized()
     auto b = getLocalBounds().reduced (kMargin);
 
     startButton_.setBounds (b.removeFromRight (60));
-    streamName_.setBounds (b.removeFromTop (20));
-    streamDescription_.setBounds (b);
+    sessionName_.setBounds (b.removeFromTop (20));
+    description_.setBounds (b);
 }
 
 void DiscoveredStreamsContainer::Row::paint (juce::Graphics& g)

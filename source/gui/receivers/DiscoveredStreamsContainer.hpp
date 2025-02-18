@@ -11,10 +11,11 @@
 #pragma once
 
 #include "application/ApplicationContext.hpp"
+#include "util/MessageThreadExecutor.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class DiscoveredStreamsContainer : public juce::Component, public rav::ravenna_node::subscriber
+class DiscoveredStreamsContainer : public juce::Component, public rav::ravenna_browser::subscriber
 {
 public:
     explicit DiscoveredStreamsContainer (ApplicationContext& context);
@@ -27,6 +28,7 @@ public:
 
     // rav::ravenna_node::subscriber overrides
     void ravenna_session_discovered (const rav::dnssd::dnssd_browser::service_resolved& event) override;
+    void ravenna_session_removed (const rav::dnssd::dnssd_browser::service_removed& event) override;
 
 private:
     static constexpr int kRowHeight = 60;
@@ -37,15 +39,20 @@ private:
     class Row : public Component
     {
     public:
-        Row(const juce::String& streamName, const juce::String& streamDescription);
+        explicit Row (const rav::dnssd::service_description& serviceDescription);
+
+        juce::String getSessionName() const;
+
+        void update(const rav::dnssd::service_description& serviceDescription);
         void resized() override;
         void paint (juce::Graphics& g) override;
 
     private:
-        juce::Label streamName_;
-        juce::Label streamDescription_;
-        juce::TextButton startButton_{"Start"};
+        juce::Label sessionName_;
+        juce::Label description_;
+        juce::TextButton startButton_{""};
     };
 
     juce::OwnedArray<Row> rows_;
+    MessageThreadExecutor executor_;
 };
