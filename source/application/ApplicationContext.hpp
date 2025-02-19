@@ -15,11 +15,6 @@
 class ApplicationContext
 {
 public:
-    rav::ravenna_node& getRavennaNode()
-    {
-        return ravennaNode_;
-    }
-
-private:
-    rav::ravenna_node ravennaNode_;
+    virtual ~ApplicationContext() = default;
+    virtual rav::ravenna_node& getRavennaNode() = 0;
 };

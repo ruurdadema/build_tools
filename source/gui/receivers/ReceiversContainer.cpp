@@ -14,12 +14,12 @@
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
 {
-    context_.getRavennaNode().subscribe (this).wait();
+    context_.getRavennaNode().add_subscriber (this).wait();
 }
 
 ReceiversContainer::~ReceiversContainer()
 {
-    context_.getRavennaNode().unsubscribe (this).wait();
+    context_.getRavennaNode().remove_subscriber (this).wait();
 }
 
 void ReceiversContainer::resized()
@@ -37,37 +37,44 @@ void ReceiversContainer::resizeBasedOnContent()
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
 }
 
-void ReceiversContainer::on_receiver_updated (const rav::id receiver_id)
+void ReceiversContainer::on_receiver_updated (const rav::ravenna_receiver& receiver)
 {
-    executor_.callAsync ([this, receiver_id] {
+    executor_.callAsync ([this, id = receiver.get_id(), name = receiver.get_session_name()] {
         for (const auto& row : rows_)
         {
-            if (row->getId() == receiver_id)
+            if (row->getId() == id)
             {
                 row->repaint();
                 return;
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_.getRavennaNode(), receiver_id));
+        auto* row = rows_.add (std::make_unique<Row> (context_.getRavennaNode(), id, name));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         addAndMakeVisible (row);
         resizeBasedOnContent();
     });
 }
 
-ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId) :
+ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId, const std::string& name) :
     node_ (node),
     receiverId_ (receiverId)
 {
+    stream_.streamName = name;
+
     delayEditor_.setInputRestrictions (10, "0123456789");
     addAndMakeVisible (delayEditor_);
 
     update();
     startTimer (1000);
+
+    node_.add_receiver_subscriber (receiverId_, this).wait();
 }
 
-ReceiversContainer::Row::~Row() {}
+ReceiversContainer::Row::~Row()
+{
+    node_.remove_stream_subscriber (receiverId_, this).wait();
+}
 
 rav::id ReceiversContainer::Row::getId() const
 {
@@ -90,20 +97,21 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
 
     g.setColour (juce::Colour (0xFFFFFFFF));
     g.setFont (juce::FontOptions (fontSize, juce::Font::bold));
-    g.drawText ("Anubus_610120_27", column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (stream_.streamName, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText ("Stats", column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText ("Receive interval", column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText ("Settings", column4.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
     g.setFont (juce::FontOptions (fontSize, juce::Font::plain));
-    g.drawText ("L24/48000/2", column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("239.1.16.51", column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("Status: ok", column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (stream_.audioFormat, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (stream_.packetTimeFrames, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (stream_.address, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (stream_.status, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
     g.drawText (packet_stats_.dropped, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (packet_stats_.duplicates, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (packet_stats_.out_of_order, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (packet_stats_.too_late, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (packet_stats_.outOfOrder, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (packet_stats_.tooLate, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
     g.drawText (interval_stats_.avg, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (interval_stats_.median, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
@@ -121,6 +129,23 @@ void ReceiversContainer::Row::resized()
     delayEditor_.setBounds (b.withLeft (718).withHeight (24).withWidth (60));
 }
 
+void ReceiversContainer::Row::audio_format_changed (const rav::audio_format& new_format, uint32_t packet_time_frames)
+{
+    executor_.callAsync ([this, new_format, packet_time_frames] {
+        stream_.audioFormat = new_format.to_string();
+        stream_.packetTimeFrames = "ptime: " + juce::String (packet_time_frames);
+        repaint();
+    });
+}
+
+void ReceiversContainer::Row::rtp_session_changed (const rav::rtp_session& new_session, const rav::rtp_filter& filter)
+{
+    executor_.callAsync ([this, new_session] {
+        stream_.address = new_session.connection_address.to_string();
+        repaint();
+    });
+}
+
 void ReceiversContainer::Row::timerCallback()
 {
     update();
@@ -133,8 +158,8 @@ void ReceiversContainer::Row::update()
     // Packet stats
     packet_stats_.dropped = "dropped: " + juce::String (stats.packet_stats.dropped);
     packet_stats_.duplicates = "duplicates: " + juce::String (stats.packet_stats.duplicates);
-    packet_stats_.out_of_order = "out of order: " + juce::String (stats.packet_stats.out_of_order);
-    packet_stats_.too_late = "too late: " + juce::String (stats.packet_stats.too_late);
+    packet_stats_.outOfOrder = "out of order: " + juce::String (stats.packet_stats.out_of_order);
+    packet_stats_.tooLate = "too late: " + juce::String (stats.packet_stats.too_late);
 
     // Interval stats
     interval_stats_.avg = "avg: " + juce::String (stats.packet_interval_stats.average);

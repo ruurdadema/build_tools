@@ -14,12 +14,14 @@
 #include "gui/lookandfeel/ThisLookAndFeel.hpp"
 #include "ravennakit/core/system.hpp"
 
-class Application final : public juce::JUCEApplication
+class Application final : public juce::JUCEApplication, public ApplicationContext
 {
 public:
     Application()
     {
         rav::system::do_system_checks();
+        rav::log::set_level_from_env();
+        ravennaNode_ = std::make_unique<rav::ravenna_node>();
     }
 
     const juce::String getApplicationName() override
@@ -39,10 +41,8 @@ public:
 
     void initialise (const juce::String& commandLine) override
     {
-        rav::log::set_level_from_env();
-
         std::ignore = commandLine;
-        mainWindow_ = std::make_unique<MainWindow> (getApplicationName(), context_);
+        mainWindow_ = std::make_unique<MainWindow> (getApplicationName(), *this);
         mainWindow_->setVisible (true);
         mainWindow_->centreWithSize (1200, 800);
     }
@@ -65,7 +65,12 @@ public:
     void unhandledException (const std::exception* e, const juce::String& sourceFilename, int lineNumber) override
     {
         RAV_ASSERT (e != nullptr, "Unhandled exception without exception object");
-        RAV_ERROR("Unhandled exception: {}, {}:{}", e->what(), sourceFilename.toRawUTF8(), lineNumber);
+        RAV_ERROR ("Unhandled exception: {}, {}:{}", e->what(), sourceFilename.toRawUTF8(), lineNumber);
+    }
+
+    rav::ravenna_node& getRavennaNode() override
+    {
+        return *ravennaNode_;
     }
 
     class MainWindow final : public juce::DocumentWindow
@@ -101,7 +106,7 @@ public:
     };
 
 private:
-    ApplicationContext context_;
+    std::unique_ptr<rav::ravenna_node> ravennaNode_;
     std::unique_ptr<MainWindow> mainWindow_;
 };
 

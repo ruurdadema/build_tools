@@ -12,12 +12,12 @@
 
 DiscoveredStreamsContainer::DiscoveredStreamsContainer (ApplicationContext& context) : context_ (context)
 {
-    context_.getRavennaNode().subscribe (this).wait();
+    context_.getRavennaNode().add_subscriber (this).wait();
 }
 
 DiscoveredStreamsContainer::~DiscoveredStreamsContainer()
 {
-    context_.getRavennaNode().unsubscribe (this).wait();
+    context_.getRavennaNode().remove_subscriber (this).wait();
 }
 
 void DiscoveredStreamsContainer::paint (juce::Graphics&) {}
@@ -87,7 +87,7 @@ DiscoveredStreamsContainer::Row::Row (
     startButton_.setButtonText ("Play");
     startButton_.onClick = [&context, name = serviceDescription.name] {
         const auto id = context.getRavennaNode().create_receiver (name).get();
-        RAV_TRACE ("Created receiver with ID: {}", id.value());
+        RAV_TRACE ("Created receiver with id: {}", id.value());
     };
     addAndMakeVisible (startButton_);
 }

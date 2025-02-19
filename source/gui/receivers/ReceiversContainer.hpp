@@ -27,7 +27,7 @@ public:
     void resizeBasedOnContent();
 
     // rav::ravenna_node::subscriber overrides
-    void on_receiver_updated (rav::id receiver_id) override;
+    void on_receiver_updated (const rav::ravenna_receiver& receiver) override;
 
 private:
     static constexpr int kRowHeight = 138;
@@ -35,16 +35,19 @@ private:
 
     ApplicationContext& context_;
 
-    class Row : public Component, public juce::Timer
+    class Row : public Component, public juce::Timer, public rav::rtp_stream_receiver::subscriber
     {
     public:
-        explicit Row (rav::ravenna_node& node, rav::id receiverId);
+        explicit Row (rav::ravenna_node& node, rav::id receiverId, const std::string& name);
         ~Row() override;
 
         rav::id getId() const;
 
         void paint (juce::Graphics& g) override;
         void resized() override;
+
+        void audio_format_changed (const rav::audio_format& new_format, uint32_t packet_time_frames) override;
+        void rtp_session_changed (const rav::rtp_session& new_session, const rav::rtp_filter& filter) override;
 
     private:
         rav::ravenna_node& node_;
@@ -53,11 +56,19 @@ private:
 
         struct
         {
+            juce::String streamName;
+            juce::String audioFormat {"..."};
+            juce::String packetTimeFrames {"..."};
+            juce::String address {"..."};
+            juce::String status {"..."};
+        } stream_;
+
+        struct
+        {
             juce::String dropped;
             juce::String duplicates;
-            juce::String out_of_order;
-            juce::String too_late;
-
+            juce::String outOfOrder;
+            juce::String tooLate;
         } packet_stats_;
 
         struct
@@ -68,6 +79,8 @@ private:
             juce::String max;
             juce::String stddev;
         } interval_stats_;
+
+        MessageThreadExecutor executor_;
 
         void timerCallback() override;
         void update();
