@@ -12,6 +12,7 @@
 
 #include "application/ApplicationContext.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
+#include "util/MessageThreadExecutor.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -49,10 +50,19 @@ private:
         rav::ravenna_node& node_;
         juce::TextEditor delayEditor_;
         rav::id receiverId_;
-        rav::rtp_packet_stats::counters rtp_packet_stats_;
+        struct
+        {
+            juce::String dropped;
+            juce::String duplicates;
+            juce::String out_of_order;
+            juce::String too_late;
+
+        } packet_stats_;
 
         void timerCallback() override;
+        void update();
     };
 
     juce::OwnedArray<Row> rows_;
+    MessageThreadExecutor executor_;
 };

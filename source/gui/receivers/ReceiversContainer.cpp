@@ -39,19 +39,21 @@ void ReceiversContainer::resizeBasedOnContent()
 
 void ReceiversContainer::on_receiver_updated (const rav::id receiver_id)
 {
-    for (const auto& row : rows_)
-    {
-        if (row->getId() == receiver_id)
+    executor_.callAsync ([this, receiver_id] {
+        for (const auto& row : rows_)
         {
-            row->repaint();
-            return;
+            if (row->getId() == receiver_id)
+            {
+                row->repaint();
+                return;
+            }
         }
-    }
 
-    auto* row = rows_.add (std::make_unique<Row> (context_.getRavennaNode(), receiver_id));
-    RAV_ASSERT (row != nullptr, "Failed to create row");
-    addAndMakeVisible (row);
-    resizeBasedOnContent();
+        auto* row = rows_.add (std::make_unique<Row> (context_.getRavennaNode(), receiver_id));
+        RAV_ASSERT (row != nullptr, "Failed to create row");
+        addAndMakeVisible (row);
+        resizeBasedOnContent();
+    });
 }
 
 ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId) :
@@ -61,6 +63,7 @@ ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId)
     delayEditor_.setInputRestrictions (10, "0123456789");
     addAndMakeVisible (delayEditor_);
 
+    update();
     startTimer (1000);
 }
 
@@ -97,10 +100,10 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     g.drawText ("239.1.16.51", column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText ("Status: ok", column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
-    g.drawText ("dropped: 0", column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("duplicates: 0", column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("out of order: 0", column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("too late: 0", column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (packet_stats_.dropped, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (packet_stats_.duplicates, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (packet_stats_.out_of_order, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (packet_stats_.too_late, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
     g.drawText ("avg: 1", column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText ("median: 1", column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
@@ -120,5 +123,15 @@ void ReceiversContainer::Row::resized()
 
 void ReceiversContainer::Row::timerCallback()
 {
-    // node_.
+    update();
+}
+
+void ReceiversContainer::Row::update()
+{
+    const auto packet_stats = node_.get_packet_stats_for_stream (receiverId_).get();
+    packet_stats_.dropped = "dropped: " + juce::String (packet_stats.dropped);
+    packet_stats_.duplicates = "duplicates: " + juce::String (packet_stats.duplicates);
+    packet_stats_.out_of_order = "out of order: " + juce::String (packet_stats.out_of_order);
+    packet_stats_.too_late = "too late: " + juce::String (packet_stats.too_late);
+    repaint();
 }
