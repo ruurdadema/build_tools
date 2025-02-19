@@ -105,11 +105,11 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     g.drawText (packet_stats_.out_of_order, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (packet_stats_.too_late, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
-    g.drawText ("avg: 1", column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("median: 1", column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("min: 0.8", column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("max: 2.1", column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("stddev: 0.09", column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (interval_stats_.avg, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (interval_stats_.median, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (interval_stats_.min, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (interval_stats_.max, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (interval_stats_.stddev, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
     g.drawText ("delay (samples)", column4.removeFromTop (rowHeight), juce::Justification::centredLeft);
 }
@@ -128,10 +128,20 @@ void ReceiversContainer::Row::timerCallback()
 
 void ReceiversContainer::Row::update()
 {
-    const auto packet_stats = node_.get_packet_stats_for_stream (receiverId_).get();
-    packet_stats_.dropped = "dropped: " + juce::String (packet_stats.dropped);
-    packet_stats_.duplicates = "duplicates: " + juce::String (packet_stats.duplicates);
-    packet_stats_.out_of_order = "out of order: " + juce::String (packet_stats.out_of_order);
-    packet_stats_.too_late = "too late: " + juce::String (packet_stats.too_late);
+    const auto stats = node_.get_stats_for_stream (receiverId_).get();
+
+    // Packet stats
+    packet_stats_.dropped = "dropped: " + juce::String (stats.packet_stats.dropped);
+    packet_stats_.duplicates = "duplicates: " + juce::String (stats.packet_stats.duplicates);
+    packet_stats_.out_of_order = "out of order: " + juce::String (stats.packet_stats.out_of_order);
+    packet_stats_.too_late = "too late: " + juce::String (stats.packet_stats.too_late);
+
+    // Interval stats
+    interval_stats_.avg = "avg: " + juce::String (stats.packet_interval_stats.average);
+    interval_stats_.median = "median: " + juce::String (stats.packet_interval_stats.median);
+    interval_stats_.min = "min: " + juce::String (stats.packet_interval_stats.min);
+    interval_stats_.max = "max: " + juce::String (stats.packet_interval_stats.max);
+    interval_stats_.stddev = "stddev: " + juce::String (stats.packet_interval_stats.stddev);
+
     repaint();
 }

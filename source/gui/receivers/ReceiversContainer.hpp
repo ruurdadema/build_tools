@@ -50,6 +50,7 @@ private:
         rav::ravenna_node& node_;
         juce::TextEditor delayEditor_;
         rav::id receiverId_;
+
         struct
         {
             juce::String dropped;
@@ -58,6 +59,15 @@ private:
             juce::String too_late;
 
         } packet_stats_;
+
+        struct
+        {
+            juce::String avg;
+            juce::String median;
+            juce::String min;
+            juce::String max;
+            juce::String stddev;
+        } interval_stats_;
 
         void timerCallback() override;
         void update();
