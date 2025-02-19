@@ -10,15 +10,20 @@
 
 #pragma once
 
+#include "ravennakit/ravenna/ravenna_node.hpp"
+
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class StreamsContainer : public juce::Component
+class StreamsContainer : public juce::Component, public rav::ravenna_node::subscriber
 {
 public:
     StreamsContainer();
     void resized() override;
 
     void resizeBasedOnContent();
+
+    // rav::ravenna_node::subscriber overrides
+    void on_receiver_updated (rav::id receiver_id) override;
 
 private:
     static constexpr int kRowHeight = 138;
@@ -27,12 +32,16 @@ private:
     class Row : public Component
     {
     public:
-        Row();
+        explicit Row (rav::id receiverId);
+
+        rav::id getId() const;
+
         void paint (juce::Graphics& g) override;
         void resized() override;
 
     private:
         juce::TextEditor delayEditor_;
+        rav::id receiverId_;
     };
     juce::OwnedArray<Row> rows_;
 };

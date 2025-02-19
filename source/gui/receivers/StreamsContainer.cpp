@@ -12,14 +12,7 @@
 
 #include "juce_gui_extra/juce_gui_extra.h"
 
-StreamsContainer::StreamsContainer()
-{
-    for (auto i = 0; i < 10; ++i)
-    {
-        auto* row = rows_.add (std::make_unique<Row>());
-        addAndMakeVisible (row);
-    }
-}
+StreamsContainer::StreamsContainer() {}
 
 void StreamsContainer::resized()
 {
@@ -36,10 +29,17 @@ void StreamsContainer::resizeBasedOnContent()
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
 }
 
-StreamsContainer::Row::Row()
+void StreamsContainer::on_receiver_updated (rav::id receiver_id) {}
+
+StreamsContainer::Row::Row (const rav::id receiverId) : receiverId_ (receiverId)
 {
     delayEditor_.setInputRestrictions (10, "0123456789");
     addAndMakeVisible (delayEditor_);
+}
+
+rav::id StreamsContainer::Row::getId() const
+{
+    return receiverId_;
 }
 
 void StreamsContainer::Row::paint (juce::Graphics& g)

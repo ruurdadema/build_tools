@@ -62,6 +62,12 @@ public:
         std::ignore = commandLine;
     }
 
+    void unhandledException (const std::exception* e, const juce::String& sourceFilename, int lineNumber) override
+    {
+        RAV_ASSERT (e != nullptr, "Unhandled exception without exception object");
+        RAV_ERROR("Unhandled exception: {}, {}:{}", e->what(), sourceFilename.toRawUTF8(), lineNumber);
+    }
+
     class MainWindow final : public juce::DocumentWindow
     {
     public:

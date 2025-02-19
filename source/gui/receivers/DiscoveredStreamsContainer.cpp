@@ -12,12 +12,12 @@
 
 DiscoveredStreamsContainer::DiscoveredStreamsContainer (ApplicationContext& context) : context_ (context)
 {
-    context_.getRavennaNode().subscribe_to_browser (this);
+    context_.getRavennaNode().subscribe_to_browser (this).wait();
 }
 
 DiscoveredStreamsContainer::~DiscoveredStreamsContainer()
 {
-    context_.getRavennaNode().unsubscribe_from_browser (this);
+    context_.getRavennaNode().unsubscribe_from_browser (this).wait();
 }
 
 void DiscoveredStreamsContainer::paint (juce::Graphics&) {}
@@ -49,7 +49,7 @@ void DiscoveredStreamsContainer::ravenna_session_discovered (const rav::dnssd::d
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (desc));
+        auto* row = rows_.add (std::make_unique<Row> (desc, context_));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         addAndMakeVisible (row);
         resizeBasedOnContent();
@@ -61,7 +61,7 @@ void DiscoveredStreamsContainer::ravenna_session_removed (const rav::dnssd::dnss
     executor_.callAsync ([this, name = event.description.name] {
         for (auto i = 0; i < rows_.size(); ++i)
         {
-            if (rows_.getUnchecked (i)->getSessionName() == juce::StringRef(name))
+            if (rows_.getUnchecked (i)->getSessionName() == juce::StringRef (name))
             {
                 rows_.remove (i);
                 resizeBasedOnContent();
@@ -71,7 +71,9 @@ void DiscoveredStreamsContainer::ravenna_session_removed (const rav::dnssd::dnss
     });
 }
 
-DiscoveredStreamsContainer::Row::Row (const rav::dnssd::service_description& serviceDescription)
+DiscoveredStreamsContainer::Row::Row (
+    const rav::dnssd::service_description& serviceDescription,
+    ApplicationContext& context)
 {
     sessionName_.setText (serviceDescription.name, juce::dontSendNotification);
     sessionName_.setJustificationType (juce::Justification::topLeft);
@@ -83,6 +85,10 @@ DiscoveredStreamsContainer::Row::Row (const rav::dnssd::service_description& ser
     addAndMakeVisible (description_);
 
     startButton_.setButtonText ("Play");
+    startButton_.onClick = [&context, name = serviceDescription.name] {
+        const auto id = context.getRavennaNode().create_receiver (name).get();
+        RAV_TRACE("Created receiver with ID: {}", id.value());
+    };
     addAndMakeVisible (startButton_);
 }
 

@@ -39,7 +39,7 @@ private:
     class Row : public Component
     {
     public:
-        explicit Row (const rav::dnssd::service_description& serviceDescription);
+        explicit Row (const rav::dnssd::service_description& serviceDescription, ApplicationContext& context);
 
         juce::String getSessionName() const;
 
