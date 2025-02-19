@@ -15,7 +15,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class DiscoveredStreamsContainer : public juce::Component, public rav::ravenna_browser::subscriber
+class DiscoveredStreamsContainer : public juce::Component, public rav::ravenna_node::subscriber
 {
 public:
     explicit DiscoveredStreamsContainer (ApplicationContext& context);
@@ -39,7 +39,7 @@ private:
     class Row : public Component
     {
     public:
-        explicit Row (const rav::dnssd::service_description& serviceDescription, ApplicationContext& context);
+        explicit Row (ApplicationContext& context, const rav::dnssd::service_description& serviceDescription);
 
         juce::String getSessionName() const;
 

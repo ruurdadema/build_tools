@@ -8,13 +8,21 @@
  * Copyright (c) 2025 Owllab. All rights reserved.
  */
 
-#include "StreamsContainer.hpp"
+#include "ReceiversContainer.hpp"
 
 #include "juce_gui_extra/juce_gui_extra.h"
 
-StreamsContainer::StreamsContainer() {}
+ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
+{
+    context_.getRavennaNode().subscribe (this).wait();
+}
 
-void StreamsContainer::resized()
+ReceiversContainer::~ReceiversContainer()
+{
+    context_.getRavennaNode().unsubscribe (this).wait();
+}
+
+void ReceiversContainer::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
     for (auto i = 0; i < rows_.size(); ++i)
@@ -24,25 +32,46 @@ void StreamsContainer::resized()
     }
 }
 
-void StreamsContainer::resizeBasedOnContent()
+void ReceiversContainer::resizeBasedOnContent()
 {
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
 }
 
-void StreamsContainer::on_receiver_updated (rav::id receiver_id) {}
+void ReceiversContainer::on_receiver_updated (const rav::id receiver_id)
+{
+    for (const auto& row : rows_)
+    {
+        if (row->getId() == receiver_id)
+        {
+            row->repaint();
+            return;
+        }
+    }
 
-StreamsContainer::Row::Row (const rav::id receiverId) : receiverId_ (receiverId)
+    auto* row = rows_.add (std::make_unique<Row> (context_.getRavennaNode(), receiver_id));
+    RAV_ASSERT (row != nullptr, "Failed to create row");
+    addAndMakeVisible (row);
+    resizeBasedOnContent();
+}
+
+ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId) :
+    node_ (node),
+    receiverId_ (receiverId)
 {
     delayEditor_.setInputRestrictions (10, "0123456789");
     addAndMakeVisible (delayEditor_);
+
+    startTimer (1000);
 }
 
-rav::id StreamsContainer::Row::getId() const
+ReceiversContainer::Row::~Row() {}
+
+rav::id ReceiversContainer::Row::getId() const
 {
     return receiverId_;
 }
 
-void StreamsContainer::Row::paint (juce::Graphics& g)
+void ReceiversContainer::Row::paint (juce::Graphics& g)
 {
     constexpr float fontSize = 14.0f;
     constexpr int rowHeight = 20;
@@ -82,9 +111,14 @@ void StreamsContainer::Row::paint (juce::Graphics& g)
     g.drawText ("delay (samples)", column4.removeFromTop (rowHeight), juce::Justification::centredLeft);
 }
 
-void StreamsContainer::Row::resized()
+void ReceiversContainer::Row::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
     b.removeFromTop (18);
     delayEditor_.setBounds (b.withLeft (718).withHeight (24).withWidth (60));
+}
+
+void ReceiversContainer::Row::timerCallback()
+{
+    // node_.
 }

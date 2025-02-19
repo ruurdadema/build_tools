@@ -11,7 +11,7 @@
 #pragma once
 
 #include "DiscoveredStreamsContainer.hpp"
-#include "StreamsContainer.hpp"
+#include "ReceiversContainer.hpp"
 #include "application/ApplicationContext.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -27,6 +27,6 @@ private:
     DiscoveredStreamsContainer discoveredStreamsContainer_;
     juce::Viewport leftViewport_;
 
-    StreamsContainer streamsContainer_;
+    ReceiversContainer streamsContainer_;
     juce::Viewport rightViewport_;
 };

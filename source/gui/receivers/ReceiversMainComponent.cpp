@@ -10,7 +10,9 @@
 
 #include "ReceiversMainComponent.hpp"
 
-ReceiversMainComponent::ReceiversMainComponent (ApplicationContext& context) : discoveredStreamsContainer_ (context)
+ReceiversMainComponent::ReceiversMainComponent (ApplicationContext& context) :
+    discoveredStreamsContainer_ (context),
+    streamsContainer_ (context)
 {
     leftViewport_.setViewedComponent (&discoveredStreamsContainer_, false);
     addAndMakeVisible (leftViewport_);
