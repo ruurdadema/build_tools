@@ -133,7 +133,7 @@ void ReceiversContainer::Row::stream_changed (const rav::rtp_stream_receiver::st
 {
     executor_.callAsync ([this, event] {
         RAV_ASSERT(event.stream_id == receiverId_, "Stream ID mismatch");
-        stream_.audioFormat = event.selected_format.to_string();
+        stream_.audioFormat = event.selected_audio_format.to_string();
         stream_.packetTimeFrames = "ptime: " + juce::String (event.packet_time_frames);
         stream_.address = event.session.connection_address.to_string();
         stream_.state = juce::String ("State: ") + rav::rtp_stream_receiver::to_string (event.state);
