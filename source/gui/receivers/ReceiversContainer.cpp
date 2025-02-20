@@ -63,6 +63,13 @@ ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId,
     stream_.streamName = name;
 
     delayEditor_.setInputRestrictions (10, "0123456789");
+    delayEditor_.onReturnKey = [this] {
+        auto value = static_cast<uint32_t> (delayEditor_.getText().getIntValue());
+        auto work = [value] (rav::ravenna_receiver& receiver) {
+            receiver.set_delay (value);
+        };
+        node_.get_receiver (receiverId_, work).wait();
+    };
     addAndMakeVisible (delayEditor_);
 
     update();
@@ -132,11 +139,12 @@ void ReceiversContainer::Row::resized()
 void ReceiversContainer::Row::stream_changed (const rav::rtp_stream_receiver::stream_changed_event& event)
 {
     executor_.callAsync ([this, event] {
-        RAV_ASSERT(event.stream_id == receiverId_, "Stream ID mismatch");
+        RAV_ASSERT (event.receiver_id == receiverId_, "Stream ID mismatch");
         stream_.audioFormat = event.selected_audio_format.to_string();
         stream_.packetTimeFrames = "ptime: " + juce::String (event.packet_time_frames);
         stream_.address = event.session.connection_address.to_string();
         stream_.state = juce::String ("State: ") + rav::rtp_stream_receiver::to_string (event.state);
+        delayEditor_.setText (juce::String (event.delay_samples));
         repaint();
     });
 }
@@ -148,7 +156,7 @@ void ReceiversContainer::Row::timerCallback()
 
 void ReceiversContainer::Row::update()
 {
-    const auto stats = node_.get_stats_for_stream (receiverId_).get();
+    const auto stats = node_.get_stats_for_receiver (receiverId_).get();
 
     // Packet stats
     packet_stats_.dropped = "dropped: " + juce::String (stats.packet_stats.dropped);
