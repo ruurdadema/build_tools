@@ -37,6 +37,7 @@ void HorizontalMenu::addItem (const juce::String& name, const juce::String& path
 
 void HorizontalMenu::paint (juce::Graphics& g)
 {
+    g.drawRect (getLocalBounds().removeFromBottom (1));
 }
 
 void HorizontalMenu::resized()

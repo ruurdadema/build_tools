@@ -52,6 +52,7 @@ private:
         rav::ravenna_node& node_;
         juce::TextEditor delayEditor_;
         rav::id receiverId_;
+        uint32_t delay_ {0};
 
         struct
         {

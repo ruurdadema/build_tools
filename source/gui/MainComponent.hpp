@@ -24,8 +24,22 @@ public:
     void resized() override;
 
 private:
+    class TopRightSection final : public juce::Component
+    {
+    public:
+        explicit TopRightSection (ApplicationContext& context);
+
+        void resized() override;
+        void paint (juce::Graphics& g) override;
+
+    private:
+        juce::TextButton cloneWindowButton_ {"Clone Window"};
+    };
+
     ApplicationContext& context_;
     HorizontalMenu menu_;
+    TopRightSection topRightSection_;
+
     std::unique_ptr<Component> content_;
 
     void showContent (std::unique_ptr<Component> content);

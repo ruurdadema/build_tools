@@ -69,6 +69,14 @@ ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId,
             receiver.set_delay (value);
         };
         node_.get_receiver (receiverId_, work).wait();
+        unfocusAllComponents();
+    };
+    delayEditor_.onEscapeKey = [this] {
+        delayEditor_.setText (juce::String (delay_));
+        unfocusAllComponents();
+    };
+    delayEditor_.onFocusLost = [this] {
+        delayEditor_.setText (juce::String (delay_));
     };
     addAndMakeVisible (delayEditor_);
 
@@ -144,7 +152,9 @@ void ReceiversContainer::Row::stream_changed (const rav::rtp_stream_receiver::st
         stream_.packetTimeFrames = "ptime: " + juce::String (event.packet_time_frames);
         stream_.address = event.session.connection_address.to_string();
         stream_.state = juce::String ("State: ") + rav::rtp_stream_receiver::to_string (event.state);
-        delayEditor_.setText (juce::String (event.delay_samples));
+        delay_ = event.delay_samples;
+        if (!delayEditor_.hasKeyboardFocus (true))
+            delayEditor_.setText (juce::String (event.delay_samples));
         repaint();
     });
 }

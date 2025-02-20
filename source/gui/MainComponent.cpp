@@ -14,15 +14,17 @@
 #include "receivers/ReceiversMainComponent.hpp"
 #include "senders/SendersMainComponent.hpp"
 
-MainComponent::MainComponent (ApplicationContext& context) : context_ (context)
+MainComponent::MainComponent (ApplicationContext& context) : context_ (context), topRightSection_ (context)
 {
     menu_.addItem ("Receivers", "receivers", [this] {
-        showContent (std::make_unique<ReceiversMainComponent>(context_));
+        showContent (std::make_unique<ReceiversMainComponent> (context_));
     });
     menu_.addItem ("Senders", "senders", [this] {
-        showContent (std::make_unique<SendersMainComponent>(context_));
+        showContent (std::make_unique<SendersMainComponent> (context_));
     });
     addAndMakeVisible (menu_);
+
+    addAndMakeVisible (topRightSection_);
 }
 
 void MainComponent::paint (juce::Graphics& g)
@@ -35,9 +37,33 @@ void MainComponent::paint (juce::Graphics& g)
 void MainComponent::resized()
 {
     auto b = getLocalBounds();
-    menu_.setBounds (b.removeFromTop (49));
+    auto top = b.removeFromTop (49);
+    topRightSection_.setBounds (top.removeFromRight (82));
+    menu_.setBounds (top);
     if (content_ != nullptr)
         content_->setBounds (b);
+}
+
+MainComponent::TopRightSection::TopRightSection (ApplicationContext& context)
+{
+    cloneWindowButton_.setButtonText ("Clone window");
+    cloneWindowButton_.setColour (juce::TextButton::ColourIds::buttonColourId, juce::Colour (0xFF8E8F9A));
+    cloneWindowButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, juce::Colour (0xFF8E8F9A));
+    cloneWindowButton_.onClick = [&context] {
+        context.cloneWindow();
+    };
+    addAndMakeVisible (cloneWindowButton_);
+}
+
+void MainComponent::TopRightSection::resized()
+{
+    const auto b = getLocalBounds().reduced (8);
+    cloneWindowButton_.setBounds (b);
+}
+
+void MainComponent::TopRightSection::paint (juce::Graphics& g)
+{
+    g.drawRect (getLocalBounds().removeFromBottom (1));
 }
 
 void MainComponent::showContent (std::unique_ptr<Component> content)

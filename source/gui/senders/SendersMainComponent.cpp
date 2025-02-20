@@ -15,13 +15,10 @@ SendersMainComponent::SendersMainComponent (ApplicationContext& context)
     std::ignore = context;
 }
 
-void SendersMainComponent::paint (juce::Graphics& g)
+void SendersMainComponent::paint (juce::Graphics&)
 {
-    g.drawRect (getLocalBounds());
-    g.drawText ("Senders", getLocalBounds(), juce::Justification::centred);
 }
 
 void SendersMainComponent::resized()
 {
-    Component::resized();
 }

@@ -24,6 +24,8 @@ ThisLookAndFeel::ThisLookAndFeel()
     setColour (juce::ScrollBar::ColourIds::thumbColourId, juce::Colour (0xFF6B6B6B));
 
     // TextButton
+    setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colour (0xFF27B559));
+    setColour(juce::TextButton::ColourIds::buttonOnColourId, juce::Colour (0xFF27B559));
     setColour (juce::TextButton::ColourIds::textColourOnId, juce::Colour (0xFF000000));
     setColour (juce::TextButton::ColourIds::textColourOffId, juce::Colour (0xFF000000));
 
@@ -44,12 +46,12 @@ void ThisLookAndFeel::drawButtonBackground (
     const bool shouldDrawButtonAsDown)
 {
     const auto b = button.getLocalBounds();
-    constexpr auto cornerSize = 6.0f;
+    constexpr auto cornerSize = 4.0f;
 
     if ((shouldDrawButtonAsDown || shouldDrawButtonAsHighlighted) && !button.isMouseButtonDown())
-        graphics.setColour (juce::Colour (0xFF3BE075));
+        graphics.setColour (backgroundColour.brighter (0.2f));
     else
-        graphics.setColour (juce::Colour (0xFF27B559));
+        graphics.setColour (backgroundColour);
 
     graphics.fillRoundedRectangle (b.toFloat(), cornerSize);
 }

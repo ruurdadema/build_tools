@@ -42,14 +42,12 @@ public:
     void initialise (const juce::String& commandLine) override
     {
         std::ignore = commandLine;
-        mainWindow_ = std::make_unique<MainWindow> (getApplicationName(), *this);
-        mainWindow_->setVisible (true);
-        mainWindow_->centreWithSize (1200, 800);
+        addWindow();
     }
 
     void shutdown() override
     {
-        mainWindow_.reset();
+        mainWindows_.clear();
     }
 
     void systemRequestedQuit() override
@@ -73,6 +71,23 @@ public:
         return *ravennaNode_;
     }
 
+    void cloneWindow() override
+    {
+        addWindow();
+    }
+
+    void closeWindow (juce::Component* window) override
+    {
+        for (auto it = mainWindows_.begin(); it != mainWindows_.end(); ++it)
+        {
+            if (it->get() == window)
+            {
+                mainWindows_.erase (it);
+                break;
+            }
+        }
+    }
+
     class MainWindow final : public juce::DocumentWindow
     {
     public:
@@ -80,7 +95,8 @@ public:
             DocumentWindow (
                 name,
                 juce::Desktop::getInstance().getDefaultLookAndFeel().findColour (backgroundColourId),
-                allButtons)
+                allButtons),
+            context_ (context)
         {
             setLookAndFeel (&lookAndFeel_);
             setUsingNativeTitleBar (true);
@@ -97,17 +113,28 @@ public:
 
         void closeButtonPressed() override
         {
-            getInstance()->systemRequestedQuit();
+            context_.closeWindow (this);
         }
 
     private:
+        ApplicationContext& context_;
         ThisLookAndFeel lookAndFeel_;
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
 
 private:
     std::unique_ptr<rav::ravenna_node> ravennaNode_;
-    std::unique_ptr<MainWindow> mainWindow_;
+    std::vector<std::unique_ptr<MainWindow>> mainWindows_;
+
+    void addWindow()
+    {
+        std::optional<juce::Rectangle<int>> bounds;
+        if (!mainWindows_.empty())
+            bounds = mainWindows_.back()->getBounds();
+        const auto& it = mainWindows_.emplace_back (std::make_unique<MainWindow> (getApplicationName(), *this));
+        it->setVisible (true);
+        bounds ? it->setBounds (bounds->translated (20, 20)) : it->centreWithSize (1200, 800);
+    }
 };
 
 START_JUCE_APPLICATION (Application)
