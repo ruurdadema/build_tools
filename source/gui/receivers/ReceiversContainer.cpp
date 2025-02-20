@@ -106,7 +106,7 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     g.drawText (stream_.audioFormat, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (stream_.packetTimeFrames, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (stream_.address, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (stream_.status, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (stream_.state, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
     g.drawText (packet_stats_.dropped, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (packet_stats_.duplicates, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
@@ -129,19 +129,14 @@ void ReceiversContainer::Row::resized()
     delayEditor_.setBounds (b.withLeft (718).withHeight (24).withWidth (60));
 }
 
-void ReceiversContainer::Row::audio_format_changed (const rav::audio_format& new_format, uint32_t packet_time_frames)
+void ReceiversContainer::Row::stream_changed (const rav::rtp_stream_receiver::stream_changed_event& event)
 {
-    executor_.callAsync ([this, new_format, packet_time_frames] {
-        stream_.audioFormat = new_format.to_string();
-        stream_.packetTimeFrames = "ptime: " + juce::String (packet_time_frames);
-        repaint();
-    });
-}
-
-void ReceiversContainer::Row::rtp_session_changed (const rav::rtp_session& new_session, const rav::rtp_filter& filter)
-{
-    executor_.callAsync ([this, new_session] {
-        stream_.address = new_session.connection_address.to_string();
+    executor_.callAsync ([this, event] {
+        RAV_ASSERT(event.stream_id == receiverId_, "Stream ID mismatch");
+        stream_.audioFormat = event.selected_format.to_string();
+        stream_.packetTimeFrames = "ptime: " + juce::String (event.packet_time_frames);
+        stream_.address = event.session.connection_address.to_string();
+        stream_.state = juce::String ("State: ") + rav::rtp_stream_receiver::to_string (event.state);
         repaint();
     });
 }

@@ -19,7 +19,7 @@
 class ReceiversContainer : public juce::Component, public rav::ravenna_node::subscriber
 {
 public:
-    ReceiversContainer (ApplicationContext& context);
+    explicit ReceiversContainer (ApplicationContext& context);
     ~ReceiversContainer() override;
 
     void resized() override;
@@ -46,8 +46,7 @@ private:
         void paint (juce::Graphics& g) override;
         void resized() override;
 
-        void audio_format_changed (const rav::audio_format& new_format, uint32_t packet_time_frames) override;
-        void rtp_session_changed (const rav::rtp_session& new_session, const rav::rtp_filter& filter) override;
+        void stream_changed (const rav::rtp_stream_receiver::stream_changed_event& event) override;
 
     private:
         rav::ravenna_node& node_;
@@ -60,7 +59,7 @@ private:
             juce::String audioFormat {"..."};
             juce::String packetTimeFrames {"..."};
             juce::String address {"..."};
-            juce::String status {"..."};
+            juce::String state {"..."};
         } stream_;
 
         struct
