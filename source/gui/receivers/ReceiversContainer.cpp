@@ -10,6 +10,7 @@
 
 #include "ReceiversContainer.hpp"
 
+#include "gui/lookandfeel/Constants.hpp"
 #include "juce_gui_extra/juce_gui_extra.h"
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
@@ -101,7 +102,7 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     constexpr float fontSize = 14.0f;
     constexpr int rowHeight = 20;
 
-    g.setColour (juce::Colour (0xFF242428));
+    g.setColour (Constants::Colours::rowBackground);
     g.fillRoundedRectangle (getLocalBounds().toFloat(), 5.0f);
 
     auto b = getLocalBounds().reduced (kMargin + 5, kMargin);
@@ -110,7 +111,7 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     auto column3 = b.removeFromLeft (200);
     auto column4 = b.removeFromLeft (200);
 
-    g.setColour (juce::Colour (0xFFFFFFFF));
+    g.setColour (Constants::Colours::text);
     g.setFont (juce::FontOptions (fontSize, juce::Font::bold));
     g.drawText (stream_.streamName, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText ("Stats", column2.removeFromTop (rowHeight), juce::Justification::centredLeft);

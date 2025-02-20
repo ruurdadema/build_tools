@@ -10,6 +10,8 @@
 
 #include "DiscoveredStreamsContainer.hpp"
 
+#include "gui/lookandfeel/Constants.hpp"
+
 DiscoveredStreamsContainer::DiscoveredStreamsContainer (ApplicationContext& context) : context_ (context)
 {
     context_.getRavennaNode().add_subscriber (this).wait();
@@ -114,6 +116,6 @@ void DiscoveredStreamsContainer::Row::resized()
 
 void DiscoveredStreamsContainer::Row::paint (juce::Graphics& g)
 {
-    g.setColour (juce::Colour (0xFF242428));
+    g.setColour (Constants::Colours::rowBackground);
     g.fillRoundedRectangle (getLocalBounds().toFloat(), 5.0f);
 }

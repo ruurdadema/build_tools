@@ -10,32 +10,33 @@
 
 #include "ThisLookAndFeel.hpp"
 
+#include "Constants.hpp"
 #include "juce_gui_extra/juce_gui_extra.h"
 
 ThisLookAndFeel::ThisLookAndFeel()
 {
     // ResizableWindow
-    setColour (juce::ResizableWindow::backgroundColourId, juce::Colour (0xFF1A1A1E));
+    setColour (juce::ResizableWindow::backgroundColourId, Constants::Colours::windowBackground);
 
     // HyperLinkButton
-    setColour (juce::HyperlinkButton::ColourIds::textColourId, juce::Colour (0xFF27BAFD));
+    setColour (juce::HyperlinkButton::ColourIds::textColourId, Constants::Colours::blue);
 
     // ScrollBar
-    setColour (juce::ScrollBar::ColourIds::thumbColourId, juce::Colour (0xFF6B6B6B));
+    setColour (juce::ScrollBar::ColourIds::thumbColourId, Constants::Colours::gray);
 
     // TextButton
-    setColour(juce::TextButton::ColourIds::buttonColourId, juce::Colour (0xFF27B559));
-    setColour(juce::TextButton::ColourIds::buttonOnColourId, juce::Colour (0xFF27B559));
-    setColour (juce::TextButton::ColourIds::textColourOnId, juce::Colour (0xFF000000));
-    setColour (juce::TextButton::ColourIds::textColourOffId, juce::Colour (0xFF000000));
+    setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::buttonSuccess);
+    setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::buttonSuccess);
+    setColour (juce::TextButton::ColourIds::textColourOnId, Constants::Colours::black);
+    setColour (juce::TextButton::ColourIds::textColourOffId, Constants::Colours::black);
 
     // TextEditor
-    setColour (juce::TextEditor::ColourIds::backgroundColourId, juce::Colour (0xFF2C2C31));
-    setColour (juce::TextEditor::ColourIds::outlineColourId, juce::Colour (0xFF6B6B6B));
-    setColour (juce::TextEditor::ColourIds::focusedOutlineColourId, juce::Colour (0xFF6B6B6B));
+    setColour (juce::TextEditor::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
+    setColour (juce::TextEditor::ColourIds::outlineColourId, Constants::Colours::gray);
+    setColour (juce::TextEditor::ColourIds::focusedOutlineColourId, Constants::Colours::gray);
 
     // CaretComponent
-    setColour (juce::CaretComponent::ColourIds::caretColourId, juce::Colour (0xFF27BAFD));
+    setColour (juce::CaretComponent::ColourIds::caretColourId, Constants::Colours::blue);
 }
 
 void ThisLookAndFeel::drawButtonBackground (
