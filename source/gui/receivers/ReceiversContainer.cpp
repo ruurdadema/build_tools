@@ -167,6 +167,8 @@ void ReceiversContainer::Row::timerCallback()
 
 void ReceiversContainer::Row::update()
 {
+    TRACY_ZONE_SCOPED;
+
     const auto stats = node_.get_stats_for_receiver (receiverId_).get();
 
     // Packet stats

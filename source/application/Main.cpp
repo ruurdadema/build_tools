@@ -14,6 +14,8 @@
 #include "gui/lookandfeel/ThisLookAndFeel.hpp"
 #include "ravennakit/core/system.hpp"
 
+#include <CLI/CLI.hpp>
+
 class Application final : public juce::JUCEApplication, public ApplicationContext
 {
 public:
@@ -21,7 +23,6 @@ public:
     {
         rav::system::do_system_checks();
         rav::log::set_level_from_env();
-        ravennaNode_ = std::make_unique<rav::ravenna_node>();
     }
 
     const juce::String getApplicationName() override
@@ -41,7 +42,14 @@ public:
 
     void initialise (const juce::String& commandLine) override
     {
-        std::ignore = commandLine;
+        CLI::App app { PROJECT_PRODUCT_NAME };
+        app.add_option ("--interface-addr", interfaceAddress, "The interface address");
+        app.parse (commandLine.toStdString(), false);
+
+        rav::rtp_receiver::configuration config;
+        config.interface_address = asio::ip::make_address (interfaceAddress);
+        ravennaNode_ = std::make_unique<rav::ravenna_node>(std::move(config));
+
         addWindow();
     }
 
@@ -123,6 +131,7 @@ public:
     };
 
 private:
+    std::string interfaceAddress;
     std::unique_ptr<rav::ravenna_node> ravennaNode_;
     std::vector<std::unique_ptr<MainWindow>> mainWindows_;
 

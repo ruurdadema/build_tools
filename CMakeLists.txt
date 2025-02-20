@@ -34,6 +34,12 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>" CACHE INTERNAL "")
 endif ()
 
+#########
+# VCPKG #
+#########
+
+find_package(CLI11 CONFIG REQUIRED)
+
 ##############
 # RAVENNAKIT #
 ##############
@@ -101,4 +107,5 @@ target_link_libraries(ravennakit_juce_demo
         juce::juce_gui_extra
         juce::juce_audio_utils
         ravennakit
+        CLI11::CLI11
 )
