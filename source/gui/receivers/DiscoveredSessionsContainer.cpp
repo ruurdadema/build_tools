@@ -8,23 +8,23 @@
  * Copyright (c) 2025 Owllab. All rights reserved.
  */
 
-#include "DiscoveredStreamsContainer.hpp"
+#include "DiscoveredSessionsContainer.hpp"
 
 #include "gui/lookandfeel/Constants.hpp"
 
-DiscoveredStreamsContainer::DiscoveredStreamsContainer (ApplicationContext& context) : context_ (context)
+DiscoveredSessionsContainer::DiscoveredSessionsContainer (ApplicationContext& context) : context_ (context)
 {
     context_.getRavennaNode().add_subscriber (this).wait();
 }
 
-DiscoveredStreamsContainer::~DiscoveredStreamsContainer()
+DiscoveredSessionsContainer::~DiscoveredSessionsContainer()
 {
     context_.getRavennaNode().remove_subscriber (this).wait();
 }
 
-void DiscoveredStreamsContainer::paint (juce::Graphics&) {}
+void DiscoveredSessionsContainer::paint (juce::Graphics&) {}
 
-void DiscoveredStreamsContainer::resized()
+void DiscoveredSessionsContainer::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
     for (auto i = 0; i < rows_.size(); ++i)
@@ -34,12 +34,12 @@ void DiscoveredStreamsContainer::resized()
     }
 }
 
-void DiscoveredStreamsContainer::resizeBasedOnContent()
+void DiscoveredSessionsContainer::resizeBasedOnContent()
 {
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
 }
 
-void DiscoveredStreamsContainer::ravenna_session_discovered (const rav::dnssd::dnssd_browser::service_resolved& event)
+void DiscoveredSessionsContainer::ravenna_session_discovered (const rav::dnssd::dnssd_browser::service_resolved& event)
 {
     executor_.callAsync ([this, desc = event.description] {
         for (auto* row : rows_)
@@ -58,7 +58,7 @@ void DiscoveredStreamsContainer::ravenna_session_discovered (const rav::dnssd::d
     });
 }
 
-void DiscoveredStreamsContainer::ravenna_session_removed (const rav::dnssd::dnssd_browser::service_removed& event)
+void DiscoveredSessionsContainer::ravenna_session_removed (const rav::dnssd::dnssd_browser::service_removed& event)
 {
     executor_.callAsync ([this, name = event.description.name] {
         for (auto i = 0; i < rows_.size(); ++i)
@@ -73,7 +73,7 @@ void DiscoveredStreamsContainer::ravenna_session_removed (const rav::dnssd::dnss
     });
 }
 
-DiscoveredStreamsContainer::Row::Row (
+DiscoveredSessionsContainer::Row::Row (
     ApplicationContext& context,
     const rav::dnssd::service_description& serviceDescription)
 {
@@ -94,18 +94,18 @@ DiscoveredStreamsContainer::Row::Row (
     addAndMakeVisible (startButton_);
 }
 
-juce::String DiscoveredStreamsContainer::Row::getSessionName() const
+juce::String DiscoveredSessionsContainer::Row::getSessionName() const
 {
     return sessionName_.getText();
 }
 
-void DiscoveredStreamsContainer::Row::update (const rav::dnssd::service_description& serviceDescription)
+void DiscoveredSessionsContainer::Row::update (const rav::dnssd::service_description& serviceDescription)
 {
     sessionName_.setText (serviceDescription.name, juce::dontSendNotification);
     description_.setText (serviceDescription.host_target, juce::dontSendNotification);
 }
 
-void DiscoveredStreamsContainer::Row::resized()
+void DiscoveredSessionsContainer::Row::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
 
@@ -114,7 +114,7 @@ void DiscoveredStreamsContainer::Row::resized()
     description_.setBounds (b);
 }
 
-void DiscoveredStreamsContainer::Row::paint (juce::Graphics& g)
+void DiscoveredSessionsContainer::Row::paint (juce::Graphics& g)
 {
     g.setColour (Constants::Colours::rowBackground);
     g.fillRoundedRectangle (getLocalBounds().toFloat(), 5.0f);

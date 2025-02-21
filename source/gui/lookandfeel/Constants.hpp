@@ -18,6 +18,7 @@ static const juce::Colour black { 0xFF000000 };
 static const juce::Colour white { 0xFFFFFFFF };
 static const juce::Colour dark { 0xFF1A1A1E };
 static const juce::Colour green { 0xFF27B559 };
+static const juce::Colour red { 0xFFFE5C5D };
 static const juce::Colour blue { 0xFF27BAFD };
 static const juce::Colour gray { 0xFF6B6B6B };
 

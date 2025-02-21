@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "DiscoveredStreamsContainer.hpp"
+#include "DiscoveredSessionsContainer.hpp"
 #include "ReceiversContainer.hpp"
 #include "application/ApplicationContext.hpp"
 
@@ -24,7 +24,7 @@ public:
     void resized() override;
 
 private:
-    DiscoveredStreamsContainer discoveredStreamsContainer_;
+    DiscoveredSessionsContainer discoveredStreamsContainer_;
     juce::Viewport leftViewport_;
 
     ReceiversContainer streamsContainer_;

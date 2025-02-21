@@ -28,6 +28,7 @@ public:
 
     // rav::ravenna_node::subscriber overrides
     void ravenna_receiver_added (const rav::ravenna_receiver& receiver) override;
+    void ravenna_receiver_removed (rav::id receiver_id) override;
 
 private:
     static constexpr int kRowHeight = 138;
@@ -53,6 +54,7 @@ private:
         juce::TextEditor delayEditor_;
         rav::id receiverId_;
         uint32_t delay_ {0};
+        juce::TextButton deleteButton_{""};
 
         struct
         {

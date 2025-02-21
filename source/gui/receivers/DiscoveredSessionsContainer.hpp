@@ -15,11 +15,11 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class DiscoveredStreamsContainer : public juce::Component, public rav::ravenna_node::subscriber
+class DiscoveredSessionsContainer : public juce::Component, public rav::ravenna_node::subscriber
 {
 public:
-    explicit DiscoveredStreamsContainer (ApplicationContext& context);
-    ~DiscoveredStreamsContainer() override;
+    explicit DiscoveredSessionsContainer (ApplicationContext& context);
+    ~DiscoveredSessionsContainer() override;
 
     void paint (juce::Graphics& g) override;
     void resized() override;

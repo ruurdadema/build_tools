@@ -57,6 +57,21 @@ void ReceiversContainer::ravenna_receiver_added (const rav::ravenna_receiver& re
     });
 }
 
+void ReceiversContainer::ravenna_receiver_removed (rav::id receiver_id)
+{
+    executor_.callAsync ([this, receiver_id] {
+        for (auto i = 0; i < rows_.size(); ++i)
+        {
+            if (rows_.getUnchecked (i)->getId() == receiver_id)
+            {
+                rows_.remove (i);
+                resizeBasedOnContent();
+                return;
+            }
+        }
+    });
+}
+
 ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId, const std::string& name) :
     node_ (node),
     receiverId_ (receiverId)
@@ -80,6 +95,13 @@ ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId,
         delayEditor_.setText (juce::String (delay_));
     };
     addAndMakeVisible (delayEditor_);
+
+    deleteButton_.setButtonText ("Delete");
+    deleteButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::red);
+    deleteButton_.onClick = [this] {
+        node_.remove_receiver (receiverId_).wait();
+    };
+    addAndMakeVisible (deleteButton_);
 
     update();
     startTimer (1000);
@@ -143,6 +165,9 @@ void ReceiversContainer::Row::resized()
     auto b = getLocalBounds().reduced (kMargin);
     b.removeFromTop (18);
     delayEditor_.setBounds (b.withLeft (718).withHeight (24).withWidth (60));
+
+    auto bottom = b.removeFromBottom (27);
+    deleteButton_.setBounds (bottom.removeFromRight (65));
 }
 
 void ReceiversContainer::Row::stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event)
