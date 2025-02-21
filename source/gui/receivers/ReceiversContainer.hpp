@@ -27,7 +27,7 @@ public:
     void resizeBasedOnContent();
 
     // rav::ravenna_node::subscriber overrides
-    void on_receiver_updated (const rav::ravenna_receiver& receiver) override;
+    void ravenna_receiver_added (const rav::ravenna_receiver& receiver) override;
 
 private:
     static constexpr int kRowHeight = 138;
@@ -46,7 +46,7 @@ private:
         void paint (juce::Graphics& g) override;
         void resized() override;
 
-        void stream_changed (const rav::rtp_stream_receiver::stream_changed_event& event) override;
+        void stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event) override;
 
     private:
         rav::ravenna_node& node_;

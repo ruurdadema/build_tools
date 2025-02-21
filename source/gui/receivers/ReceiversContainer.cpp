@@ -38,7 +38,7 @@ void ReceiversContainer::resizeBasedOnContent()
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
 }
 
-void ReceiversContainer::on_receiver_updated (const rav::ravenna_receiver& receiver)
+void ReceiversContainer::ravenna_receiver_added (const rav::ravenna_receiver& receiver)
 {
     executor_.callAsync ([this, id = receiver.get_id(), name = receiver.get_session_name()] {
         for (const auto& row : rows_)
@@ -145,7 +145,7 @@ void ReceiversContainer::Row::resized()
     delayEditor_.setBounds (b.withLeft (718).withHeight (24).withWidth (60));
 }
 
-void ReceiversContainer::Row::stream_changed (const rav::rtp_stream_receiver::stream_changed_event& event)
+void ReceiversContainer::Row::stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event)
 {
     executor_.callAsync ([this, event] {
         RAV_ASSERT (event.receiver_id == receiverId_, "Stream ID mismatch");
