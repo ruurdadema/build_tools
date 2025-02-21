@@ -36,6 +36,12 @@ private:
 
     ApplicationContext& context_;
 
+    class SdpViewer : public juce::Component
+    {
+    public:
+        void paint (juce::Graphics& g) override;
+    };
+
     class Row : public Component, public juce::Timer, public rav::rtp_stream_receiver::subscriber
     {
     public:
@@ -54,6 +60,7 @@ private:
         juce::TextEditor delayEditor_;
         rav::id receiverId_;
         uint32_t delay_ {0};
+        juce::TextButton showSdpButton_{""};
         juce::TextButton deleteButton_{""};
 
         struct

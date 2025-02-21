@@ -72,6 +72,13 @@ void ReceiversContainer::ravenna_receiver_removed (rav::id receiver_id)
     });
 }
 
+void ReceiversContainer::SdpViewer::paint (juce::Graphics& g)
+{
+    g.drawRect (getLocalBounds());
+    g.setColour (Constants::Colours::text);
+    g.drawText ("SDP Viewer", getLocalBounds(), juce::Justification::centred);
+}
+
 ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId, const std::string& name) :
     node_ (node),
     receiverId_ (receiverId)
@@ -95,6 +102,25 @@ ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId,
         delayEditor_.setText (juce::String (delay_));
     };
     addAndMakeVisible (delayEditor_);
+
+    showSdpButton_.setButtonText ("Show SDP");
+    showSdpButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
+    showSdpButton_.onClick = [this] {
+        auto content = std::make_unique<SdpViewer>();
+        content->setSize (400, 400);
+
+        juce::DialogWindow::LaunchOptions o;
+        o.dialogTitle = "SDP Text";
+        o.content.setOwned (content.release());
+        o.componentToCentreAround = nullptr;
+        o.dialogBackgroundColour = Constants::Colours::windowBackground;
+        o.escapeKeyTriggersCloseButton = true;
+        o.useNativeTitleBar = true;
+        o.resizable = true;
+        o.useBottomRightCornerResizer = false;
+        o.launchAsync();
+    };
+    addAndMakeVisible (showSdpButton_);
 
     deleteButton_.setButtonText ("Delete");
     deleteButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::red);
@@ -168,6 +194,8 @@ void ReceiversContainer::Row::resized()
 
     auto bottom = b.removeFromBottom (27);
     deleteButton_.setBounds (bottom.removeFromRight (65));
+    bottom.removeFromRight (6);
+    showSdpButton_.setBounds (bottom.removeFromRight (89));
 }
 
 void ReceiversContainer::Row::stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event)

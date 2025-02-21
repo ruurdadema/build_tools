@@ -22,7 +22,7 @@ ThisLookAndFeel::ThisLookAndFeel()
     setColour (juce::HyperlinkButton::ColourIds::textColourId, Constants::Colours::blue);
 
     // ScrollBar
-    setColour (juce::ScrollBar::ColourIds::thumbColourId, Constants::Colours::gray);
+    setColour (juce::ScrollBar::ColourIds::thumbColourId, Constants::Colours::grey);
 
     // TextButton
     setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::buttonSuccess);
@@ -32,8 +32,8 @@ ThisLookAndFeel::ThisLookAndFeel()
 
     // TextEditor
     setColour (juce::TextEditor::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
-    setColour (juce::TextEditor::ColourIds::outlineColourId, Constants::Colours::gray);
-    setColour (juce::TextEditor::ColourIds::focusedOutlineColourId, Constants::Colours::gray);
+    setColour (juce::TextEditor::ColourIds::outlineColourId, Constants::Colours::grey);
+    setColour (juce::TextEditor::ColourIds::focusedOutlineColourId, Constants::Colours::grey);
 
     // CaretComponent
     setColour (juce::CaretComponent::ColourIds::caretColourId, Constants::Colours::blue);
