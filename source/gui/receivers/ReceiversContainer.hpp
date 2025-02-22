@@ -39,7 +39,15 @@ private:
     class SdpViewer : public juce::Component
     {
     public:
+        explicit SdpViewer(const std::string& sdpText);
+        ~SdpViewer() override;
+        void resized() override;
         void paint (juce::Graphics& g) override;
+
+    private:
+        juce::String sdpText_;
+        juce::TextButton closeButton_ { "Close" };
+        juce::TextButton copyButton_ { "Copy" };
     };
 
     class Row : public Component, public juce::Timer, public rav::rtp_stream_receiver::subscriber
@@ -59,17 +67,17 @@ private:
         rav::ravenna_node& node_;
         juce::TextEditor delayEditor_;
         rav::id receiverId_;
-        uint32_t delay_ {0};
-        juce::TextButton showSdpButton_{""};
-        juce::TextButton deleteButton_{""};
+        uint32_t delay_ { 0 };
+        juce::TextButton showSdpButton_ { "" };
+        juce::TextButton deleteButton_ { "" };
 
         struct
         {
             juce::String streamName;
-            juce::String audioFormat {"..."};
-            juce::String packetTimeFrames {"..."};
-            juce::String address {"..."};
-            juce::String state {"..."};
+            juce::String audioFormat { "..." };
+            juce::String packetTimeFrames { "..." };
+            juce::String address { "..." };
+            juce::String state { "..." };
         } stream_;
 
         struct

@@ -12,6 +12,7 @@
 
 #include "gui/MainComponent.hpp"
 #include "gui/lookandfeel/ThisLookAndFeel.hpp"
+#include "ravennakit/core/support.hpp"
 #include "ravennakit/core/system.hpp"
 
 #include <CLI/CLI.hpp>
@@ -106,7 +107,7 @@ public:
                 allButtons),
             context_ (context)
         {
-            setLookAndFeel (&lookAndFeel_);
+            setLookAndFeel (&rav::get_global_instance_of_type<ThisLookAndFeel>());
             setUsingNativeTitleBar (true);
             setContentOwned (new MainComponent (context), true);
 
@@ -126,7 +127,6 @@ public:
 
     private:
         ApplicationContext& context_;
-        ThisLookAndFeel lookAndFeel_;
         JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
     };
 

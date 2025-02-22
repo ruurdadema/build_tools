@@ -11,7 +11,10 @@
 #include "ReceiversContainer.hpp"
 
 #include "gui/lookandfeel/Constants.hpp"
+#include "gui/lookandfeel/ThisLookAndFeel.hpp"
 #include "juce_gui_extra/juce_gui_extra.h"
+#include "ravennakit/core/chrono/high_resolution_clock.hpp"
+#include "ravennakit/core/support.hpp"
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
 {
@@ -72,11 +75,45 @@ void ReceiversContainer::ravenna_receiver_removed (rav::id receiver_id)
     });
 }
 
+ReceiversContainer::SdpViewer::SdpViewer (const std::string& sdpText) : sdpText_ (sdpText)
+{
+    closeButton_.onClick = [this] {
+        if (auto* parent = findParentComponentOfClass<juce::DialogWindow>())
+            parent->exitModalState (0);
+    };
+    closeButton_.setButtonText ("Close");
+    closeButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::red);
+    addAndMakeVisible (closeButton_);
+
+    copyButton_.onClick = [this] {
+        juce::SystemClipboard::copyTextToClipboard (sdpText_);
+    };
+    copyButton_.setButtonText ("Copy");
+    copyButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
+    addAndMakeVisible (copyButton_);
+
+    setLookAndFeel (&rav::get_global_instance_of_type<ThisLookAndFeel>());
+}
+
+ReceiversContainer::SdpViewer::~SdpViewer()
+{
+    setLookAndFeel (nullptr);
+}
+
+void ReceiversContainer::SdpViewer::resized()
+{
+    auto b = getLocalBounds().reduced (kMargin);
+    auto bottom = b.removeFromBottom (27);
+    closeButton_.setBounds (bottom.removeFromRight (71));
+    bottom.removeFromRight (6);
+    copyButton_.setBounds (bottom.removeFromRight (71));
+}
+
 void ReceiversContainer::SdpViewer::paint (juce::Graphics& g)
 {
-    g.drawRect (getLocalBounds());
+    const auto b = getLocalBounds().reduced (10);
     g.setColour (Constants::Colours::text);
-    g.drawText ("SDP Viewer", getLocalBounds(), juce::Justification::centred);
+    g.drawMultiLineText (sdpText_, b.getX(), b.getY() + 10, b.getWidth(), juce::Justification::topLeft);
 }
 
 ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId, const std::string& name) :
@@ -106,19 +143,22 @@ ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId,
     showSdpButton_.setButtonText ("Show SDP");
     showSdpButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     showSdpButton_.onClick = [this] {
-        auto content = std::make_unique<SdpViewer>();
+        auto result = node_.get_sdp_text_for_receiver (receiverId_).get();
+
+        auto content = std::make_unique<SdpViewer> (result ? std::move (*result) : "SDP text not available");
         content->setSize (400, 400);
 
         juce::DialogWindow::LaunchOptions o;
         o.dialogTitle = "SDP Text";
         o.content.setOwned (content.release());
-        o.componentToCentreAround = nullptr;
+        o.componentToCentreAround = getTopLevelComponent();
         o.dialogBackgroundColour = Constants::Colours::windowBackground;
         o.escapeKeyTriggersCloseButton = true;
         o.useNativeTitleBar = true;
         o.resizable = true;
         o.useBottomRightCornerResizer = false;
-        o.launchAsync();
+        if (auto* dialog = o.launchAsync())
+            dialog->setResizeLimits (400, 400, 99999, 99999);
     };
     addAndMakeVisible (showSdpButton_);
 
