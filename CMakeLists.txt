@@ -72,6 +72,10 @@ set(JUCE_COMMON_TARGET_DEFINITIONS
         JUCE_ASIO=1
 )
 
+####################
+# Demo application #
+####################
+
 juce_add_gui_app(ravennakit_juce_demo
         PRODUCT_NAME ${PROJECT_PRODUCT_NAME}
         COMPANY_NAME ${PROJECT_COMPANY_NAME}
@@ -79,8 +83,6 @@ juce_add_gui_app(ravennakit_juce_demo
 )
 
 file(GLOB_RECURSE SOURCE_FILES source/*.hpp source/*.cpp)
-
-message(STATUS "Source files: ${SOURCE_FILES}")
 
 target_sources(ravennakit_juce_demo PRIVATE ${SOURCE_FILES})
 
