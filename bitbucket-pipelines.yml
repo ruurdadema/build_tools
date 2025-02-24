@@ -1,0 +1,54 @@
+clone:
+  lfs: true
+
+definitions:
+  steps:
+    - step: &build-macos
+        runs-on:
+          - 'self.hosted'
+          - 'macos'
+        name: 'Build for macOS'
+        script:
+          - git submodule update --recursive --init
+          - brew install pkg-config
+          - python3 -m pip install pygit2 boto3 requests
+          - python3 -u build.py --path-to-build build-macos --notarize --macos-notarization-password $MACOS_NOTARIZATION_PASSWORD --build-number $BITBUCKET_BUILD_NUMBER
+        artifacts:
+          - build-macos/archive/*.dmg
+    - step: &build-windows
+        runs-on:
+          - 'self.hosted'
+          - 'windows'
+        name: 'Build for Windows'
+        script:
+          - git submodule update --recursive --init
+          - python -m pip install pygit2 boto3 requests
+          - python -u build.py --path-to-build build-windows --sign --upload --spaces-key "$env:SPACES_KEY" --spaces-secret "$env:SPACES_SECRET" --build-number "$env:BITBUCKET_BUILD_NUMBER"
+        artifacts:
+          - build-windows/archive/*.exe
+
+pipelines:
+  pull-requests:
+    '**':
+      - parallel:
+        - step: *build-macos
+        - step: *build-windows
+  tags:
+    'v*':
+      - parallel:
+        - step: *build-macos
+        - step: *build-windows
+  branches:
+    main:
+      - parallel:
+        - step: *build-macos
+        - step: *build-windows
+  custom:
+    all:
+      - parallel:
+        - step: *build-macos
+        - step: *build-windows
+    macos:
+      - step: *build-macos
+    windows:
+      - step: *build-windows
