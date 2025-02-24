@@ -4,3 +4,6 @@
 [submodule "submodules/ravennakit"]
 	path = submodules/ravennakit
 	url = git@bitbucket.org:soundondigital/ravennakit.git
+[submodule "submodules/build_tools"]
+	path = submodules/build_tools
+	url = https://github.com/ruurdadema/build_tools.git
