@@ -226,12 +226,14 @@ def build_dist(args):
 
     # Manually choose the files to copy to prevent accidental leaking of files when the repo changes or is not clean.
 
-    copy2('README.md', path_to_dist)
+    copytree('source', path_to_dist / 'source', dirs_exist_ok=True)
     copy2('.clang-format', path_to_dist)
     copy2('.gitignore', path_to_dist)
     copy2('CMakeLists.txt', path_to_dist)
     copy2('LICENSE.md', path_to_dist)
-    copytree('source', path_to_dist / 'source', dirs_exist_ok=True)
+    copy2('README.md', path_to_dist)
+    copy2('vcpkg.json', path_to_dist)
+    
     (path_to_dist / 'ravennakit').mkdir(exist_ok=True)
     copy2('templates/RAVENNAKIT-README.md', path_to_dist / 'ravennakit' / 'README.md', )
 
