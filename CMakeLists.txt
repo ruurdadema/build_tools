@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.22)
 
-include(submodules/ravennakit/submodules/build_tools/cmake/git_version.cmake)
-include(submodules/ravennakit/cmake/helpers.cmake)
+include(ravennakit/submodules/build_tools/cmake/git_version.cmake)
+include(ravennakit/cmake/helpers.cmake)
+include(FetchContent)
 
 project(ravennakit_juce_demo VERSION ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.${GIT_VERSION_PATCH} LANGUAGES C CXX)
 
@@ -44,16 +45,23 @@ find_package(CLI11 CONFIG REQUIRED)
 # RAVENNAKIT #
 ##############
 
-add_subdirectory(submodules/ravennakit)
+add_subdirectory(ravennakit)
 
 ########
 # JUCE #
 ########
 
+FetchContent_Declare(
+        JUCE
+        GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
+        GIT_TAG 8.0.6
+)
+
+FetchContent_MakeAvailable(JUCE)
+
 set(JUCE_ENABLE_MODULE_SOURCE_GROUPS ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS YES)
 
-add_subdirectory(submodules/JUCE)
 set(JUCE_COMMON_TARGET_DEFINITIONS
         DONT_SET_USING_JUCE_NAMESPACE
         JUCE_WEB_BROWSER=0
@@ -69,7 +77,7 @@ set(JUCE_COMMON_TARGET_DEFINITIONS
         JucePlugin_AAXDisableDynamicProcessing=1
         JUCE_DIRECTSOUND=0
         JUCE_WASAPI=1
-        JUCE_ASIO=1
+        JUCE_ASIO=0
 )
 
 ####################

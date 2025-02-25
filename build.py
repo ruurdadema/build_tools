@@ -1,16 +1,22 @@
 #!/usr/bin/env python3 -u
 import multiprocessing
 import platform
-from shutil import copytree
+from datetime import datetime
+from shutil import copytree, copy2
 
 import pygit2
 import boto3
 
-from submodules.build_tools.cmake import *
-from submodules.build_tools.macos.codesigning import *
-from submodules.build_tools.macos.universal import *
-from submodules.build_tools.windows.innosetup import InnoSetup
-from submodules.build_tools.windows.signtool import signtool_get_sign_command, signtool_verify
+from ravennakit.submodules.build_tools.cmake import *
+from ravennakit.submodules.build_tools.macos.codesigning import *
+from ravennakit.submodules.build_tools.macos.productbuilder import ProductBuilder
+from ravennakit.submodules.build_tools.macos.universal import *
+from ravennakit.submodules.build_tools.windows.innosetup import InnoSetup
+from ravennakit.submodules.build_tools.windows.signtool import signtool_get_sign_command, signtool_verify
+
+app_target_name = 'ravennakit_juce_demo'
+app_artefacts_dir = f'{app_target_name}_artefacts'
+app_name = 'RAVENNAKIT JUCE Demo'
 
 # Script location matters, cwd does not
 script_path = Path(__file__)
@@ -51,11 +57,11 @@ def upload_to_spaces(args, file: Path):
         # If we're in head, we're most likely building from a tag in which case we want to archive the artifacts
         folder = 'archive/' + git_version
 
-    space_name = 'mix-to-mobile'
+    bucket = 'ravennakit-juce-demo'
     file_name = folder + '/' + file.name
-    client.upload_file(str(file), space_name, file_name)
+    client.upload_file(str(file), bucket, file_name)
 
-    print("Uploaded artefacts to {}/{}".format(space_name, file_name))
+    print("Uploaded artefacts to {}/{}".format(bucket, file_name))
 
 
 def pack_and_sign_macos(args, path_to_build: Path, build_config: Config):
@@ -75,20 +81,24 @@ def pack_and_sign_macos(args, path_to_build: Path, build_config: Config):
         return full_path_to_bundle
 
     # RAVENNAKIT JUCE Demo
-    path_to_app = process_bundle(Path('ravennakit_juce_demo_artefacts', str(build_config.value)), Path('RAVENNAKIT JUCE Demo.app'))
-    copy_into_archive(path_to_build / 'ravennakit_juce_demo_artefacts')
+    path_to_app = process_bundle(Path(app_artefacts_dir, str(build_config.value)), Path(f'{app_name}.app'))
+    copy_into_archive(path_to_build / app_artefacts_dir)
 
-    path_to_dmg_archive = path_to_build_archive / 'dmg'
-    path_to_dmg_archive.mkdir(parents=True, exist_ok=True)
-    copytree(path_to_app, path_to_dmg_archive / path_to_app.name)
+    # Create installer package
+    builder = ProductBuilder(title=app_name)
 
-    path_to_dmg = path_to_build_archive / 'ravennakit-juce-demo.dmg'
-    subprocess.run(['create-dmg', '--volname', 'RAVANNEKIT JUCE Demo', path_to_dmg, path_to_dmg_archive], check=True)
+    builder.add_component(path_to_app,
+                          install_location=Path('/Applications'),
+                          identifier=args.macos_notarization_bundle_id,
+                          title=app_name)
+
+    path_to_installer = path_to_build_archive / 'ravennakit-juce-demo-{}.pkg'.format(git_version)
+    builder.build(output_path=path_to_installer, developer_id_installer=args.macos_developer_id_installer)
 
     # Notarize installer package
     if args.notarize:
         notarize_file(args.macos_notarization_username, args.macos_notarization_password, args.macos_development_team,
-                      path_to_dmg)
+                      path_to_installer)
 
     # Create ZIP from archive
     archive_path = args.path_to_build + '/ravennakit-juce-demo-' + git_version + '-' + args.build_number + '-macos'
@@ -115,11 +125,11 @@ def pack_windows(args, path_to_build_x64: Path, build_config: Config):
             shutil.copy(file, path_to_build_archive / sub_folder, follow_symlinks=True)
 
     # RAVENNAKIT JUCE Demo application
-    copy_into_archive(path_to_build_x64 / 'ravennakit_juce_demo_artefacts')
+    path_to_desktop_receiver_app = path_to_build_x64 / app_artefacts_dir / str(build_config.value) / f'{app_name}.exe'
+    copy_into_archive(path_to_build_x64 / app_artefacts_dir)
 
     # Create installer package
-    innosetup = InnoSetup(appname='RAVENNAKIT JUCE Demo', appversion=git_version,
-                          app_publisher=installer_publisher_name)
+    innosetup = InnoSetup(appname=app_name, appversion=git_version, app_publisher=installer_publisher_name)
     innosetup.set_appid(installer_app_id)
     innosetup.set_app_publisher_url(installer_publisher_url)
     innosetup.set_allow_change_destination(False)
@@ -128,13 +138,13 @@ def pack_windows(args, path_to_build_x64: Path, build_config: Config):
         innosetup.set_signtool_command(get_signtool_command(args))
 
     # Desktop sender app
-    desktop_send = InnoSetup.File(path_to_desktop_sender_app)
+    desktop_send = InnoSetup.File(path_to_desktop_receiver_app)
     desktop_send.set_add_to_start_menu(True)
     desktop_send.set_add_to_desktop(True)
     desktop_send.set_run_after_install(True)
     innosetup.add_file(desktop_send)
 
-    installer_file_name = 'Mix-to-Mobile-{}'.format(git_version).replace(' ', '-')
+    installer_file_name = 'ravennakit-juce-demo-{}'.format(git_version).replace(' ', '-')
     innosetup.generate(path_to_build_archive / 'innosetup', installer_file_name)
     innosetup.build(path_to_build_archive)
 
@@ -142,7 +152,7 @@ def pack_windows(args, path_to_build_x64: Path, build_config: Config):
         signtool_verify(path_to_build_archive / (installer_file_name + '.exe'))
 
     # Create ZIP from archive
-    archive_path = args.path_to_build + '/MixToMobile-' + git_version + '-' + args.build_number + '-windows'
+    archive_path = args.path_to_build + '/ravennakit-jude-demo-' + git_version + '-' + args.build_number + '-windows'
     zip_path = Path(archive_path + '.zip')
     zip_path.unlink(missing_ok=True)
 
@@ -166,14 +176,15 @@ def build_macos(args, build_config: Config):
     cmake.generator('Xcode')
     cmake.parallel(multiprocessing.cpu_count())
 
-    cmake.option('CMAKE_TOOLCHAIN_FILE', 'submodules/ravennakit/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake')
-    cmake.option('VCPKG_OVERLAY_TRIPLETS', 'submodules/ravennakit/triplets')
+    cmake.option('CMAKE_TOOLCHAIN_FILE', 'ravennakit/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake')
+    cmake.option('VCPKG_OVERLAY_TRIPLETS', 'ravennakit/triplets')
     cmake.option('VCPKG_TARGET_TRIPLET', 'macos-universal')
     cmake.option('CMAKE_OSX_ARCHITECTURES', 'x86_64;arm64')
     cmake.option('CMAKE_OSX_DEPLOYMENT_TARGET', args.macos_deployment_target)
     cmake.option('CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY', 'Apple Development')
     cmake.option('CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM', args.macos_development_team)
     cmake.option('BUILD_NUMBER', args.build_number)
+    cmake.option('RAV_ENABLE_SPDLOG', 'ON')
 
     cmake.configure()
     cmake.build()
@@ -196,10 +207,12 @@ def build_windows(args, arch, build_config: Config):
     cmake.architecture(arch)
     cmake.parallel(multiprocessing.cpu_count())
 
-    cmake.option('CMAKE_TOOLCHAIN_FILE', 'submodules/ravennakit/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake')
-    cmake.option('VCPKG_OVERLAY_TRIPLETS', 'submodules/ravennakit/triplets')
+    cmake.option('CMAKE_TOOLCHAIN_FILE', 'ravennakit/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake')
+    cmake.option('VCPKG_OVERLAY_TRIPLETS', 'ravennakit/triplets')
     cmake.option('VCPKG_TARGET_TRIPLET', 'windows-' + arch)
     cmake.option('BUILD_NUMBER', args.build_number)
+    cmake.option('RAV_WINDOWS_VERSION', args.windows_version)
+    cmake.option('RAV_ENABLE_SPDLOG', 'ON')
 
     cmake.configure()
     cmake.build()
@@ -207,12 +220,51 @@ def build_windows(args, arch, build_config: Config):
     return path_to_build
 
 
+def build_dist(args):
+    path_to_dist = Path(args.path_to_build) / 'dist'
+    path_to_dist.mkdir(parents=True, exist_ok=True)
+
+    # Manually choose the files to copy to prevent accidental leaking of files when the repo changes or is not clean.
+
+    copy2('README.md', path_to_dist)
+    copy2('.clang-format', path_to_dist)
+    copy2('.gitignore', path_to_dist)
+    copy2('CMakeLists.txt', path_to_dist)
+    copytree('source', path_to_dist / 'source', dirs_exist_ok=True)
+    (path_to_dist / 'ravennakit').mkdir(exist_ok=True)
+    copy2('templates/RAVENNAKIT-README.md', path_to_dist / 'ravennakit' / 'README.md', )
+
+    ravennakit_repo = pygit2.Repository(path='ravennakit')
+    ravennakit_version = ravennakit_repo.describe(pattern='v*')
+
+    version_data = {
+        "juce_demo_version": git_version,
+        "ravennakit_version": ravennakit_version,
+        "build_number": args.build_number,
+        "date": str(datetime.now())
+    }
+
+    with open(path_to_dist / 'version.json', 'w') as file:
+        json.dump(version_data, file, indent=4)
+
+    # Create ZIP from archive
+    archive_path = args.path_to_build + '/ravennakit-jude-demo-' + git_version + '-' + args.build_number + '-dist'
+    zip_path = Path(archive_path + '.zip')
+    zip_path.unlink(missing_ok=True)
+
+    shutil.make_archive(archive_path, 'zip', path_to_dist)
+
+    return zip_path
+
+
 def build(args):
     build_config = Config.debug if args.debug else Config.release_with_debug_info
 
     archive = None
 
-    if platform.system() == 'Darwin':
+    if args.dist:
+        archive = build_dist(args)
+    elif platform.system() == 'Darwin':
         path_to_build = build_macos(args, build_config)
         archive = pack_and_sign_macos(args, path_to_build, build_config)
     elif platform.system() == 'Windows':
@@ -233,6 +285,10 @@ def main():
     parser.add_argument("--path-to-build",
                         help="The folder to build the project in",
                         default="build")
+
+    parser.add_argument("--dist",
+                        help="Prepare the source code for distribution",
+                        action='store_true')
 
     parser.add_argument("--build-number",
                         help="Specifies the build number",
@@ -292,6 +348,10 @@ def main():
         parser.add_argument("--windows-code-sign-identity",
                             help="Specify the code signing identity (Windows only)",
                             default="431e889eeb203c2db5dd01da91d56186b20d1880")  # GlobalSign cert
+
+        parser.add_argument("--windows-version",
+                            help="Specify the minimum supported version of Windows",
+                            default="0x0A00")  # Windows 10
 
     build(parser.parse_args())
 

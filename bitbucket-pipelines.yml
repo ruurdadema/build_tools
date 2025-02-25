@@ -12,9 +12,9 @@ definitions:
           - git submodule update --recursive --init
           - brew install pkg-config
           - python3 -m pip install pygit2 boto3 requests
-          - python3 -u build.py --path-to-build build-macos --notarize --macos-notarization-password $MACOS_NOTARIZATION_PASSWORD --build-number $BITBUCKET_BUILD_NUMBER
+          - python3 -u build.py --path-to-build build-macos --notarize --macos-notarization-password $MACOS_NOTARIZATION_PASSWORD --build-number $BITBUCKET_BUILD_NUMBER --upload --spaces-key $SPACES_KEY --spaces-secret $SPACES_SECRET
         artifacts:
-          - build-macos/archive/*.dmg
+          - build-macos/archive/*.pkg
     - step: &build-windows
         runs-on:
           - 'self.hosted'
@@ -23,9 +23,20 @@ definitions:
         script:
           - git submodule update --recursive --init
           - python -m pip install pygit2 boto3 requests
-          - python -u build.py --path-to-build build-windows --sign --upload --spaces-key "$env:SPACES_KEY" --spaces-secret "$env:SPACES_SECRET" --build-number "$env:BITBUCKET_BUILD_NUMBER"
+          - python -u build.py --path-to-build build-windows --sign --build-number "$env:BITBUCKET_BUILD_NUMBER" --upload --spaces-key "$env:SPACES_KEY" --spaces-secret "$env:SPACES_SECRET"
         artifacts:
           - build-windows/archive/*.exe
+    - step: &build-dist
+        runs-on:
+          - 'self.hosted'
+          - 'macos'
+        name: 'Build distribution package'
+        script:
+          - git submodule update --recursive --init
+          - python3 -m pip install pygit2 boto3 requests
+          - python3 -u build.py --dist --path-to-build build-dist --build-number $BITBUCKET_BUILD_NUMBER --upload --spaces-key $SPACES_KEY --spaces-secret $SPACES_SECRET
+        artifacts:
+          - build-dist/*.zip
 
 pipelines:
   pull-requests:
@@ -33,22 +44,28 @@ pipelines:
       - parallel:
         - step: *build-macos
         - step: *build-windows
+        - step: *build-dist
   tags:
     'v*':
       - parallel:
         - step: *build-macos
         - step: *build-windows
+        - step: *build-dist
   branches:
     main:
       - parallel:
         - step: *build-macos
         - step: *build-windows
+        - step: *build-dist
   custom:
     all:
       - parallel:
         - step: *build-macos
         - step: *build-windows
+        - step: *build-dist
     macos:
       - step: *build-macos
     windows:
       - step: *build-windows
+    dist:
+      - step: *build-dist
