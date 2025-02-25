@@ -230,6 +230,7 @@ def build_dist(args):
     copy2('.clang-format', path_to_dist)
     copy2('.gitignore', path_to_dist)
     copy2('CMakeLists.txt', path_to_dist)
+    copy2('LICENSE.md', path_to_dist)
     copytree('source', path_to_dist / 'source', dirs_exist_ok=True)
     (path_to_dist / 'ravennakit').mkdir(exist_ok=True)
     copy2('templates/RAVENNAKIT-README.md', path_to_dist / 'ravennakit' / 'README.md', )
@@ -238,7 +239,7 @@ def build_dist(args):
     ravennakit_version = ravennakit_repo.describe(pattern='v*')
 
     version_data = {
-        "juce_demo_version": git_version,
+        "version": git_version,
         "ravennakit_version": ravennakit_version,
         "build_number": args.build_number,
         "date": str(datetime.now())
