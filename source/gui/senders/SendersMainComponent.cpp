@@ -10,15 +10,18 @@
 
 #include "SendersMainComponent.hpp"
 
-SendersMainComponent::SendersMainComponent (ApplicationContext& context)
+#include "gui/widgets/MiniAudioDeviceSelectorComponent.hpp"
+
+SendersMainComponent::SendersMainComponent (ApplicationContext& context) :
+    miniDeviceSelector_ (context.getAudioDeviceManager(), MiniAudioDeviceSelectorComponent::Direction::Input)
 {
-    std::ignore = context;
+    addAndMakeVisible (miniDeviceSelector_);
 }
 
-void SendersMainComponent::paint (juce::Graphics&)
-{
-}
+void SendersMainComponent::paint (juce::Graphics&) {}
 
 void SendersMainComponent::resized()
 {
+    auto b = getLocalBounds();
+    miniDeviceSelector_.setBounds (b.removeFromBottom (50).reduced (10));
 }

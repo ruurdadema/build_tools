@@ -37,6 +37,15 @@ ThisLookAndFeel::ThisLookAndFeel()
 
     // CaretComponent
     setColour (juce::CaretComponent::ColourIds::caretColourId, Constants::Colours::blue);
+
+    // ComboBox
+    setColour(juce::ComboBox::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
+
+    // PopupMenu
+    setColour(juce::PopupMenu::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
+
+    // ListBox
+    setColour(juce::ListBox::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
 }
 
 void ThisLookAndFeel::drawButtonBackground (

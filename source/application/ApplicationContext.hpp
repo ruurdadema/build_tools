@@ -13,6 +13,7 @@
 #include "ravennakit/ravenna/ravenna_node.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
+#include <juce_audio_devices/juce_audio_devices.h>
 
 class ApplicationContext
 {
@@ -21,4 +22,5 @@ public:
     virtual rav::ravenna_node& getRavennaNode() = 0;
     virtual void closeWindow(juce::Component* window) = 0;
     virtual void cloneWindow() = 0;
+    virtual juce::AudioDeviceManager& getAudioDeviceManager() = 0;
 };

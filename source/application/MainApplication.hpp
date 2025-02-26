@@ -38,7 +38,10 @@ public:
     rav::ravenna_node& getRavennaNode() override;
     void cloneWindow() override;
     void closeWindow (juce::Component* window) override;
+    juce::AudioDeviceManager& getAudioDeviceManager() override;
+
 private:
+    juce::AudioDeviceManager audioDeviceManager_;
     std::unique_ptr<rav::ravenna_node> ravennaNode_;
     std::vector<std::unique_ptr<juce::ResizableWindow>> mainWindows_;
 

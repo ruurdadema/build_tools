@@ -13,6 +13,7 @@
 #include "DiscoveredSessionsContainer.hpp"
 #include "ReceiversContainer.hpp"
 #include "application/ApplicationContext.hpp"
+#include "gui/widgets/MiniAudioDeviceSelectorComponent.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -29,4 +30,6 @@ private:
 
     ReceiversContainer streamsContainer_;
     juce::Viewport rightViewport_;
+
+    MiniAudioDeviceSelectorComponent miniDeviceSelector_;
 };

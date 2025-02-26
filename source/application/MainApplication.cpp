@@ -91,6 +91,7 @@ void MainApplication::initialise (const juce::String& commandLine)
     }
     ravennaNode_ = std::make_unique<rav::ravenna_node> (std::move (config));
 
+    audioDeviceManager_.initialiseWithDefaultDevices (1, 2);
     addWindow();
 }
 
@@ -141,6 +142,11 @@ void MainApplication::closeWindow (juce::Component* window)
             break;
         }
     }
+}
+
+juce::AudioDeviceManager& MainApplication::getAudioDeviceManager()
+{
+    return audioDeviceManager_;
 }
 
 void MainApplication::addWindow()

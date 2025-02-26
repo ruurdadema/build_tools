@@ -11,17 +11,17 @@
 #pragma once
 
 #include "application/ApplicationContext.hpp"
-#include "gui/widgets/MiniAudioDeviceSelectorComponent.hpp"
 
+#include <juce_audio_utils/juce_audio_utils.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class SendersMainComponent : public juce::Component {
+class SettingsMainComponent : public juce::Component
+{
 public:
-    explicit SendersMainComponent(ApplicationContext& context);
+    explicit SettingsMainComponent (ApplicationContext& context);
 
-    void paint (juce::Graphics& g) override;
     void resized() override;
 
 private:
-    MiniAudioDeviceSelectorComponent miniDeviceSelector_;
+    [[maybe_unused]] ApplicationContext& context_;
 };

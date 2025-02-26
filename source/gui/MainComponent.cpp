@@ -13,6 +13,7 @@
 #include "ravennakit/core/tracy.hpp"
 #include "receivers/ReceiversMainComponent.hpp"
 #include "senders/SendersMainComponent.hpp"
+#include "settings/SettingsMainComponent.hpp"
 
 MainComponent::MainComponent (ApplicationContext& context) : context_ (context), topRightSection_ (context)
 {
@@ -21,6 +22,9 @@ MainComponent::MainComponent (ApplicationContext& context) : context_ (context),
     });
     menu_.addItem ("Senders", "senders", [this] {
         showContent (std::make_unique<SendersMainComponent> (context_));
+    });
+    menu_.addItem ("Settings", "settings", [this] {
+        showContent (std::make_unique<SettingsMainComponent> (context_));
     });
     addAndMakeVisible (menu_);
 
