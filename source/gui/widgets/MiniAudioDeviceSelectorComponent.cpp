@@ -34,14 +34,12 @@ MiniAudioDeviceSelectorComponent::MiniAudioDeviceSelectorComponent (
     addAndMakeVisible (label_);
 
     comboBox_.onChange = [this] {
-        if (comboBox_.getSelectedItemIndex() == comboBox_.getNumItems() - 1)
-        {
-            audioDeviceManager_.closeAudioDevice();
-            return;
-        }
         auto setup = audioDeviceManager_.getAudioDeviceSetup();
-        direction_ == Direction::Input ? setup.inputDeviceName = comboBox_.getText()
-                                       : setup.outputDeviceName = comboBox_.getText();
+        auto& deviceName = direction_ == Direction::Input ? setup.inputDeviceName : setup.outputDeviceName;
+        if (comboBox_.getSelectedItemIndex() == comboBox_.getNumItems() - 1)
+            deviceName = {};
+        else
+            deviceName = comboBox_.getText();
         if (const auto result = audioDeviceManager_.setAudioDeviceSetup (setup, true); result.isNotEmpty())
         {
             RAV_ERROR ("Failed to select audio device: {}", result.toRawUTF8());
