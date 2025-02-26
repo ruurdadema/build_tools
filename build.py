@@ -233,7 +233,7 @@ def build_dist(args):
     copy2('LICENSE.md', path_to_dist)
     copy2('README.md', path_to_dist)
     copy2('vcpkg.json', path_to_dist)
-    
+
     (path_to_dist / 'ravennakit').mkdir(exist_ok=True)
     copy2('templates/RAVENNAKIT-README.md', path_to_dist / 'ravennakit' / 'README.md', )
 
