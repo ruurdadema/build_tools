@@ -45,7 +45,7 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainWindow)
 };
 
-}
+} // namespace
 MainApplication::MainApplication()
 {
     rav::system::do_system_checks();
@@ -61,6 +61,7 @@ const juce::String MainApplication::getApplicationVersion()
 {
     return PROJECT_VERSION_STRING;
 }
+
 bool MainApplication::moreThanOneInstanceAllowed()
 {
     return true;
@@ -69,11 +70,25 @@ bool MainApplication::moreThanOneInstanceAllowed()
 void MainApplication::initialise (const juce::String& commandLine)
 {
     CLI::App app { PROJECT_PRODUCT_NAME };
+    std::string interfaceAddress;
     app.add_option ("--interface-addr", interfaceAddress, "The interface address");
     app.parse (commandLine.toStdString(), false);
 
     rav::rtp_receiver::configuration config;
-    config.interface_address = asio::ip::make_address (interfaceAddress);
+    if (!interfaceAddress.empty())
+    {
+        asio::error_code ec;
+        config.interface_address = asio::ip::make_address (interfaceAddress, ec);
+        if (ec)
+        {
+            RAV_ERROR ("Invalid interface address: {}", interfaceAddress);
+            juce::NativeMessageBox::showMessageBoxAsync (
+                juce::AlertWindow::AlertIconType::WarningIcon,
+                "Invalid interface address",
+                "Failed to parse the interface address: " + interfaceAddress,
+                nullptr);
+        }
+    }
     ravennaNode_ = std::make_unique<rav::ravenna_node> (std::move (config));
 
     addWindow();
@@ -96,8 +111,14 @@ void MainApplication::anotherInstanceStarted (const juce::String& commandLine)
 
 void MainApplication::unhandledException (const std::exception* e, const juce::String& sourceFilename, int lineNumber)
 {
-    RAV_ASSERT (e != nullptr, "Unhandled exception without exception object");
     RAV_ERROR ("Unhandled exception: {}, {}:{}", e->what(), sourceFilename.toRawUTF8(), lineNumber);
+    RAV_ASSERT (e != nullptr, "Unhandled exception without exception object");
+
+    juce::NativeMessageBox::showMessageBoxAsync (
+        juce::AlertWindow::AlertIconType::WarningIcon,
+        "Exception",
+        e->what(),
+        nullptr);
 }
 
 rav::ravenna_node& MainApplication::getRavennaNode()
