@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "audio/AudioMixer.hpp"
+
 #include <memory>
 
 #include "gui/MainComponent.hpp"
@@ -43,6 +45,7 @@ public:
 private:
     juce::AudioDeviceManager audioDeviceManager_;
     std::unique_ptr<rav::ravenna_node> ravennaNode_;
+    std::unique_ptr<AudioMixer> audioMixer_;
     std::vector<std::unique_ptr<juce::ResizableWindow>> mainWindows_;
 
     void addWindow();

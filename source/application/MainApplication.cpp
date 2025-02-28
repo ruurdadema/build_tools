@@ -90,6 +90,7 @@ void MainApplication::initialise (const juce::String& commandLine)
         }
     }
     ravennaNode_ = std::make_unique<rav::ravenna_node> (std::move (config));
+    audioMixer_ = std::make_unique<AudioMixer> (*ravennaNode_);
 
     audioDeviceManager_.initialiseWithDefaultDevices (1, 2);
     addWindow();

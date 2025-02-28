@@ -36,7 +36,7 @@ void ReceiversContainer::resized()
     }
 }
 
-void ReceiversContainer::resizeBasedOnContent()
+void ReceiversContainer::resizeToFitContent()
 {
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
 }
@@ -56,7 +56,7 @@ void ReceiversContainer::ravenna_receiver_added (const rav::ravenna_receiver& re
         auto* row = rows_.add (std::make_unique<Row> (context_.getRavennaNode(), id, name));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         addAndMakeVisible (row);
-        resizeBasedOnContent();
+        resizeToFitContent();
     });
 }
 
@@ -68,7 +68,7 @@ void ReceiversContainer::ravenna_receiver_removed (rav::id receiver_id)
             if (rows_.getUnchecked (i)->getId() == receiver_id)
             {
                 rows_.remove (i);
-                resizeBasedOnContent();
+                resizeToFitContent();
                 return;
             }
         }

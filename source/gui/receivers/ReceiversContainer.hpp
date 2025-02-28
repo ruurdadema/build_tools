@@ -24,7 +24,7 @@ public:
 
     void resized() override;
 
-    void resizeBasedOnContent();
+    void resizeToFitContent();
 
     // rav::ravenna_node::subscriber overrides
     void ravenna_receiver_added (const rav::ravenna_receiver& receiver) override;

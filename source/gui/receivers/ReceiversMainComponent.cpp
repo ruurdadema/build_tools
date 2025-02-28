@@ -41,5 +41,5 @@ void ReceiversMainComponent::resized()
     discoveredStreamsContainer_.resizeBasedOnContent();
 
     streamsContainer_.setSize (rightViewport_.getWidth() - 10, 10);
-    streamsContainer_.resizeBasedOnContent();
+    streamsContainer_.resizeToFitContent();
 }
