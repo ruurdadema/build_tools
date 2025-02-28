@@ -152,7 +152,7 @@ def pack_windows(args, path_to_build_x64: Path, build_config: Config):
         signtool_verify(path_to_build_archive / (installer_file_name + '.exe'))
 
     # Create ZIP from archive
-    archive_path = args.path_to_build + '/ravennakit-jude-demo-' + git_version + '-' + args.build_number + '-windows'
+    archive_path = args.path_to_build + '/ravennakit-juce-demo-' + git_version + '-' + args.build_number + '-windows'
     zip_path = Path(archive_path + '.zip')
     zip_path.unlink(missing_ok=True)
 
@@ -251,7 +251,7 @@ def build_dist(args):
         json.dump(version_data, file, indent=4)
 
     # Create ZIP from archive
-    archive_path = args.path_to_build + '/ravennakit-jude-demo-' + git_version + '-' + args.build_number + '-dist'
+    archive_path = args.path_to_build + '/ravennakit-juce-demo-' + git_version + '-' + args.build_number + '-dist'
     zip_path = Path(archive_path + '.zip')
     zip_path.unlink(missing_ok=True)
 
