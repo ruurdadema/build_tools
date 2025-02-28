@@ -69,7 +69,6 @@ void AudioMixer::audioDeviceIOCallbackWithContext (
     int numSamples,
     const juce::AudioIODeviceCallbackContext& context)
 {
-    node_.realtime_read_data (rav::id (0), 0, nullptr, 0);
 }
 
 void AudioMixer::audioDeviceAboutToStart (juce::AudioIODevice* device) {}
