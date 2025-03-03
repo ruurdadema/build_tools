@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "ravennakit/core/audio/audio_format_converter.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
 #include "ravennakit/rtp/rtp_stream_receiver.hpp"
 #include "util/MessageThreadExecutor.hpp"
@@ -35,7 +36,7 @@ public:
 
     // rav::ravenna_node::subscriber overrides
     void ravenna_receiver_added (const rav::ravenna_receiver& receiver) override;
-    void ravenna_receiver_removed (rav::id receiver_id) override;
+    void ravenna_receiver_removed (rav::id receiverId) override;
 
     // rav::rtp_stream_receiver::subscriber overrides
     void stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event) override;
@@ -56,15 +57,28 @@ public:
     void audioDeviceStopped() override;
 
 private:
-    struct StreamState
+    class RxStream
     {
-        rav::id receiverId;
-        rav::audio_format selectedAudioFormat;
+    public:
+        explicit RxStream (const rav::id receiverId) : receiverId_ (receiverId) {}
+
+        [[nodiscard]] rav::id getReceiverId() const;
+
+        void prepareInput (rav::audio_format format);
+        void prepareOutput (rav::audio_format format, int maxNumFramesPerBlock);
+
+    private:
+        rav::id receiverId_;
+        rav::audio_format_converter formatConverter_;
+        std::vector<uint8_t> inputBuffer_;
+        uint32_t numFramesPerBlock_ {};
+
+        void allocateResources();
     };
 
     rav::ravenna_node& node_;
-    std::vector<StreamState> streams_;
+    std::vector<RxStream> rxStreams_;
     MessageThreadExecutor executor_;
 
-    StreamState* findStreamState (rav::id receiverId);
+    RxStream* findRxStream (rav::id receiverId);
 };
