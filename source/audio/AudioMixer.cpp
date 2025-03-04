@@ -99,11 +99,12 @@ void AudioMixer::audioDeviceIOCallbackWithContext (
 
 void AudioMixer::audioDeviceAboutToStart (juce::AudioIODevice* device)
 {
-    const rav::audio_format targetFormat { .encoding = rav::audio_encoding::pcm_f32,
-                                           .sample_rate = static_cast<uint32_t> (device->getCurrentSampleRate()),
-                                           .num_channels = static_cast<uint32_t> (
+    const rav::audio_format targetFormat { rav::audio_format::byte_order::le,
+                                           rav::audio_encoding::pcm_f32,
+                                           static_cast<uint32_t> (device->getCurrentSampleRate()),
+                                           static_cast<uint32_t> (
                                                device->getActiveOutputChannels().countNumberOfSetBits()),
-                                           .ordering = rav::audio_format::channel_ordering::noninterleaved };
+                                           rav::audio_format::channel_ordering::noninterleaved };
 
     const auto bufferSize = device->getCurrentBufferSizeSamples();
 
@@ -128,18 +129,15 @@ void AudioMixer::RxStream::prepareInput (const rav::audio_format format)
 
 void AudioMixer::RxStream::prepareOutput (const rav::audio_format format, const int maxNumFramesPerBlock)
 {
-    RAV_ASSERT(maxNumFramesPerBlock >= 0, "Num samples must be >= 0");
-    RAV_ASSERT(format.is_valid(), "Invalid format");
+    RAV_ASSERT (maxNumFramesPerBlock >= 0, "Num samples must be >= 0");
+    RAV_ASSERT (format.is_valid(), "Invalid format");
 
     formatConverter_.set_target_format (format);
     numFramesPerBlock_ = static_cast<uint32_t> (maxNumFramesPerBlock);
     allocateResources();
 }
 
-void AudioMixer::RxStream::allocateResources()
-{
-
-}
+void AudioMixer::RxStream::allocateResources() {}
 
 AudioMixer::RxStream* AudioMixer::findRxStream (const rav::id receiverId)
 {
