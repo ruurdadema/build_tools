@@ -10,7 +10,8 @@
 
 #pragma once
 
-#include "ravennakit/core/audio/audio_format_converter.hpp"
+#include "ravennakit/core/audio/audio_buffer.hpp"
+#include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
 #include "ravennakit/rtp/rtp_stream_receiver.hpp"
 #include "util/MessageThreadExecutor.hpp"
@@ -20,11 +21,7 @@
 /**
  * This is a high level class connecting an audio device to a ravenna_node.
  */
-class AudioMixer :
-    public rav::ravenna_node::subscriber,
-    public rav::rtp_stream_receiver::subscriber,
-    public rav::rtp_stream_receiver::data_callback,
-    public juce::AudioIODeviceCallback
+class AudioMixer : public rav::ravenna_node::subscriber, public juce::AudioIODeviceCallback
 {
 public:
     /**
@@ -38,13 +35,6 @@ public:
     void ravenna_receiver_added (const rav::ravenna_receiver& receiver) override;
     void ravenna_receiver_removed (rav::id receiverId) override;
 
-    // rav::rtp_stream_receiver::subscriber overrides
-    void stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event) override;
-
-    // rav::rtp_stream_receiver::data_callback overrides
-    void on_data_received (rav::wrapping_uint32 timestamp) override;
-    void on_data_ready (rav::wrapping_uint32 timestamp) override;
-
     // public juce::AudioIODeviceCallback overrides
     void audioDeviceIOCallbackWithContext (
         const float* const* inputChannelData,
@@ -57,28 +47,46 @@ public:
     void audioDeviceStopped() override;
 
 private:
-    class RxStream
+    class RxStream : public rav::rtp_stream_receiver::data_callback, public rav::rtp_stream_receiver::subscriber
     {
     public:
-        explicit RxStream (const rav::id receiverId) : receiverId_ (receiverId) {}
+        explicit RxStream (rav::ravenna_node& node, rav::id receiverId);
+        ~RxStream() override;
 
         [[nodiscard]] rav::id getReceiverId() const;
 
-        void prepareInput (rav::audio_format format);
-        void prepareOutput (rav::audio_format format, int maxNumFramesPerBlock);
+        void prepareInput (const rav::audio_format& format);
+        void prepareOutput (const rav::audio_format& format, uint32_t maxNumFramesPerBlock);
+
+        void processBlock (rav::audio_buffer_view<float> outputBuffer);
+
+        // rav::rtp_stream_receiver::subscriber overrides
+        void stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event) override;
+
+        // rav::rtp_stream_receiver::data_callback overrides
+        void on_data_received (rav::wrapping_uint32 timestamp) override;
+        void on_data_ready (rav::wrapping_uint32 timestamp) override;
 
     private:
+        rav::ravenna_node& node_;
         rav::id receiverId_;
-        rav::audio_format_converter formatConverter_;
+        rav::audio_format inputFormat_;
+        rav::audio_format outputFormat_;
+        uint32_t maxNumFramesPerBlock_ {};
         std::vector<uint8_t> inputBuffer_;
-        uint32_t numFramesPerBlock_ {};
+        rav::audio_buffer<float> outputBuffer_;
+        std::atomic<std::optional<rav::wrapping_uint32>> mostRecentTimestamp_{};
+        std::optional<rav::wrapping_uint32> timestamp_{};
+        MessageThreadExecutor executor_;
 
         void allocateResources();
     };
 
     rav::ravenna_node& node_;
-    std::vector<RxStream> rxStreams_;
+    std::vector<std::unique_ptr<RxStream>> rxStreams_;
     MessageThreadExecutor executor_;
+    rav::audio_format targetFormat_;
+    uint32_t maxNumFramesPerBlock_ {};
 
-    RxStream* findRxStream (rav::id receiverId);
+    [[nodiscard]] RxStream* findRxStream (rav::id receiverId) const;
 };

@@ -92,12 +92,16 @@ void MainApplication::initialise (const juce::String& commandLine)
     ravennaNode_ = std::make_unique<rav::ravenna_node> (std::move (config));
     audioMixer_ = std::make_unique<AudioMixer> (*ravennaNode_);
 
-    audioDeviceManager_.initialiseWithDefaultDevices (1, 2);
+    juce::AudioDeviceManager::AudioDeviceSetup setup;
+    setup.bufferSize = 32;
+    audioDeviceManager_.initialise (1, 2, nullptr, false, {}, &setup);
+    audioDeviceManager_.addAudioCallback (audioMixer_.get());
     addWindow();
 }
 
 void MainApplication::shutdown()
 {
+    audioDeviceManager_.removeAudioCallback (audioMixer_.get());
     mainWindows_.clear();
 }
 

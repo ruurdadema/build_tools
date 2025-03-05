@@ -177,7 +177,7 @@ ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId,
 
 ReceiversContainer::Row::~Row()
 {
-    node_.remove_stream_subscriber (receiverId_, this).wait();
+    node_.remove_receiver_subscriber (receiverId_, this).wait();
 }
 
 rav::id ReceiversContainer::Row::getId() const
