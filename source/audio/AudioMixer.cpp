@@ -133,43 +133,32 @@ void AudioMixer::RxStream::prepareInput (const rav::audio_format& format)
     RAV_ASSERT (format.is_valid(), "Invalid format");
 
     inputFormat_ = format;
-    allocateResources();
 }
 
 void AudioMixer::RxStream::prepareOutput (const rav::audio_format& format, const uint32_t maxNumFramesPerBlock)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
-    RAV_ASSERT (maxNumFramesPerBlock > 0, "Num samples must be > 0");
     RAV_ASSERT (format.is_valid(), "Invalid format");
+    RAV_ASSERT (maxNumFramesPerBlock > 0, "Num samples must be > 0");
 
     outputFormat_ = format;
-    maxNumFramesPerBlock_ = maxNumFramesPerBlock;
-    allocateResources();
 }
 
-void AudioMixer::RxStream::processBlock (const rav::audio_buffer_view<float>& outputBuffer)
+void AudioMixer::RxStream::processBlock (const rav::audio_buffer_view<float>& outputBuffer) const
 {
+    if (!inputFormat_.is_valid())
+        return;
+
     if (inputFormat_.sample_rate != outputFormat_.sample_rate)
     {
         RAV_WARNING ("Sample rate mismatch");
         return;
     }
 
-    if (!timestamp_.has_value())
+    if (!node_.read_audio_data_realtime (receiverId_, outputBuffer, {}).has_value())
     {
-        const auto mostRecentTimestamp = mostRecentDataReadyTimestamp_.load();
-        if (!mostRecentTimestamp.has_value())
-        {
-            return; // No timestamp available
-        }
-        timestamp_ = mostRecentTimestamp;
+        RAV_WARNING ("Failed to read data");
     }
-
-    RAV_ASSERT (timestamp_.has_value(), "Timestamp must be valid at this point");
-
-    node_.realtime_read_audio_data (receiverId_, timestamp_->value(), outputBuffer);
-
-    timestamp_ = timestamp_->operator+ (static_cast<uint32_t>(outputBuffer.num_frames()));
 }
 
 void AudioMixer::RxStream::stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event)
@@ -178,7 +167,7 @@ void AudioMixer::RxStream::stream_updated (const rav::rtp_stream_receiver::strea
 
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
 
-    if (event.selected_audio_format.is_valid())
+    if (event.selected_audio_format.is_valid() && inputFormat_ != event.selected_audio_format)
         prepareInput (event.selected_audio_format);
 }
 
@@ -190,14 +179,6 @@ void AudioMixer::RxStream::on_data_received ([[maybe_unused]] const rav::wrappin
 void AudioMixer::RxStream::on_data_ready (const rav::wrapping_uint32 timestamp)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
-    mostRecentDataReadyTimestamp_ = timestamp;
-}
-
-void AudioMixer::RxStream::allocateResources()
-{
-    RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
-    inputBuffer_.resize (inputFormat_.bytes_per_frame() * maxNumFramesPerBlock_);
-    outputBuffer_.resize (outputFormat_.num_channels, maxNumFramesPerBlock_);
 }
 
 AudioMixer::RxStream* AudioMixer::findRxStream (const rav::id receiverId) const
