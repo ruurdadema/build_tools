@@ -58,7 +58,7 @@ private:
         void prepareInput (const rav::audio_format& format);
         void prepareOutput (const rav::audio_format& format, uint32_t maxNumFramesPerBlock);
 
-        void processBlock (rav::audio_buffer_view<float> outputBuffer);
+        void processBlock (const rav::audio_buffer_view<float>& outputBuffer);
 
         // rav::rtp_stream_receiver::subscriber overrides
         void stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event) override;
@@ -75,9 +75,8 @@ private:
         uint32_t maxNumFramesPerBlock_ {};
         std::vector<uint8_t> inputBuffer_;
         rav::audio_buffer<float> outputBuffer_;
-        std::atomic<std::optional<rav::wrapping_uint32>> mostRecentTimestamp_{};
+        std::atomic<std::optional<rav::wrapping_uint32>> mostRecentDataReadyTimestamp_{};
         std::optional<rav::wrapping_uint32> timestamp_{};
-        MessageThreadExecutor executor_;
 
         void allocateResources();
     };
@@ -87,6 +86,7 @@ private:
     MessageThreadExecutor executor_;
     rav::audio_format targetFormat_;
     uint32_t maxNumFramesPerBlock_ {};
+    std::mutex mutex_;
 
     [[nodiscard]] RxStream* findRxStream (rav::id receiverId) const;
 };
