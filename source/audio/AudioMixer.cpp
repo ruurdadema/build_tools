@@ -62,7 +62,14 @@ void AudioMixer::audioDeviceIOCallbackWithContext (
     const int numSamples,
     [[maybe_unused]] const juce::AudioIODeviceCallbackContext& context)
 {
+    TRACY_ZONE_SCOPED;
+
     std::lock_guard lock (mutex_);
+
+    if (context.hostTimeNs)
+    {
+        TRACY_PLOT ("Host time", static_cast<double> (*context.hostTimeNs));
+    }
 
     RAV_ASSERT (numInputChannels >= 0, "Num input channels must be >= 0");
     RAV_ASSERT (numOutputChannels >= 0, "Num output channels must be >= 0");
@@ -80,6 +87,8 @@ void AudioMixer::audioDeviceIOCallbackWithContext (
 
 void AudioMixer::audioDeviceAboutToStart (juce::AudioIODevice* device)
 {
+    TRACY_ZONE_SCOPED;
+
     auto work = [this, device] {
         targetFormat_ = rav::audio_format {
             rav::audio_format::byte_order::le,
@@ -101,6 +110,7 @@ void AudioMixer::audioDeviceAboutToStart (juce::AudioIODevice* device)
 
 void AudioMixer::audioDeviceStopped()
 {
+    TRACY_ZONE_SCOPED;
     RAV_TRACE ("Audio device stopped");
 }
 
@@ -146,6 +156,8 @@ void AudioMixer::RxStream::prepareOutput (const rav::audio_format& format, const
 
 void AudioMixer::RxStream::processBlock (const rav::audio_buffer_view<float>& outputBuffer) const
 {
+    TRACY_ZONE_SCOPED;
+
     if (!inputFormat_.is_valid())
         return;
 
