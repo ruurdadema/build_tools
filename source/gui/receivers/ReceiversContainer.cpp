@@ -19,12 +19,12 @@
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
 {
-    context_.getRavennaNode().add_subscriber (this).wait();
+    context_.getAudioReceivers().addSubscriber (this);
 }
 
 ReceiversContainer::~ReceiversContainer()
 {
-    context_.getRavennaNode().remove_subscriber (this).wait();
+    context_.getAudioReceivers().removeSubscriber (this);
 }
 
 void ReceiversContainer::resized()
@@ -42,38 +42,39 @@ void ReceiversContainer::resizeToFitContent()
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
 }
 
-void ReceiversContainer::ravenna_receiver_added (const rav::ravenna_receiver& receiver)
+void ReceiversContainer::onAudioReceiverUpdated (rav::id receiverId, const AudioReceivers::ReceiverState* state)
 {
-    executor_.callAsync ([this, id = receiver.get_id(), name = receiver.get_session_name()] {
+    JUCE_ASSERT_MESSAGE_THREAD;
+
+    if (state != nullptr)
+    {
         for (const auto& row : rows_)
         {
-            if (row->getId() == id)
+            if (row->getId() == receiverId)
             {
-                row->repaint();
+                row->update(*state);
                 return;
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_.getRavennaNode(), id, name));
+        auto* row = rows_.add (std::make_unique<Row> (context_.getRavennaNode(), receiverId, state->sessionName));
         RAV_ASSERT (row != nullptr, "Failed to create row");
+        row->update (*state);
         addAndMakeVisible (row);
         resizeToFitContent();
-    });
-}
-
-void ReceiversContainer::ravenna_receiver_removed (rav::id receiver_id)
-{
-    executor_.callAsync ([this, receiver_id] {
+    }
+    else
+    {
         for (auto i = 0; i < rows_.size(); ++i)
         {
-            if (rows_.getUnchecked (i)->getId() == receiver_id)
+            if (rows_.getUnchecked (i)->getId() == receiverId)
             {
                 rows_.remove (i);
                 resizeToFitContent();
                 return;
             }
         }
-    });
+    }
 }
 
 ReceiversContainer::SdpViewer::SdpViewer (const std::string& sdpText) : sdpText_ (sdpText)
@@ -172,18 +173,24 @@ ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId,
 
     update();
     startTimer (1000);
-
-    node_.add_receiver_subscriber (receiverId_, this).wait();
-}
-
-ReceiversContainer::Row::~Row()
-{
-    node_.remove_receiver_subscriber (receiverId_, this).wait();
 }
 
 rav::id ReceiversContainer::Row::getId() const
 {
     return receiverId_;
+}
+
+void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state)
+{
+    JUCE_ASSERT_MESSAGE_THREAD;
+    stream_.audioFormat = state.inputFormat.to_string();
+    stream_.packetTimeFrames = "ptime: " + juce::String (state.packetTimeFrames);
+    stream_.address = state.session.connection_address.to_string();
+    stream_.state = juce::String ("State: ") + rav::rtp_stream_receiver::to_string (state.state);
+    delay_ = state.delaySamples;
+    if (!delayEditor_.hasKeyboardFocus (true))
+        delayEditor_.setText (juce::String (state.delaySamples));
+    repaint();
 }
 
 void ReceiversContainer::Row::paint (juce::Graphics& g)
@@ -237,21 +244,6 @@ void ReceiversContainer::Row::resized()
     deleteButton_.setBounds (bottom.removeFromRight (65));
     bottom.removeFromRight (6);
     showSdpButton_.setBounds (bottom.removeFromRight (89));
-}
-
-void ReceiversContainer::Row::stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event)
-{
-    executor_.callAsync ([this, event] {
-        RAV_ASSERT (event.receiver_id == receiverId_, "Stream ID mismatch");
-        stream_.audioFormat = event.selected_audio_format.to_string();
-        stream_.packetTimeFrames = "ptime: " + juce::String (event.packet_time_frames);
-        stream_.address = event.session.connection_address.to_string();
-        stream_.state = juce::String ("State: ") + rav::rtp_stream_receiver::to_string (event.state);
-        delay_ = event.delay_samples;
-        if (!delayEditor_.hasKeyboardFocus (true))
-            delayEditor_.setText (juce::String (event.delay_samples));
-        repaint();
-    });
 }
 
 void ReceiversContainer::Row::timerCallback()

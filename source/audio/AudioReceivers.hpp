@@ -21,15 +21,51 @@
 /**
  * This is a high level class connecting an audio device to a ravenna_node.
  */
-class AudioMixer : public rav::ravenna_node::subscriber, public juce::AudioIODeviceCallback
+class AudioReceivers : public rav::ravenna_node::subscriber, public juce::AudioIODeviceCallback
 {
 public:
+    struct ReceiverState
+    {
+        std::string sessionName;
+        rav::audio_format inputFormat;
+        rav::audio_format outputFormat;
+        rav::rtp_session session;
+        uint16_t packetTimeFrames = 0;
+        uint32_t delaySamples = 0;
+        rav::rtp_stream_receiver::receiver_state state {};
+    };
+
+    class Subscriber
+    {
+    public:
+        virtual ~Subscriber() = default;
+        virtual void onAudioReceiverUpdated (
+            [[maybe_unused]] rav::id streamId,
+            [[maybe_unused]] const ReceiverState* state)
+        {
+        }
+    };
+
     /**
      * Constructor.
      * @param node The ravenna_node to connect to.
      */
-    explicit AudioMixer (rav::ravenna_node& node);
-    ~AudioMixer() override;
+    explicit AudioReceivers (rav::ravenna_node& node);
+    ~AudioReceivers() override;
+
+    /**
+     * Adds a subscriber to the audio mixer.
+     * @param subscriber The subscriber to add.
+     * @return true if the subscriber was added, or false if it was already in the list.
+     */
+    bool addSubscriber (Subscriber* subscriber);
+
+    /**
+     * Removes a subscriber from the audio mixer.
+     * @param subscriber The subscriber to remove.
+     * @return true if the subscriber was removed, or false if it was not in the list.
+     */
+    bool removeSubscriber (Subscriber* subscriber);
 
     // rav::ravenna_node::subscriber overrides
     void ravenna_receiver_added (const rav::ravenna_receiver& receiver) override;
@@ -47,13 +83,14 @@ public:
     void audioDeviceStopped() override;
 
 private:
-    class RxStream : public rav::rtp_stream_receiver::data_callback, public rav::rtp_stream_receiver::subscriber
+    class Receiver : public rav::rtp_stream_receiver::data_callback, public rav::rtp_stream_receiver::subscriber
     {
     public:
-        explicit RxStream (rav::ravenna_node& node, rav::id receiverId);
-        ~RxStream() override;
+        explicit Receiver (AudioReceivers& owner, rav::id receiverId, std::string sessionName);
+        ~Receiver() override;
 
         [[nodiscard]] rav::id getReceiverId() const;
+        [[nodiscard]] const ReceiverState& getState() const;
 
         void prepareInput (const rav::audio_format& format);
         void prepareOutput (const rav::audio_format& format, uint32_t maxNumFramesPerBlock);
@@ -68,18 +105,18 @@ private:
         void on_data_ready (rav::wrapping_uint32 timestamp) override;
 
     private:
-        rav::ravenna_node& node_;
+        AudioReceivers& owner_;
         rav::id receiverId_;
-        rav::audio_format inputFormat_;
-        rav::audio_format outputFormat_;
+        ReceiverState state_;
+        MessageThreadExecutor executor_;
     };
 
     rav::ravenna_node& node_;
-    std::vector<std::unique_ptr<RxStream>> rxStreams_;
+    std::vector<std::unique_ptr<Receiver>> rxStreams_;
     MessageThreadExecutor executor_;
     rav::audio_format targetFormat_;
     uint32_t maxNumFramesPerBlock_ {};
-    std::mutex mutex_;
+    rav::subscriber_list<Subscriber> subscribers_;
 
-    [[nodiscard]] RxStream* findRxStream (rav::id receiverId) const;
+    [[nodiscard]] Receiver* findRxStream (rav::id receiverId) const;
 };
