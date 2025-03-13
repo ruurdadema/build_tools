@@ -56,7 +56,7 @@ bool AudioReceivers::addSubscriber (Subscriber* subscriber)
 {
     if (subscribers_.add (subscriber))
     {
-        for (const auto& stream : rxStreams_)
+        for (const auto& stream : receivers_)
             subscriber->onAudioReceiverUpdated (stream->getReceiverId(), &stream->getState());
         return true;
     }
@@ -74,7 +74,7 @@ void AudioReceivers::ravenna_receiver_added (const rav::ravenna_receiver& receiv
 
     executor_.callAsync ([this, streamId = receiver.get_id(), sessionName = receiver.get_session_name()] {
         RAV_ASSERT (findRxStream (streamId) == nullptr, "Receiver already exists");
-        const auto& it = rxStreams_.emplace_back (std::make_unique<Receiver> (*this, streamId, sessionName));
+        const auto& it = receivers_.emplace_back (std::make_unique<Receiver> (*this, streamId, sessionName));
         if (targetFormat_.is_valid() && maxNumFramesPerBlock_ > 0)
             it->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
         for (const auto& subscriber : subscribers_)
@@ -88,11 +88,11 @@ void AudioReceivers::ravenna_receiver_removed (const rav::id receiverId)
 
     executor_.callAsync ([this, receiverId] {
         // No need to unsubscribe from the receiver (via ravenna_node), as the stream no longer exists at this point.
-        for (auto it = rxStreams_.begin(); it != rxStreams_.end(); ++it)
+        for (auto it = receivers_.begin(); it != receivers_.end(); ++it)
         {
             if ((*it)->getReceiverId() == receiverId)
             {
-                rxStreams_.erase (it);
+                receivers_.erase (it);
                 break;
             }
         }
@@ -128,7 +128,7 @@ void AudioReceivers::audioDeviceIOCallbackWithContext (
 
     outputBuffer.clear();
 
-    for (const auto& stream : rxStreams_)
+    for (const auto& stream : receivers_)
         stream->processBlock (outputBuffer);
 }
 
@@ -146,7 +146,7 @@ void AudioReceivers::audioDeviceAboutToStart (juce::AudioIODevice* device)
 
     maxNumFramesPerBlock_ = static_cast<uint32_t> (device->getCurrentBufferSizeSamples());
 
-    for (const auto& stream : rxStreams_)
+    for (const auto& stream : receivers_)
         stream->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
 }
 
@@ -222,7 +222,7 @@ void AudioReceivers::Receiver::processBlock (const rav::audio_buffer_view<float>
     }
 }
 
-void AudioReceivers::Receiver::stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event)
+void AudioReceivers::Receiver::rtp_stream_receiver_updated (const rav::rtp_stream_receiver::stream_updated_event& event)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
@@ -243,7 +243,7 @@ void AudioReceivers::Receiver::on_data_received ([[maybe_unused]] const rav::wra
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 }
 
-void AudioReceivers::Receiver::on_data_ready (const rav::wrapping_uint32 timestamp)
+void AudioReceivers::Receiver::on_data_ready ([[maybe_unused]] const rav::wrapping_uint32 timestamp)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 }
@@ -251,7 +251,7 @@ void AudioReceivers::Receiver::on_data_ready (const rav::wrapping_uint32 timesta
 AudioReceivers::Receiver* AudioReceivers::findRxStream (const rav::id receiverId) const
 {
     JUCE_ASSERT_MESSAGE_THREAD;
-    for (const auto& stream : rxStreams_)
+    for (const auto& stream : receivers_)
         if (stream->getReceiverId() == receiverId)
             return stream.get();
     return nullptr;

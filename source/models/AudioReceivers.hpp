@@ -132,7 +132,7 @@ private:
         void processBlock (const rav::audio_buffer_view<float>& outputBuffer) const;
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event) override;
+        void rtp_stream_receiver_updated (const rav::rtp_stream_receiver::stream_updated_event& event) override;
 
         // rav::rtp_stream_receiver::data_callback overrides
         void on_data_received (rav::wrapping_uint32 timestamp) override;
@@ -146,7 +146,7 @@ private:
     };
 
     rav::ravenna_node& node_;
-    std::vector<std::unique_ptr<Receiver>> rxStreams_;
+    std::vector<std::unique_ptr<Receiver>> receivers_;
     MessageThreadExecutor executor_;
     rav::audio_format targetFormat_;
     uint32_t maxNumFramesPerBlock_ {};
