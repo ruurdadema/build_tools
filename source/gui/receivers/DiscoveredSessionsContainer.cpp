@@ -14,12 +14,12 @@
 
 DiscoveredSessionsContainer::DiscoveredSessionsContainer (ApplicationContext& context) : context_ (context)
 {
-    context_.getRavennaNode().add_subscriber (this).wait();
+    context_.getSessions().addSubscriber (this);
 }
 
 DiscoveredSessionsContainer::~DiscoveredSessionsContainer()
 {
-    context_.getRavennaNode().remove_subscriber (this).wait();
+    context_.getSessions().removeSubscriber (this);
 }
 
 void DiscoveredSessionsContainer::paint (juce::Graphics&) {}
@@ -39,56 +39,53 @@ void DiscoveredSessionsContainer::resizeBasedOnContent()
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
 }
 
-void DiscoveredSessionsContainer::ravenna_session_discovered (const rav::dnssd::dnssd_browser::service_resolved& event)
+void DiscoveredSessionsContainer::onSessionUpdated (const std::string& sessionName, const RavennaSessions::SessionState* state)
 {
-    executor_.callAsync ([this, desc = event.description] {
+    if (state != nullptr)
+    {
         for (auto* row : rows_)
         {
-            if (row->getSessionName() == juce::StringRef (desc.name))
+            if (row->getSessionName() == juce::StringRef (state->name))
             {
-                row->update (desc);
+                row->update (*state);
                 return;
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_, desc));
+        auto* row = rows_.add (std::make_unique<Row> (context_, *state));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         addAndMakeVisible (row);
         resizeBasedOnContent();
-    });
-}
-
-void DiscoveredSessionsContainer::ravenna_session_removed (const rav::dnssd::dnssd_browser::service_removed& event)
-{
-    executor_.callAsync ([this, name = event.description.name] {
+    }
+    else
+    {
         for (auto i = 0; i < rows_.size(); ++i)
         {
-            if (rows_.getUnchecked (i)->getSessionName() == juce::StringRef (name))
+            if (rows_.getUnchecked (i)->getSessionName() == juce::StringRef (sessionName))
             {
                 rows_.remove (i);
                 resizeBasedOnContent();
                 return;
             }
         }
-    });
+    }
 }
 
 DiscoveredSessionsContainer::Row::Row (
-    ApplicationContext& context,
-    const rav::dnssd::service_description& serviceDescription)
+    ApplicationContext& context, const RavennaSessions::SessionState& session)
 {
-    sessionName_.setText (serviceDescription.name, juce::dontSendNotification);
+    sessionName_.setText (session.name, juce::dontSendNotification);
     sessionName_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (sessionName_);
 
-    description_.setText (serviceDescription.host_target, juce::dontSendNotification);
+    description_.setText (session.host, juce::dontSendNotification);
     description_.setJustificationType (juce::Justification::topLeft);
     description_.setColour (juce::Label::textColourId, juce::Colours::grey);
     addAndMakeVisible (description_);
 
     startButton_.setButtonText ("Play");
-    startButton_.onClick = [&context, name = serviceDescription.name] {
-        const auto id = context.getRavennaNode().create_receiver (name).get();
+    startButton_.onClick = [&context, name = session.name] {
+        const auto id = context.getAudioReceivers().createReceiver (name);
         RAV_TRACE ("Created receiver with id: {}", id.value());
     };
     addAndMakeVisible (startButton_);
@@ -99,10 +96,10 @@ juce::String DiscoveredSessionsContainer::Row::getSessionName() const
     return sessionName_.getText();
 }
 
-void DiscoveredSessionsContainer::Row::update (const rav::dnssd::service_description& serviceDescription)
+void DiscoveredSessionsContainer::Row::update (const RavennaSessions::SessionState& sessionState)
 {
-    sessionName_.setText (serviceDescription.name, juce::dontSendNotification);
-    description_.setText (serviceDescription.host_target, juce::dontSendNotification);
+    sessionName_.setText (sessionState.name, juce::dontSendNotification);
+    description_.setText (sessionState.host, juce::dontSendNotification);
 }
 
 void DiscoveredSessionsContainer::Row::resized()

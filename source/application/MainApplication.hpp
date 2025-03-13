@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "audio/AudioReceivers.hpp"
+#include "models/AudioReceivers.hpp"
 
 #include <memory>
 
@@ -37,16 +37,17 @@ public:
     void unhandledException (const std::exception* e, const juce::String& sourceFilename, int lineNumber) override;
 
     // ApplicationContext overrides
-    rav::ravenna_node& getRavennaNode() override;
     void cloneWindow() override;
     void closeWindow (juce::Component* window) override;
+    RavennaSessions& getSessions() override;
     juce::AudioDeviceManager& getAudioDeviceManager() override;
     AudioReceivers& getAudioReceivers() override;
 
 private:
     juce::AudioDeviceManager audioDeviceManager_;
     std::unique_ptr<rav::ravenna_node> ravennaNode_;
-    std::unique_ptr<AudioReceivers> audioMixer_;
+    std::unique_ptr<RavennaSessions> sessions_;
+    std::unique_ptr<AudioReceivers> audioReceivers_;
     std::vector<std::unique_ptr<juce::ResizableWindow>> mainWindows_;
 
     void addWindow();

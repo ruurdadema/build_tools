@@ -24,6 +24,34 @@ AudioReceivers::~AudioReceivers()
     node_.remove_subscriber (this).wait();
 }
 
+rav::id AudioReceivers::createReceiver (const std::string& sessionName) const
+{
+    return node_.create_receiver (sessionName).get();
+}
+
+void AudioReceivers::removeReceiver (const rav::id receiverId) const
+{
+    node_.remove_receiver (receiverId).wait();
+}
+
+void AudioReceivers::setReceiverDelay (const rav::id receiverId, const uint32_t delaySamples) const
+{
+    if (!node_.set_receiver_delay (receiverId, delaySamples).get())
+    {
+        RAV_ERROR ("Failed to set receiver delay");
+    }
+}
+
+std::optional<std::string> AudioReceivers::getSdpTextForReceiver (const rav::id receiverId) const
+{
+    return node_.get_sdp_text_for_receiver (receiverId).get();
+}
+
+rav::rtp_stream_receiver::stream_stats AudioReceivers::getStatisticsForReceiver (const rav::id receiverId) const
+{
+    return node_.get_stats_for_receiver (receiverId).get();
+}
+
 bool AudioReceivers::addSubscriber (Subscriber* subscriber)
 {
     if (subscribers_.add (subscriber))
@@ -46,8 +74,7 @@ void AudioReceivers::ravenna_receiver_added (const rav::ravenna_receiver& receiv
 
     executor_.callAsync ([this, streamId = receiver.get_id(), sessionName = receiver.get_session_name()] {
         RAV_ASSERT (findRxStream (streamId) == nullptr, "Receiver already exists");
-        const auto& it = rxStreams_.emplace_back (
-            std::make_unique<Receiver> (*this, streamId, sessionName));
+        const auto& it = rxStreams_.emplace_back (std::make_unique<Receiver> (*this, streamId, sessionName));
         if (targetFormat_.is_valid() && maxNumFramesPerBlock_ > 0)
             it->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
         for (const auto& subscriber : subscribers_)

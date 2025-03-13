@@ -54,6 +54,40 @@ public:
     ~AudioReceivers() override;
 
     /**
+     * Creates a receiver.
+     * @param sessionName The session name to create the receiver for.
+     * @return true if the receiver was created, or false if it already exists.
+     */
+    rav::id createReceiver (const std::string& sessionName) const;
+
+    /**
+     * Removes a receiver.
+     * @param receiverId The receiver to remove.
+     */
+    void removeReceiver (rav::id receiverId) const;
+
+    /**
+     * Sets the delay for a receiver.
+     * @param receiverId The receiver to set the delay for.
+     * @param delaySamples The delay in samples.
+     */
+    void setReceiverDelay (rav::id receiverId, uint32_t delaySamples) const;
+
+    /**
+     * Gets the packet statistics for a receiver.
+     * @param receiverId The receiver to get the packet statistics for.
+     * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
+     */
+    [[nodiscard]] std::optional<std::string> getSdpTextForReceiver (rav::id receiverId) const;
+
+    /**
+     * Gets the packet statistics for a receiver.
+     * @param receiverId The receiver to get the packet statistics for.
+     * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
+     */
+    [[nodiscard]] rav::rtp_stream_receiver::stream_stats getStatisticsForReceiver (rav::id receiverId) const;
+
+    /**
      * Adds a subscriber to the audio mixer.
      * @param subscriber The subscriber to add.
      * @return true if the subscriber was added, or false if it was already in the list.

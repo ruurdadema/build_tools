@@ -11,8 +11,7 @@
 #pragma once
 
 #include "application/ApplicationContext.hpp"
-#include "audio/AudioReceivers.hpp"
-#include "ravennakit/ravenna/ravenna_node.hpp"
+#include "models/AudioReceivers.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -52,7 +51,7 @@ private:
     class Row : public Component, public juce::Timer
     {
     public:
-        explicit Row (rav::ravenna_node& node, rav::id receiverId, const std::string& name);
+        explicit Row (AudioReceivers& audioReceivers, rav::id receiverId, const std::string& name);
 
         rav::id getId() const;
 
@@ -61,7 +60,7 @@ private:
         void resized() override;
 
     private:
-        rav::ravenna_node& node_;
+        AudioReceivers& audioReceivers_;
         juce::TextEditor delayEditor_;
         rav::id receiverId_;
         uint32_t delay_ { 0 };

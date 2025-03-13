@@ -10,19 +10,19 @@
 
 #pragma once
 
-#include "audio/AudioReceivers.hpp"
-#include "ravennakit/ravenna/ravenna_node.hpp"
+#include "models/AudioReceivers.hpp"
+#include "models/RavennaSessions.hpp"
 
-#include <juce_gui_basics/juce_gui_basics.h>
 #include <juce_audio_devices/juce_audio_devices.h>
+#include <juce_gui_basics/juce_gui_basics.h>
 
 class ApplicationContext
 {
 public:
     virtual ~ApplicationContext() = default;
-    virtual rav::ravenna_node& getRavennaNode() = 0;
     virtual void closeWindow(juce::Component* window) = 0;
     virtual void cloneWindow() = 0;
+    virtual RavennaSessions& getSessions() = 0;
     virtual AudioReceivers& getAudioReceivers() = 0;
     virtual juce::AudioDeviceManager& getAudioDeviceManager() = 0;
 };

@@ -52,12 +52,12 @@ void ReceiversContainer::onAudioReceiverUpdated (rav::id receiverId, const Audio
         {
             if (row->getId() == receiverId)
             {
-                row->update(*state);
+                row->update (*state);
                 return;
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_.getRavennaNode(), receiverId, state->sessionName));
+        auto* row = rows_.add (std::make_unique<Row> (context_.getAudioReceivers(), receiverId, state->sessionName));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
@@ -118,20 +118,16 @@ void ReceiversContainer::SdpViewer::paint (juce::Graphics& g)
     g.drawMultiLineText (sdpText_, b.getX(), b.getY() + 10, b.getWidth(), juce::Justification::topLeft);
 }
 
-ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId, const std::string& name) :
-    node_ (node),
+ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::id receiverId, const std::string& name) :
+    audioReceivers_ (audioReceivers),
     receiverId_ (receiverId)
 {
     stream_.streamName = name;
 
     delayEditor_.setInputRestrictions (10, "0123456789");
     delayEditor_.onReturnKey = [this] {
-        auto value = static_cast<uint32_t> (delayEditor_.getText().getIntValue());
-        auto work = [value] (rav::ravenna_receiver& receiver) {
-            receiver.set_delay (value);
-        };
-        node_.get_receiver (receiverId_, work).wait();
-        unfocusAllComponents();
+        const auto value = static_cast<uint32_t> (delayEditor_.getText().getIntValue());
+        audioReceivers_.setReceiverDelay (receiverId_, value);
     };
     delayEditor_.onEscapeKey = [this] {
         delayEditor_.setText (juce::String (delay_));
@@ -145,7 +141,7 @@ ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId,
     showSdpButton_.setButtonText ("Show SDP");
     showSdpButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     showSdpButton_.onClick = [this] {
-        auto result = node_.get_sdp_text_for_receiver (receiverId_).get();
+        auto result = audioReceivers_.getSdpTextForReceiver (receiverId_);
 
         auto content = std::make_unique<SdpViewer> (result ? std::move (*result) : "SDP text not available");
         content->setSize (400, 400);
@@ -167,7 +163,7 @@ ReceiversContainer::Row::Row (rav::ravenna_node& node, const rav::id receiverId,
     deleteButton_.setButtonText ("Delete");
     deleteButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::red);
     deleteButton_.onClick = [this] {
-        node_.remove_receiver (receiverId_).wait();
+        audioReceivers_.removeReceiver (receiverId_);
     };
     addAndMakeVisible (deleteButton_);
 
@@ -255,7 +251,7 @@ void ReceiversContainer::Row::update()
 {
     TRACY_ZONE_SCOPED;
 
-    const auto stats = node_.get_stats_for_receiver (receiverId_).get();
+    const auto stats = audioReceivers_.getStatisticsForReceiver (receiverId_);
 
     // Packet stats
     packet_stats_.dropped = "dropped: " + juce::String (stats.packet_stats.dropped);

@@ -15,7 +15,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class DiscoveredSessionsContainer : public juce::Component, public rav::ravenna_node::subscriber
+class DiscoveredSessionsContainer : public juce::Component, public RavennaSessions::Subscriber
 {
 public:
     explicit DiscoveredSessionsContainer (ApplicationContext& context);
@@ -26,9 +26,8 @@ public:
 
     void resizeBasedOnContent();
 
-    // rav::ravenna_node::subscriber overrides
-    void ravenna_session_discovered (const rav::dnssd::dnssd_browser::service_resolved& event) override;
-    void ravenna_session_removed (const rav::dnssd::dnssd_browser::service_removed& event) override;
+    // Sessions::Subscriber overrides
+    void onSessionUpdated (const std::string& sessionName, const RavennaSessions::SessionState* state) override;
 
 private:
     static constexpr int kRowHeight = 60;
@@ -39,11 +38,11 @@ private:
     class Row : public Component
     {
     public:
-        explicit Row (ApplicationContext& context, const rav::dnssd::service_description& serviceDescription);
+        explicit Row (ApplicationContext& context, const RavennaSessions::SessionState& session);
 
         juce::String getSessionName() const;
 
-        void update(const rav::dnssd::service_description& serviceDescription);
+        void update (const RavennaSessions::SessionState& sessionState);
         void resized() override;
         void paint (juce::Graphics& g) override;
 

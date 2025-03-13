@@ -90,18 +90,19 @@ void MainApplication::initialise (const juce::String& commandLine)
         }
     }
     ravennaNode_ = std::make_unique<rav::ravenna_node> (std::move (config));
-    audioMixer_ = std::make_unique<AudioReceivers> (*ravennaNode_);
+    sessions_ = std::make_unique<RavennaSessions> (*ravennaNode_);
+    audioReceivers_ = std::make_unique<AudioReceivers> (*ravennaNode_);
 
     juce::AudioDeviceManager::AudioDeviceSetup setup;
     setup.bufferSize = 32;
     audioDeviceManager_.initialise (1, 2, nullptr, false, {}, &setup);
-    audioDeviceManager_.addAudioCallback (audioMixer_.get());
+    audioDeviceManager_.addAudioCallback (audioReceivers_.get());
     addWindow();
 }
 
 void MainApplication::shutdown()
 {
-    audioDeviceManager_.removeAudioCallback (audioMixer_.get());
+    audioDeviceManager_.removeAudioCallback (audioReceivers_.get());
     mainWindows_.clear();
 }
 
@@ -127,11 +128,6 @@ void MainApplication::unhandledException (const std::exception* e, const juce::S
         nullptr);
 }
 
-rav::ravenna_node& MainApplication::getRavennaNode()
-{
-    return *ravennaNode_;
-}
-
 void MainApplication::cloneWindow()
 {
     addWindow();
@@ -149,6 +145,11 @@ void MainApplication::closeWindow (juce::Component* window)
     }
 }
 
+RavennaSessions& MainApplication::getSessions()
+{
+    return *sessions_;
+}
+
 juce::AudioDeviceManager& MainApplication::getAudioDeviceManager()
 {
     return audioDeviceManager_;
@@ -156,7 +157,7 @@ juce::AudioDeviceManager& MainApplication::getAudioDeviceManager()
 
 AudioReceivers& MainApplication::getAudioReceivers()
 {
-    return *audioMixer_;
+    return *audioReceivers_;
 }
 
 void MainApplication::addWindow()
