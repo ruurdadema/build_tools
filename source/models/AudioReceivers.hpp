@@ -157,6 +157,7 @@ private:
     std::vector<std::unique_ptr<Receiver>> receivers_;
     rav::audio_format targetFormat_;
     uint32_t maxNumFramesPerBlock_ {};
+    rav::audio_buffer<float> intermediateBuffer_{};
     rav::subscriber_list<Subscriber> subscribers_;
     rav::realtime_shared_object<RealtimeSharedContext> realtimeSharedContext_;
     MessageThreadExecutor executor_; // Keep last so that it's destroyed first

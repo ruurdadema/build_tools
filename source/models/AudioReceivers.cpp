@@ -126,15 +126,23 @@ void AudioReceivers::audioDeviceIOCallbackWithContext (
 
     outputBuffer.clear();
 
+    const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
+                                  .with_num_frames (static_cast<size_t> (numSamples));
+
     const auto lock = realtimeSharedContext_.lock_realtime();
 
     for (auto* receiver : lock->receivers)
-        receiver->processBlock (outputBuffer);
+    {
+        receiver->processBlock (intermediateBuffer);
+        outputBuffer.add (intermediateBuffer);
+    }
 }
 
 void AudioReceivers::audioDeviceAboutToStart (juce::AudioIODevice* device)
 {
     TRACY_ZONE_SCOPED;
+
+    RAV_ASSERT (device != nullptr, "Device expected to be not null");
 
     targetFormat_ = rav::audio_format {
         rav::audio_format::byte_order::le,
@@ -145,6 +153,10 @@ void AudioReceivers::audioDeviceAboutToStart (juce::AudioIODevice* device)
     };
 
     maxNumFramesPerBlock_ = static_cast<uint32_t> (device->getCurrentBufferSizeSamples());
+
+    intermediateBuffer_.resize (
+        static_cast<size_t> (device->getActiveOutputChannels().countNumberOfSetBits()),
+        maxNumFramesPerBlock_);
 
     for (const auto& stream : receivers_)
         stream->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
@@ -218,7 +230,7 @@ void AudioReceivers::Receiver::processBlock (const rav::audio_buffer_view<float>
 
     if (!owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, {}).has_value())
     {
-        RAV_WARNING ("Failed to read data");
+        outputBuffer.clear(); // Receiver not (yet) available, make sure we don't output garbage
     }
 }
 
