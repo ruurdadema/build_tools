@@ -129,7 +129,7 @@ private:
         void prepareInput (const rav::audio_format& format);
         void prepareOutput (const rav::audio_format& format, uint32_t maxNumFramesPerBlock);
 
-        void processBlock (const rav::audio_buffer_view<float>& outputBuffer) const;
+        void processBlock (const rav::audio_buffer_view<float>& outputBuffer);
 
         // rav::rtp_stream_receiver::subscriber overrides
         void rtp_stream_receiver_updated (const rav::rtp_stream_receiver::stream_updated_event& event) override;
@@ -142,15 +142,25 @@ private:
         AudioReceivers& owner_;
         rav::id receiverId_;
         ReceiverState state_;
+        rav::realtime_shared_object<ReceiverState> realtimeSharedState_;
         MessageThreadExecutor executor_;
+
+        void updateRealtimeSharedState();
+    };
+
+    struct RealtimeSharedContext
+    {
+        std::vector<Receiver*> receivers;
     };
 
     rav::ravenna_node& node_;
     std::vector<std::unique_ptr<Receiver>> receivers_;
-    MessageThreadExecutor executor_;
     rav::audio_format targetFormat_;
     uint32_t maxNumFramesPerBlock_ {};
     rav::subscriber_list<Subscriber> subscribers_;
+    rav::realtime_shared_object<RealtimeSharedContext> realtimeSharedContext_;
+    MessageThreadExecutor executor_; // Keep last so that it's destroyed first
 
     [[nodiscard]] Receiver* findRxStream (rav::id receiverId) const;
+    void updateRealtimeSharedContext();
 };

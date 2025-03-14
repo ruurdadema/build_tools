@@ -77,6 +77,7 @@ void AudioReceivers::ravenna_receiver_added (const rav::ravenna_receiver& receiv
         const auto& it = receivers_.emplace_back (std::make_unique<Receiver> (*this, streamId, sessionName));
         if (targetFormat_.is_valid() && maxNumFramesPerBlock_ > 0)
             it->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
+        updateRealtimeSharedContext();
         for (const auto& subscriber : subscribers_)
             subscriber->onAudioReceiverUpdated (streamId, &it->getState());
     });
@@ -92,7 +93,9 @@ void AudioReceivers::ravenna_receiver_removed (const rav::id receiverId)
         {
             if ((*it)->getReceiverId() == receiverId)
             {
+                std::unique_ptr<Receiver> tmp = std::move (*it); // Keep alive until after the context is updated
                 receivers_.erase (it);
+                updateRealtimeSharedContext();
                 break;
             }
         }
@@ -113,11 +116,6 @@ void AudioReceivers::audioDeviceIOCallbackWithContext (
 
     // TODO: Synchronize with main thread
 
-    if (context.hostTimeNs)
-    {
-        TRACY_PLOT ("Host time", static_cast<double> (*context.hostTimeNs));
-    }
-
     RAV_ASSERT (numInputChannels >= 0, "Num input channels must be >= 0");
     RAV_ASSERT (numOutputChannels >= 0, "Num output channels must be >= 0");
     RAV_ASSERT (numSamples >= 0, "Num samples must be >= 0");
@@ -128,8 +126,10 @@ void AudioReceivers::audioDeviceIOCallbackWithContext (
 
     outputBuffer.clear();
 
-    for (const auto& stream : receivers_)
-        stream->processBlock (outputBuffer);
+    const auto lock = realtimeSharedContext_.lock_realtime();
+
+    for (auto* receiver : lock->receivers)
+        receiver->processBlock (outputBuffer);
 }
 
 void AudioReceivers::audioDeviceAboutToStart (juce::AudioIODevice* device)
@@ -189,6 +189,7 @@ void AudioReceivers::Receiver::prepareInput (const rav::audio_format& format)
     JUCE_ASSERT_MESSAGE_THREAD;
     RAV_ASSERT (format.is_valid(), "Invalid format");
     state_.inputFormat = format;
+    updateRealtimeSharedState();
 }
 
 void AudioReceivers::Receiver::prepareOutput (const rav::audio_format& format, const uint32_t maxNumFramesPerBlock)
@@ -197,20 +198,21 @@ void AudioReceivers::Receiver::prepareOutput (const rav::audio_format& format, c
     RAV_ASSERT (format.is_valid(), "Invalid format");
     RAV_ASSERT (maxNumFramesPerBlock > 0, "Num samples must be > 0");
     state_.outputFormat = format;
+    updateRealtimeSharedState();
 }
 
-void AudioReceivers::Receiver::processBlock (const rav::audio_buffer_view<float>& outputBuffer) const
+void AudioReceivers::Receiver::processBlock (const rav::audio_buffer_view<float>& outputBuffer)
 {
     TRACY_ZONE_SCOPED;
 
-    // TODO: Synchronize with main thread
+    const auto state = realtimeSharedState_.lock_realtime();
 
-    if (!state_.inputFormat.is_valid())
+    if (!state->inputFormat.is_valid())
         return;
 
-    if (state_.inputFormat.sample_rate != state_.outputFormat.sample_rate)
+    if (state->inputFormat.sample_rate != state->outputFormat.sample_rate)
     {
-        RAV_WARNING ("Sample rate mismatch");
+        // Sample rate mismatch, can't process
         return;
     }
 
@@ -246,6 +248,15 @@ void AudioReceivers::Receiver::on_data_ready ([[maybe_unused]] const rav::wrappi
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 }
 
+void AudioReceivers::Receiver::updateRealtimeSharedState()
+{
+    auto newState = std::make_unique<ReceiverState> (state_);
+    if (!realtimeSharedState_.update (std::move (newState)))
+    {
+        RAV_ERROR ("Failed to update realtime shared state");
+    }
+}
+
 AudioReceivers::Receiver* AudioReceivers::findRxStream (const rav::id receiverId) const
 {
     JUCE_ASSERT_MESSAGE_THREAD;
@@ -253,4 +264,15 @@ AudioReceivers::Receiver* AudioReceivers::findRxStream (const rav::id receiverId
         if (stream->getReceiverId() == receiverId)
             return stream.get();
     return nullptr;
+}
+
+void AudioReceivers::updateRealtimeSharedContext()
+{
+    auto newContext = std::make_unique<RealtimeSharedContext>();
+    for (const auto& stream : receivers_)
+        newContext->receivers.push_back (stream.get());
+    if (!realtimeSharedContext_.update (std::move (newContext)))
+    {
+        RAV_ERROR ("Failed to update realtime shared context");
+    }
 }
