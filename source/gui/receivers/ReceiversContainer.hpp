@@ -37,7 +37,7 @@ private:
     class SdpViewer : public juce::Component
     {
     public:
-        explicit SdpViewer(const std::string& sdpText);
+        explicit SdpViewer (const std::string& sdpText);
         ~SdpViewer() override;
         void resized() override;
         void paint (juce::Graphics& g) override;
@@ -74,6 +74,7 @@ private:
             juce::String packetTimeFrames { "..." };
             juce::String address { "..." };
             juce::String state { "..." };
+            juce::String warning {};
         } stream_;
 
         struct

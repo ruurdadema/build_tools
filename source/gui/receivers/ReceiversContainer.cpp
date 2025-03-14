@@ -189,6 +189,12 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
     stream_.packetTimeFrames = "ptime: " + juce::String (state.packetTimeFrames);
     stream_.address = state.session.connection_address.to_string();
     stream_.state = juce::String ("State: ") + rav::rtp_stream_receiver::to_string (state.state);
+
+    if (state.inputFormat.sample_rate != state.outputFormat.sample_rate)
+        stream_.warning = "Warning: sample rate mismatch";
+    else
+        stream_.warning.clear();
+
     delay_ = state.delaySamples;
     if (!delayEditor_.hasKeyboardFocus (true))
         delayEditor_.setText (juce::String (state.delaySamples));
@@ -204,7 +210,7 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     g.fillRoundedRectangle (getLocalBounds().toFloat(), 5.0f);
 
     auto b = getLocalBounds().reduced (kMargin + 5, kMargin);
-    auto column1 = b.removeFromLeft (200);
+    auto column1 = b.removeFromLeft (250);
     auto column2 = b.removeFromLeft (200);
     auto column3 = b.removeFromLeft (200);
     auto column4 = b.removeFromLeft (200);
@@ -221,6 +227,10 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     g.drawText (stream_.packetTimeFrames, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (stream_.address, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (stream_.state, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+
+    g.setColour(Constants::Colours::warning);
+    g.drawText (stream_.warning, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.setColour (Constants::Colours::text);
 
     g.drawText (packet_stats_.dropped, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (packet_stats_.duplicates, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
@@ -240,7 +250,7 @@ void ReceiversContainer::Row::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
     b.removeFromTop (18);
-    delayEditor_.setBounds (b.withLeft (718).withHeight (24).withWidth (60));
+    delayEditor_.setBounds (b.withLeft (768).withHeight (24).withWidth (60));
 
     auto bottom = b.removeFromBottom (27);
     deleteButton_.setBounds (bottom.removeFromRight (65));
