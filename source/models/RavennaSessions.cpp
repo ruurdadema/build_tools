@@ -12,12 +12,12 @@
 
 RavennaSessions::RavennaSessions (rav::ravenna_node& ravennaNode) : node_ (ravennaNode)
 {
-    node_.add_subscriber (this).wait();
+    node_.subscribe (this).wait();
 }
 
 RavennaSessions::~RavennaSessions()
 {
-    node_.remove_subscriber (this).wait();
+    node_.unsubscribe (this).wait();
 }
 
 bool RavennaSessions::addSubscriber (Subscriber* subscriber)

@@ -16,12 +16,12 @@
 
 AudioReceivers::AudioReceivers (rav::ravenna_node& node) : node_ (node)
 {
-    node_.add_subscriber (this).wait();
+    node_.subscribe (this).wait();
 }
 
 AudioReceivers::~AudioReceivers()
 {
-    node_.remove_subscriber (this).wait();
+    node_.unsubscribe (this).wait();
 }
 
 rav::id AudioReceivers::createReceiver (const std::string& sessionName) const
@@ -163,13 +163,13 @@ AudioReceivers::Receiver::Receiver (AudioReceivers& owner, const rav::id receive
     state_.sessionName = std::move (sessionName);
 
     JUCE_ASSERT_MESSAGE_THREAD;
-    owner_.node_.add_receiver_subscriber (receiverId_, this).wait();
+    owner_.node_.subscribe_to_receiver (receiverId_, this).wait();
 }
 
 AudioReceivers::Receiver::~Receiver()
 {
     JUCE_ASSERT_MESSAGE_THREAD;
-    owner_.node_.remove_receiver_subscriber (receiverId_, this).wait();
+    owner_.node_.unsubscribe_from_receiver (receiverId_, this).wait();
 }
 
 rav::id AudioReceivers::Receiver::getReceiverId() const
