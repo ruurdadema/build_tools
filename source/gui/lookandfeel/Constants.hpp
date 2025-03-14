@@ -21,9 +21,11 @@ static const juce::Colour green { 0xFF27B559 };
 static const juce::Colour red { 0xFFFE5C5D };
 static const juce::Colour blue { 0xFF27BAFD };
 static const juce::Colour grey { 0xFF6B6B6B };
+static const juce::Colour yellow { 0xFFFFBE12 };
 
 static const juce::Colour text { white };
 static const juce::Colour rowBackground { 0xFF242428 };
 static const juce::Colour windowBackground { dark };
 static const juce::Colour buttonSuccess { green };
+static const juce::Colour warning { yellow };
 } // namespace Constants::Colours

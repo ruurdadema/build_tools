@@ -19,10 +19,15 @@
 class MessageThreadExecutor : juce::AsyncUpdater
 {
 public:
+    ~MessageThreadExecutor() override
+    {
+        cancelPendingUpdate();
+    }
+
     /**
      * Schedules given function to be called from the message thread using the JUCE message manager. The function will
-     * return immediatly and the work will be executed some time in the future. It's safe to call this function from any
-     * thread.
+     * return immediately and the work will be executed some time in the future. It's safe to call this function from
+     * any thread.
      * @param work The work to execute.
      */
     void callAsync (std::function<void()>&& work)

@@ -11,12 +11,12 @@
 #pragma once
 
 #include "application/ApplicationContext.hpp"
-#include "ravennakit/ravenna/ravenna_node.hpp"
+#include "models/AudioReceivers.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class ReceiversContainer : public juce::Component, public rav::ravenna_node::subscriber
+class ReceiversContainer : public juce::Component, public AudioReceivers::Subscriber
 {
 public:
     explicit ReceiversContainer (ApplicationContext& context);
@@ -26,9 +26,7 @@ public:
 
     void resizeToFitContent();
 
-    // rav::ravenna_node::subscriber overrides
-    void ravenna_receiver_added (const rav::ravenna_receiver& receiver) override;
-    void ravenna_receiver_removed (rav::id receiver_id) override;
+    void onAudioReceiverUpdated (rav::id receiverId, const AudioReceivers::ReceiverState* state) override;
 
 private:
     static constexpr int kRowHeight = 138;
@@ -39,7 +37,7 @@ private:
     class SdpViewer : public juce::Component
     {
     public:
-        explicit SdpViewer(const std::string& sdpText);
+        explicit SdpViewer (const std::string& sdpText);
         ~SdpViewer() override;
         void resized() override;
         void paint (juce::Graphics& g) override;
@@ -50,21 +48,19 @@ private:
         juce::TextButton copyButton_ { "Copy" };
     };
 
-    class Row : public Component, public juce::Timer, public rav::rtp_stream_receiver::subscriber
+    class Row : public Component, public juce::Timer
     {
     public:
-        explicit Row (rav::ravenna_node& node, rav::id receiverId, const std::string& name);
-        ~Row() override;
+        explicit Row (AudioReceivers& audioReceivers, rav::id receiverId, const std::string& name);
 
         rav::id getId() const;
 
+        void update (const AudioReceivers::ReceiverState& state);
         void paint (juce::Graphics& g) override;
         void resized() override;
 
-        void stream_updated (const rav::rtp_stream_receiver::stream_updated_event& event) override;
-
     private:
-        rav::ravenna_node& node_;
+        AudioReceivers& audioReceivers_;
         juce::TextEditor delayEditor_;
         rav::id receiverId_;
         uint32_t delay_ { 0 };
@@ -78,6 +74,7 @@ private:
             juce::String packetTimeFrames { "..." };
             juce::String address { "..." };
             juce::String state { "..." };
+            juce::String warning {};
         } stream_;
 
         struct
