@@ -58,7 +58,7 @@ public:
      * @param sessionName The session name to create the receiver for.
      * @return true if the receiver was created, or false if it already exists.
      */
-    rav::id createReceiver (const std::string& sessionName) const;
+    [[nodiscard]] rav::id createReceiver (const std::string& sessionName) const;
 
     /**
      * Removes a receiver.
@@ -92,14 +92,14 @@ public:
      * @param subscriber The subscriber to add.
      * @return true if the subscriber was added, or false if it was already in the list.
      */
-    bool addSubscriber (Subscriber* subscriber);
+    [[nodiscard]] bool addSubscriber (Subscriber* subscriber);
 
     /**
      * Removes a subscriber from the audio mixer.
      * @param subscriber The subscriber to remove.
      * @return true if the subscriber was removed, or false if it was not in the list.
      */
-    bool removeSubscriber (Subscriber* subscriber);
+    [[nodiscard]] bool removeSubscriber (Subscriber* subscriber);
 
     // rav::ravenna_node::subscriber overrides
     void ravenna_receiver_added (const rav::ravenna_receiver& receiver) override;

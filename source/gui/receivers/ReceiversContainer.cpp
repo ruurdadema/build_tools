@@ -19,12 +19,18 @@
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
 {
-    context_.getAudioReceivers().addSubscriber (this);
+    if (!context_.getAudioReceivers().addSubscriber (this))
+    {
+        RAV_ERROR ("Failed to add subscriber");
+    }
 }
 
 ReceiversContainer::~ReceiversContainer()
 {
-    context_.getAudioReceivers().removeSubscriber (this);
+    if (!context_.getAudioReceivers().removeSubscriber (this))
+    {
+        RAV_ERROR ("Failed to remove subscriber");
+    }
 }
 
 void ReceiversContainer::resized()
