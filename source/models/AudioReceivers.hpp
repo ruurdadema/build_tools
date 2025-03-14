@@ -117,7 +117,7 @@ public:
     void audioDeviceStopped() override;
 
 private:
-    class Receiver : public rav::rtp_stream_receiver::data_callback, public rav::rtp_stream_receiver::subscriber
+    class Receiver : public rav::rtp_stream_receiver::subscriber
     {
     public:
         explicit Receiver (AudioReceivers& owner, rav::id receiverId, std::string sessionName);

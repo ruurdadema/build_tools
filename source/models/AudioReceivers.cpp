@@ -164,13 +164,11 @@ AudioReceivers::Receiver::Receiver (AudioReceivers& owner, const rav::id receive
 
     JUCE_ASSERT_MESSAGE_THREAD;
     owner_.node_.add_receiver_subscriber (receiverId_, this).wait();
-    owner_.node_.add_receiver_data_callback (receiverId_, this).wait();
 }
 
 AudioReceivers::Receiver::~Receiver()
 {
     JUCE_ASSERT_MESSAGE_THREAD;
-    owner_.node_.remove_receiver_data_callback (receiverId_, this).wait();
     owner_.node_.remove_receiver_subscriber (receiverId_, this).wait();
 }
 
