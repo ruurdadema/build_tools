@@ -10,7 +10,7 @@
 
 #include "RavennaSessions.hpp"
 
-RavennaSessions::RavennaSessions (rav::ravenna_node& ravennaNode) : node_ (ravennaNode)
+RavennaSessions::RavennaSessions (rav::RavennaNode& ravennaNode) : node_ (ravennaNode)
 {
     node_.subscribe (this).wait();
 }
@@ -38,7 +38,7 @@ bool RavennaSessions::removeSubscriber (Subscriber* subscriber)
     return subscribers_.remove (subscriber);
 }
 
-void RavennaSessions::ravenna_session_discovered (const rav::dnssd::dnssd_browser::service_resolved& event)
+void RavennaSessions::ravenna_session_discovered (const rav::dnssd::Browser::ServiceResolved& event)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
     executor_.callAsync ([this, desc = event.description] {
@@ -56,7 +56,7 @@ void RavennaSessions::ravenna_session_discovered (const rav::dnssd::dnssd_browse
     });
 }
 
-void RavennaSessions::ravenna_session_removed (const rav::dnssd::dnssd_browser::service_removed& event)
+void RavennaSessions::ravenna_session_removed (const rav::dnssd::Browser::ServiceRemoved& event)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
     executor_.callAsync ([this, desc = event.description] {

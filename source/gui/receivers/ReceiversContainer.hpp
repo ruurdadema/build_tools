@@ -26,7 +26,7 @@ public:
 
     void resizeToFitContent();
 
-    void onAudioReceiverUpdated (rav::id receiverId, const AudioReceivers::ReceiverState* state) override;
+    void onAudioReceiverUpdated (rav::Id receiverId, const AudioReceivers::ReceiverState* state) override;
 
 private:
     static constexpr int kRowHeight = 138;
@@ -51,9 +51,9 @@ private:
     class Row : public Component, public juce::Timer
     {
     public:
-        explicit Row (AudioReceivers& audioReceivers, rav::id receiverId, const std::string& name);
+        explicit Row (AudioReceivers& audioReceivers, rav::Id receiverId, const std::string& name);
 
-        rav::id getId() const;
+        rav::Id getId() const;
 
         void update (const AudioReceivers::ReceiverState& state);
         void paint (juce::Graphics& g) override;
@@ -62,7 +62,7 @@ private:
     private:
         AudioReceivers& audioReceivers_;
         juce::TextEditor delayEditor_;
-        rav::id receiverId_;
+        rav::Id receiverId_;
         uint32_t delay_ { 0 };
         juce::TextButton showSdpButton_ { "" };
         juce::TextButton deleteButton_ { "" };

@@ -21,18 +21,18 @@
 /**
  * This is a high level class connecting an audio device to a ravenna_node.
  */
-class AudioReceivers : public rav::ravenna_node::subscriber, public juce::AudioIODeviceCallback
+class AudioReceivers : public rav::RavennaNode::Subscriber, public juce::AudioIODeviceCallback
 {
 public:
     struct ReceiverState
     {
         std::string sessionName;
-        rav::audio_format inputFormat;
-        rav::audio_format outputFormat;
-        rav::rtp::rtp_session session;
+        rav::AudioFormat inputFormat;
+        rav::AudioFormat outputFormat;
+        rav::rtp::Session session;
         uint16_t packetTimeFrames = 0;
         uint32_t delaySamples = 0;
-        rav::rtp::rtp_stream_receiver::receiver_state state {};
+        rav::rtp::StreamReceiver::ReceiverState state {};
     };
 
     class Subscriber
@@ -40,7 +40,7 @@ public:
     public:
         virtual ~Subscriber() = default;
         virtual void onAudioReceiverUpdated (
-            [[maybe_unused]] rav::id streamId,
+            [[maybe_unused]] rav::Id streamId,
             [[maybe_unused]] const ReceiverState* state)
         {
         }
@@ -50,7 +50,7 @@ public:
      * Constructor.
      * @param node The ravenna_node to connect to.
      */
-    explicit AudioReceivers (rav::ravenna_node& node);
+    explicit AudioReceivers (rav::RavennaNode& node);
     ~AudioReceivers() override;
 
     /**
@@ -58,34 +58,34 @@ public:
      * @param sessionName The session name to create the receiver for.
      * @return true if the receiver was created, or false if it already exists.
      */
-    [[nodiscard]] rav::id createReceiver (const std::string& sessionName) const;
+    [[nodiscard]] rav::Id createReceiver (const std::string& sessionName) const;
 
     /**
      * Removes a receiver.
      * @param receiverId The receiver to remove.
      */
-    void removeReceiver (rav::id receiverId) const;
+    void removeReceiver (rav::Id receiverId) const;
 
     /**
      * Sets the delay for a receiver.
      * @param receiverId The receiver to set the delay for.
      * @param delaySamples The delay in samples.
      */
-    void setReceiverDelay (rav::id receiverId, uint32_t delaySamples) const;
+    void setReceiverDelay (rav::Id receiverId, uint32_t delaySamples) const;
 
     /**
      * Gets the packet statistics for a receiver.
      * @param receiverId The receiver to get the packet statistics for.
      * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
      */
-    [[nodiscard]] std::optional<std::string> getSdpTextForReceiver (rav::id receiverId) const;
+    [[nodiscard]] std::optional<std::string> getSdpTextForReceiver (rav::Id receiverId) const;
 
     /**
      * Gets the packet statistics for a receiver.
      * @param receiverId The receiver to get the packet statistics for.
      * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
      */
-    [[nodiscard]] rav::rtp::rtp_stream_receiver::stream_stats getStatisticsForReceiver (rav::id receiverId) const;
+    [[nodiscard]] rav::rtp::StreamReceiver::StreamStats getStatisticsForReceiver (rav::Id receiverId) const;
 
     /**
      * Adds a subscriber to the audio mixer.
@@ -102,8 +102,8 @@ public:
     [[nodiscard]] bool removeSubscriber (Subscriber* subscriber);
 
     // rav::ravenna_node::subscriber overrides
-    void ravenna_receiver_added (const rav::ravenna_receiver& receiver) override;
-    void ravenna_receiver_removed (rav::id receiverId) override;
+    void ravenna_receiver_added (const rav::RavennaReceiver& receiver) override;
+    void ravenna_receiver_removed (rav::Id receiverId) override;
 
     // public juce::AudioIODeviceCallback overrides
     void audioDeviceIOCallbackWithContext (
@@ -117,32 +117,32 @@ public:
     void audioDeviceStopped() override;
 
 private:
-    class Receiver : public rav::rtp::rtp_stream_receiver::subscriber
+    class Receiver : public rav::rtp::StreamReceiver::Subscriber
     {
     public:
-        explicit Receiver (AudioReceivers& owner, rav::id receiverId, std::string sessionName);
+        explicit Receiver (AudioReceivers& owner, rav::Id receiverId, std::string sessionName);
         ~Receiver() override;
 
-        [[nodiscard]] rav::id getReceiverId() const;
+        [[nodiscard]] rav::Id getReceiverId() const;
         [[nodiscard]] const ReceiverState& getState() const;
 
-        void prepareInput (const rav::audio_format& format);
-        void prepareOutput (const rav::audio_format& format, uint32_t maxNumFramesPerBlock);
+        void prepareInput (const rav::AudioFormat& format);
+        void prepareOutput (const rav::AudioFormat& format, uint32_t maxNumFramesPerBlock);
 
-        void processBlock (const rav::audio_buffer_view<float>& outputBuffer);
+        void processBlock (const rav::AudioBufferView<float>& outputBuffer);
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void rtp_stream_receiver_updated (const rav::rtp::rtp_stream_receiver::stream_updated_event& event) override;
+        void rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event) override;
 
         // rav::rtp_stream_receiver::data_callback overrides
-        void on_data_received (rav::wrapping_uint32 timestamp) override;
-        void on_data_ready (rav::wrapping_uint32 timestamp) override;
+        void on_data_received (rav::WrappingUint32 timestamp) override;
+        void on_data_ready (rav::WrappingUint32 timestamp) override;
 
     private:
         AudioReceivers& owner_;
-        rav::id receiverId_;
+        rav::Id receiverId_;
         ReceiverState state_;
-        rav::realtime_shared_object<ReceiverState> realtimeSharedState_;
+        rav::RealtimeSharedObject<ReceiverState> realtimeSharedState_;
         MessageThreadExecutor executor_;
 
         void updateRealtimeSharedState();
@@ -153,15 +153,15 @@ private:
         std::vector<Receiver*> receivers;
     };
 
-    rav::ravenna_node& node_;
+    rav::RavennaNode& node_;
     std::vector<std::unique_ptr<Receiver>> receivers_;
-    rav::audio_format targetFormat_;
+    rav::AudioFormat targetFormat_;
     uint32_t maxNumFramesPerBlock_ {};
-    rav::audio_buffer<float> intermediateBuffer_{};
-    rav::subscriber_list<Subscriber> subscribers_;
-    rav::realtime_shared_object<RealtimeSharedContext> realtimeSharedContext_;
+    rav::AudioBuffer<float> intermediateBuffer_{};
+    rav::SubscriberList<Subscriber> subscribers_;
+    rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
     MessageThreadExecutor executor_; // Keep last so that it's destroyed first
 
-    [[nodiscard]] Receiver* findRxStream (rav::id receiverId) const;
+    [[nodiscard]] Receiver* findRxStream (rav::Id receiverId) const;
     void updateRealtimeSharedContext();
 };

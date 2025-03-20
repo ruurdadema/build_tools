@@ -48,8 +48,8 @@ private:
 } // namespace
 MainApplication::MainApplication()
 {
-    rav::system::do_system_checks();
-    rav::log::set_level_from_env();
+    rav::do_system_checks();
+    rav::set_log_level_from_env();
 }
 
 const juce::String MainApplication::getApplicationName()
@@ -74,7 +74,7 @@ void MainApplication::initialise (const juce::String& commandLine)
     app.add_option ("--interface-addr", interfaceAddress, "The interface address");
     app.parse (commandLine.toStdString(), false);
 
-    rav::rtp::rtp_receiver::configuration config;
+    rav::rtp::Receiver::Configuration config;
     if (!interfaceAddress.empty())
     {
         asio::error_code ec;
@@ -89,7 +89,7 @@ void MainApplication::initialise (const juce::String& commandLine)
                 nullptr);
         }
     }
-    ravennaNode_ = std::make_unique<rav::ravenna_node> (std::move (config));
+    ravennaNode_ = std::make_unique<rav::RavennaNode> (std::move (config));
     sessions_ = std::make_unique<RavennaSessions> (*ravennaNode_);
     audioReceivers_ = std::make_unique<AudioReceivers> (*ravennaNode_);
 

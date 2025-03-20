@@ -48,7 +48,7 @@ void ReceiversContainer::resizeToFitContent()
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
 }
 
-void ReceiversContainer::onAudioReceiverUpdated (rav::id receiverId, const AudioReceivers::ReceiverState* state)
+void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const AudioReceivers::ReceiverState* state)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
 
@@ -124,7 +124,7 @@ void ReceiversContainer::SdpViewer::paint (juce::Graphics& g)
     g.drawMultiLineText (sdpText_, b.getX(), b.getY() + 10, b.getWidth(), juce::Justification::topLeft);
 }
 
-ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::id receiverId, const std::string& name) :
+ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id receiverId, const std::string& name) :
     audioReceivers_ (audioReceivers),
     receiverId_ (receiverId)
 {
@@ -177,7 +177,7 @@ ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::id rece
     startTimer (1000);
 }
 
-rav::id ReceiversContainer::Row::getId() const
+rav::Id ReceiversContainer::Row::getId() const
 {
     return receiverId_;
 }
@@ -188,7 +188,7 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
     stream_.audioFormat = state.inputFormat.to_string();
     stream_.packetTimeFrames = "ptime: " + juce::String (state.packetTimeFrames);
     stream_.address = state.session.connection_address.to_string();
-    stream_.state = juce::String ("State: ") + rav::rtp::rtp_stream_receiver::to_string (state.state);
+    stream_.state = juce::String ("State: ") + rav::rtp::StreamReceiver::to_string (state.state);
 
     if (state.inputFormat.sample_rate != state.outputFormat.sample_rate)
         stream_.warning = "Warning: sample rate mismatch";

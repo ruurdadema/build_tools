@@ -45,7 +45,7 @@ public:
 
 private:
     juce::AudioDeviceManager audioDeviceManager_;
-    std::unique_ptr<rav::ravenna_node> ravennaNode_;
+    std::unique_ptr<rav::RavennaNode> ravennaNode_;
     std::unique_ptr<RavennaSessions> sessions_;
     std::unique_ptr<AudioReceivers> audioReceivers_;
     std::vector<std::unique_ptr<juce::ResizableWindow>> mainWindows_;

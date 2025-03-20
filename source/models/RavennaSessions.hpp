@@ -13,7 +13,7 @@
 #include "ravennakit/ravenna/ravenna_node.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
-class RavennaSessions : public rav::ravenna_node::subscriber
+class RavennaSessions : public rav::RavennaNode::Subscriber
 {
 public:
     struct SessionState
@@ -29,19 +29,19 @@ public:
         virtual void onSessionUpdated ([[maybe_unused]] const std::string& sessionName, [[maybe_unused]] const SessionState* state) {}
     };
 
-    explicit RavennaSessions (rav::ravenna_node& ravennaNode);
+    explicit RavennaSessions (rav::RavennaNode& ravennaNode);
     ~RavennaSessions() override;
 
     bool addSubscriber (Subscriber* subscriber);
     bool removeSubscriber (Subscriber* subscriber);
 
     // rav::ravenna_node::subscriber overrides
-    void ravenna_session_discovered (const rav::dnssd::dnssd_browser::service_resolved& event) override;
-    void ravenna_session_removed (const rav::dnssd::dnssd_browser::service_removed& event) override;
+    void ravenna_session_discovered (const rav::dnssd::Browser::ServiceResolved& event) override;
+    void ravenna_session_removed (const rav::dnssd::Browser::ServiceRemoved& event) override;
 
 private:
-    rav::ravenna_node& node_;
-    rav::subscriber_list<Subscriber> subscribers_;
+    rav::RavennaNode& node_;
+    rav::SubscriberList<Subscriber> subscribers_;
     std::vector<SessionState> sessions_;
     MessageThreadExecutor executor_;
 
