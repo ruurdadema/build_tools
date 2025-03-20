@@ -74,7 +74,7 @@ void MainApplication::initialise (const juce::String& commandLine)
     app.add_option ("--interface-addr", interfaceAddress, "The interface address");
     app.parse (commandLine.toStdString(), false);
 
-    rav::rtp_receiver::configuration config;
+    rav::rtp::rtp_receiver::configuration config;
     if (!interfaceAddress.empty())
     {
         asio::error_code ec;

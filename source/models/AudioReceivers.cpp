@@ -47,7 +47,7 @@ std::optional<std::string> AudioReceivers::getSdpTextForReceiver (const rav::id 
     return node_.get_sdp_text_for_receiver (receiverId).get();
 }
 
-rav::rtp_stream_receiver::stream_stats AudioReceivers::getStatisticsForReceiver (const rav::id receiverId) const
+rav::rtp::rtp_stream_receiver::stream_stats AudioReceivers::getStatisticsForReceiver (const rav::id receiverId) const
 {
     return node_.get_stats_for_receiver (receiverId).get();
 }
@@ -234,7 +234,7 @@ void AudioReceivers::Receiver::processBlock (const rav::audio_buffer_view<float>
     }
 }
 
-void AudioReceivers::Receiver::rtp_stream_receiver_updated (const rav::rtp_stream_receiver::stream_updated_event& event)
+void AudioReceivers::Receiver::rtp_stream_receiver_updated (const rav::rtp::rtp_stream_receiver::stream_updated_event& event)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 

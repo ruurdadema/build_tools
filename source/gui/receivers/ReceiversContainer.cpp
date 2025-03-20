@@ -188,7 +188,7 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
     stream_.audioFormat = state.inputFormat.to_string();
     stream_.packetTimeFrames = "ptime: " + juce::String (state.packetTimeFrames);
     stream_.address = state.session.connection_address.to_string();
-    stream_.state = juce::String ("State: ") + rav::rtp_stream_receiver::to_string (state.state);
+    stream_.state = juce::String ("State: ") + rav::rtp::rtp_stream_receiver::to_string (state.state);
 
     if (state.inputFormat.sample_rate != state.outputFormat.sample_rate)
         stream_.warning = "Warning: sample rate mismatch";

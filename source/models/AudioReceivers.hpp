@@ -29,10 +29,10 @@ public:
         std::string sessionName;
         rav::audio_format inputFormat;
         rav::audio_format outputFormat;
-        rav::rtp_session session;
+        rav::rtp::rtp_session session;
         uint16_t packetTimeFrames = 0;
         uint32_t delaySamples = 0;
-        rav::rtp_stream_receiver::receiver_state state {};
+        rav::rtp::rtp_stream_receiver::receiver_state state {};
     };
 
     class Subscriber
@@ -85,7 +85,7 @@ public:
      * @param receiverId The receiver to get the packet statistics for.
      * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
      */
-    [[nodiscard]] rav::rtp_stream_receiver::stream_stats getStatisticsForReceiver (rav::id receiverId) const;
+    [[nodiscard]] rav::rtp::rtp_stream_receiver::stream_stats getStatisticsForReceiver (rav::id receiverId) const;
 
     /**
      * Adds a subscriber to the audio mixer.
@@ -117,7 +117,7 @@ public:
     void audioDeviceStopped() override;
 
 private:
-    class Receiver : public rav::rtp_stream_receiver::subscriber
+    class Receiver : public rav::rtp::rtp_stream_receiver::subscriber
     {
     public:
         explicit Receiver (AudioReceivers& owner, rav::id receiverId, std::string sessionName);
@@ -132,7 +132,7 @@ private:
         void processBlock (const rav::audio_buffer_view<float>& outputBuffer);
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void rtp_stream_receiver_updated (const rav::rtp_stream_receiver::stream_updated_event& event) override;
+        void rtp_stream_receiver_updated (const rav::rtp::rtp_stream_receiver::stream_updated_event& event) override;
 
         // rav::rtp_stream_receiver::data_callback overrides
         void on_data_received (rav::wrapping_uint32 timestamp) override;
