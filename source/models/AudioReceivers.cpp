@@ -52,18 +52,18 @@ rav::rtp::StreamReceiver::StreamStats AudioReceivers::getStatisticsForReceiver (
     return node_.get_stats_for_receiver (receiverId).get();
 }
 
-bool AudioReceivers::addSubscriber (Subscriber* subscriber)
+bool AudioReceivers::subscribe (Subscriber* subscriber)
 {
     if (subscribers_.add (subscriber))
     {
-        for (const auto& stream : receivers_)
-            subscriber->onAudioReceiverUpdated (stream->getReceiverId(), &stream->getState());
+        for (const auto& receiver : receivers_)
+            subscriber->onAudioReceiverUpdated (receiver->getReceiverId(), &receiver->getState());
         return true;
     }
     return false;
 }
 
-bool AudioReceivers::removeSubscriber (Subscriber* subscriber)
+bool AudioReceivers::unsubscribe (Subscriber* subscriber)
 {
     return subscribers_.remove (subscriber);
 }
@@ -73,7 +73,7 @@ void AudioReceivers::ravenna_receiver_added (const rav::RavennaReceiver& receive
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
 
     executor_.callAsync ([this, streamId = receiver.get_id(), sessionName = receiver.get_session_name()] {
-        RAV_ASSERT (findRxStream (streamId) == nullptr, "Receiver already exists");
+        RAV_ASSERT (findReceiver (streamId) == nullptr, "Receiver already exists");
         const auto& it = receivers_.emplace_back (std::make_unique<Receiver> (*this, streamId, sessionName));
         if (targetFormat_.is_valid() && maxNumFramesPerBlock_ > 0)
             it->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
@@ -269,12 +269,12 @@ void AudioReceivers::Receiver::updateRealtimeSharedState()
     }
 }
 
-AudioReceivers::Receiver* AudioReceivers::findRxStream (const rav::Id receiverId) const
+AudioReceivers::Receiver* AudioReceivers::findReceiver (const rav::Id receiverId) const
 {
     JUCE_ASSERT_MESSAGE_THREAD;
-    for (const auto& stream : receivers_)
-        if (stream->getReceiverId() == receiverId)
-            return stream.get();
+    for (const auto& receiver : receivers_)
+        if (receiver->getReceiverId() == receiverId)
+            return receiver.get();
     return nullptr;
 }
 

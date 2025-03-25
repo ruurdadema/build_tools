@@ -92,11 +92,14 @@ void MainApplication::initialise (const juce::String& commandLine)
     ravennaNode_ = std::make_unique<rav::RavennaNode> (std::move (config));
     sessions_ = std::make_unique<RavennaSessions> (*ravennaNode_);
     audioReceivers_ = std::make_unique<AudioReceivers> (*ravennaNode_);
+    audioSenders_ = std::make_unique<AudioSenders> (*ravennaNode_);
 
     juce::AudioDeviceManager::AudioDeviceSetup setup;
     setup.bufferSize = 32;
     audioDeviceManager_.initialise (1, 2, nullptr, false, {}, &setup);
     audioDeviceManager_.addAudioCallback (audioReceivers_.get());
+    audioDeviceManager_.addAudioCallback (audioSenders_.get());
+
     addWindow();
 }
 
@@ -158,6 +161,11 @@ juce::AudioDeviceManager& MainApplication::getAudioDeviceManager()
 AudioReceivers& MainApplication::getAudioReceivers()
 {
     return *audioReceivers_;
+}
+
+AudioSenders& MainApplication::getAudioSenders()
+{
+    return *audioSenders_;
 }
 
 void MainApplication::addWindow()

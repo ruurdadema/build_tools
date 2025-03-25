@@ -13,8 +13,12 @@
 #include "gui/widgets/MiniAudioDeviceSelectorComponent.hpp"
 
 SendersMainComponent::SendersMainComponent (ApplicationContext& context) :
+    sendersContainer_ (context),
     miniDeviceSelector_ (context.getAudioDeviceManager(), MiniAudioDeviceSelectorComponent::Direction::Input)
 {
+    viewport_.setViewedComponent (&sendersContainer_, false);
+    addAndMakeVisible (viewport_);
+
     addAndMakeVisible (miniDeviceSelector_);
 }
 
@@ -24,4 +28,9 @@ void SendersMainComponent::resized()
 {
     auto b = getLocalBounds();
     miniDeviceSelector_.setBounds (b.removeFromBottom (50).reduced (10));
+
+    viewport_.setBounds (b);
+
+    sendersContainer_.setSize (viewport_.getWidth() - 10, 10);
+    sendersContainer_.resizeToFitContent();
 }
