@@ -112,14 +112,17 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId, 
     audioSenders_ (audioSenders),
     senderId_ (senderId)
 {
-    sessionNameLabel_.setText (name, juce::dontSendNotification);
+    sessionNameLabel_.setText ("Session name:", juce::dontSendNotification);
+    sessionNameLabel_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (sessionNameLabel_);
+
+    sessionNameEditor_.setIndents (10, 10);
+    addAndMakeVisible (sessionNameEditor_);
 
     startStopButton_.setClickingTogglesState (true);
     startStopButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::green);
     startStopButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::red);
     startStopButton_.onClick = [] {
-        // audioSenders.
     };
     addAndMakeVisible (startStopButton_);
 
@@ -151,8 +154,14 @@ void SendersContainer::Row::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
 
-    sessionNameLabel_.setBounds (b.removeFromLeft (200));
-    deleteButton_.setBounds (b.removeFromRight (65));
-    b.removeFromRight (kMargin);
-    startStopButton_.setBounds (b.removeFromRight (65));
+    auto buttons = b.withTrimmedTop (b.getHeight() - kButtonHeight);
+    deleteButton_.setBounds (buttons.removeFromRight (65));
+    buttons.removeFromRight (kMargin);
+    startStopButton_.setBounds (buttons.removeFromRight (65));
+
+    auto topRow = b.removeFromTop (20);
+    b.removeFromTop (kMargin / 2);
+    auto bottomRow = b;
+    sessionNameLabel_.setBounds (topRow.removeFromLeft (200));
+    sessionNameEditor_.setBounds (bottomRow.removeFromLeft (200));
 }

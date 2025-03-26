@@ -28,9 +28,9 @@ public:
     void resized() override;
 
 private:
-    static constexpr int kRowHeight = 50;
+    static constexpr int kRowHeight = 80;
     static constexpr int kMargin = 10;
-    static constexpr int kButtonHeight = 40;
+    static constexpr int kButtonHeight = 30;
 
     class Row : public Component
     {
@@ -47,6 +47,7 @@ private:
         AudioSenders& audioSenders_;
         rav::Id senderId_;
         juce::Label sessionNameLabel_;
+        juce::TextEditor sessionNameEditor_;
         juce::TextButton startStopButton_ { "Start" };
         juce::TextButton deleteButton_ { "Delete" };
 
