@@ -20,30 +20,22 @@
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
     addButton.onClick = [this] {
-        addNewSenderDialog_ = std::make_unique<AddNewSenderDialog>();
+        auto content = std::make_unique<AddNewSenderDialog>();
 
-        addNewSenderDialog_->setSize (300, 120);
-        addNewSenderDialog_->setLookAndFeel (&rav::get_global_instance_of_type<ThisLookAndFeel>());
+        content->setSize (300, 120);
+        content->setLookAndFeel (&rav::get_global_instance_of_type<ThisLookAndFeel>());
+        content->onAdd ([this] (const juce::String& name) {
+            std::ignore = context_.getAudioSenders().createSender (name.toStdString());
+        });
 
         juce::DialogWindow::LaunchOptions options;
         options.dialogTitle = "Add new sender";
-        options.content.setOwned (addNewSenderDialog_.get());
+        options.content.setOwned (content.release());
         options.dialogBackgroundColour = Constants::Colours::windowBackground;
         options.componentToCentreAround = getTopLevelComponent();
         options.useNativeTitleBar = true;
         options.resizable = false;
-        auto* dialog = options.launchAsync();
-
-        addNewSenderDialog_->onCancel ([this, dialog] {
-            dialog->exitModalState (0);
-            addNewSenderDialog_.reset();
-        });
-
-        addNewSenderDialog_->onAdd ([this, dialog] (const juce::String& name) {
-            std::ignore = context_.getAudioSenders().createSender (name.toStdString());
-            dialog->exitModalState (0);
-            addNewSenderDialog_.reset();
-        });
+        options.launchAsync();
     };
     addAndMakeVisible (addButton);
 
@@ -149,10 +141,7 @@ void SendersContainer::Row::paint (juce::Graphics& g)
 void SendersContainer::Row::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
-    b.removeFromTop (18);
 
-    sessionNameLabel_.setBounds (b.removeFromTop (20));
-
-    auto bottom = b.removeFromBottom (27);
-    deleteButton_.setBounds (bottom.removeFromRight (65));
+    sessionNameLabel_.setBounds (b.removeFromLeft (200));
+    deleteButton_.setBounds (b.removeFromRight (65));
 }

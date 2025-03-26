@@ -28,7 +28,7 @@ public:
     void resized() override;
 
 private:
-    static constexpr int kRowHeight = 138;
+    static constexpr int kRowHeight = 50;
     static constexpr int kMargin = 10;
     static constexpr int kButtonHeight = 40;
 
@@ -55,5 +55,4 @@ private:
     ApplicationContext& context_;
     juce::OwnedArray<Row> rows_;
     juce::TextButton addButton { "Add sender" };
-    std::unique_ptr<AddNewSenderDialog> addNewSenderDialog_;
 };

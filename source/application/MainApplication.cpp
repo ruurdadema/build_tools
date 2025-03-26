@@ -106,6 +106,7 @@ void MainApplication::initialise (const juce::String& commandLine)
 void MainApplication::shutdown()
 {
     audioDeviceManager_.removeAudioCallback (audioReceivers_.get());
+    audioDeviceManager_.removeAudioCallback (audioSenders_.get());
     mainWindows_.clear();
 }
 
