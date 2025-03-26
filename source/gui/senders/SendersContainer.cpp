@@ -10,32 +10,12 @@
 
 #include "SendersContainer.hpp"
 
-#include "AddNewSenderDialog.hpp"
 #include "gui/lookandfeel/Constants.hpp"
-#include "gui/lookandfeel/ThisLookAndFeel.hpp"
-#include "ravennakit/core/support.hpp"
-
-#include <juce_gui_extra/juce_gui_extra.h>
 
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
     addButton.onClick = [this] {
-        auto content = std::make_unique<AddNewSenderDialog>();
-
-        content->setSize (300, 120);
-        content->setLookAndFeel (&rav::get_global_instance_of_type<ThisLookAndFeel>());
-        content->onAdd ([this] (const juce::String& name) {
-            std::ignore = context_.getAudioSenders().createSender (name.toStdString());
-        });
-
-        juce::DialogWindow::LaunchOptions options;
-        options.dialogTitle = "Add new sender";
-        options.content.setOwned (content.release());
-        options.dialogBackgroundColour = Constants::Colours::windowBackground;
-        options.componentToCentreAround = getTopLevelComponent();
-        options.useNativeTitleBar = true;
-        options.resizable = false;
-        options.launchAsync();
+        std::ignore = context_.getAudioSenders().createSender ({});
     };
     addAndMakeVisible (addButton);
 
@@ -75,7 +55,7 @@ void SendersContainer::onAudioSenderUpdated (rav::Id senderId, const AudioSender
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_.getAudioSenders(), senderId, state->sessionName));
+        auto* row = rows_.add (std::make_unique<Row> (context_.getAudioSenders(), senderId));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
@@ -108,7 +88,7 @@ void SendersContainer::resized()
     addButton.setBounds (b.withSizeKeepingCentre (200, kButtonHeight));
 }
 
-SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId, const std::string& name) :
+SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) :
     audioSenders_ (audioSenders),
     senderId_ (senderId)
 {
@@ -116,8 +96,37 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId, 
     sessionNameLabel_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (sessionNameLabel_);
 
-    sessionNameEditor_.setIndents (10, 10);
+    sessionNameEditor_.setIndents (8, 8);
     addAndMakeVisible (sessionNameEditor_);
+
+    addressLabel_.setText ("Address:", juce::dontSendNotification);
+    addressLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (addressLabel_);
+
+    addressEditor_.setIndents (8, 8);
+    addAndMakeVisible (addressEditor_);
+
+    ttlLabel_.setText ("TTL:", juce::dontSendNotification);
+    ttlLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (ttlLabel_);
+
+    ttlEditor_.setIndents (8, 8);
+    addAndMakeVisible (ttlEditor_);
+
+    payloadTypeLabel_.setText ("Payload type:", juce::dontSendNotification);
+    payloadTypeLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (payloadTypeLabel_);
+
+    payloadTypeEditor_.setIndents (8, 8);
+    addAndMakeVisible (payloadTypeEditor_);
+
+    formatLabel_.setText ("Format:", juce::dontSendNotification);
+    formatLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (formatLabel_);
+
+    formatComboBox_.addItem ("L16", 1);
+    formatComboBox_.addItem ("L24", 2);
+    addAndMakeVisible (formatComboBox_);
 
     startStopButton_.setClickingTogglesState (true);
     startStopButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::green);
@@ -159,9 +168,34 @@ void SendersContainer::Row::resized()
     buttons.removeFromRight (kMargin);
     startStopButton_.setBounds (buttons.removeFromRight (65));
 
-    auto topRow = b.removeFromTop (20);
+    auto topRow = b.removeFromTop (24);
     b.removeFromTop (kMargin / 2);
     auto bottomRow = b;
+
     sessionNameLabel_.setBounds (topRow.removeFromLeft (200));
     sessionNameEditor_.setBounds (bottomRow.removeFromLeft (200));
+
+    topRow.removeFromLeft (kMargin);
+    bottomRow.removeFromLeft (kMargin);
+
+    addressLabel_.setBounds (topRow.removeFromLeft (160));
+    addressEditor_.setBounds (bottomRow.removeFromLeft (160));
+
+    topRow.removeFromLeft (kMargin);
+    bottomRow.removeFromLeft (kMargin);
+
+    ttlLabel_.setBounds (topRow.removeFromLeft (50));
+    ttlEditor_.setBounds (bottomRow.removeFromLeft (50));
+
+    topRow.removeFromLeft (kMargin);
+    bottomRow.removeFromLeft (kMargin);
+
+    payloadTypeLabel_.setBounds (topRow.removeFromLeft (100));
+    payloadTypeEditor_.setBounds (bottomRow.removeFromLeft (100));
+
+    topRow.removeFromLeft (kMargin);
+    bottomRow.removeFromLeft (kMargin);
+
+    formatLabel_.setBounds (topRow.removeFromLeft (100));
+    formatComboBox_.setBounds (bottomRow.removeFromLeft (100));
 }

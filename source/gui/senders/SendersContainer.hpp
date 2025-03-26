@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "AddNewSenderDialog.hpp"
 #include "application/ApplicationContext.hpp"
 #include "models/AudioSenders.hpp"
 
@@ -35,7 +34,7 @@ private:
     class Row : public Component
     {
     public:
-        explicit Row (AudioSenders& audioSenders, rav::Id senderId, const std::string& name);
+        explicit Row (AudioSenders& audioSenders, rav::Id senderId);
 
         rav::Id getId() const;
 
@@ -48,6 +47,19 @@ private:
         rav::Id senderId_;
         juce::Label sessionNameLabel_;
         juce::TextEditor sessionNameEditor_;
+
+        juce::Label addressLabel_;
+        juce::TextEditor addressEditor_;
+
+        juce::Label ttlLabel_;
+        juce::TextEditor ttlEditor_;
+
+        juce::Label payloadTypeLabel_;
+        juce::TextEditor payloadTypeEditor_;
+
+        juce::Label formatLabel_;
+        juce::ComboBox formatComboBox_;
+
         juce::TextButton startStopButton_ { "Start" };
         juce::TextButton deleteButton_ { "Delete" };
 
