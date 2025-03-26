@@ -21,6 +21,7 @@ public:
     struct SenderState
     {
         std::string sessionName;
+        bool active = false;
     };
 
     class Subscriber
@@ -55,6 +56,8 @@ public:
      * @param senderId The sender to remove.
      */
     void removeSender (rav::Id senderId) const;
+
+
 
     /**
      * Adds a subscriber to the audio mixer.

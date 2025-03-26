@@ -115,6 +115,14 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId, 
     sessionNameLabel_.setText (name, juce::dontSendNotification);
     addAndMakeVisible (sessionNameLabel_);
 
+    startStopButton_.setClickingTogglesState (true);
+    startStopButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::green);
+    startStopButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::red);
+    startStopButton_.onClick = [] {
+        // audioSenders.
+    };
+    addAndMakeVisible (startStopButton_);
+
     deleteButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::red);
     deleteButton_.onClick = [this] {
         audioSenders_.removeSender (senderId_);
@@ -129,7 +137,8 @@ rav::Id SendersContainer::Row::getId() const
 
 void SendersContainer::Row::update (const AudioSenders::SenderState& state)
 {
-    std::ignore = state;
+    startStopButton_.setToggleState (state.active, juce::dontSendNotification);
+    startStopButton_.setButtonText (state.active ? "Stop" : "Start");
 }
 
 void SendersContainer::Row::paint (juce::Graphics& g)
@@ -144,4 +153,6 @@ void SendersContainer::Row::resized()
 
     sessionNameLabel_.setBounds (b.removeFromLeft (200));
     deleteButton_.setBounds (b.removeFromRight (65));
+    b.removeFromRight (kMargin);
+    startStopButton_.setBounds (b.removeFromRight (65));
 }

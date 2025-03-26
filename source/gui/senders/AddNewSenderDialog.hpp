@@ -31,10 +31,8 @@ public:
         };
         addAndMakeVisible (sessionNameEditor_);
 
-        addButton_.setWantsKeyboardFocus (false);
         addAndMakeVisible (addButton_);
 
-        cancelButton_.setWantsKeyboardFocus (false);
         cancelButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
         cancelButton_.onClick = [this] {
             if (auto* dw = findParentComponentOfClass<juce::DialogWindow>())

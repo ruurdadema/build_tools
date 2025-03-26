@@ -47,6 +47,7 @@ private:
         AudioSenders& audioSenders_;
         rav::Id senderId_;
         juce::Label sessionNameLabel_;
+        juce::TextButton startStopButton_ { "Start" };
         juce::TextButton deleteButton_ { "Delete" };
 
         MessageThreadExecutor executor_;
