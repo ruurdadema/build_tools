@@ -20,8 +20,7 @@ class AudioSenders : public rav::RavennaNode::Subscriber, public juce::AudioIODe
 public:
     struct SenderState
     {
-        std::string sessionName;
-        bool active = false;
+        rav::RavennaSender::Configuration configuration;
     };
 
     class Subscriber
@@ -35,8 +34,10 @@ public:
          * @param senderId The id of the sender.
          * @param state The state of the sender, or nullptr if the sender was removed.
          */
-        virtual void onAudioSenderUpdated ([[maybe_unused]] rav::Id senderId, [[maybe_unused]] const SenderState* state)
+        virtual void onAudioSenderUpdated (const rav::Id senderId, const SenderState* state)
         {
+            std::ignore = senderId;
+            std::ignore = state;
         }
     };
 
@@ -57,7 +58,12 @@ public:
      */
     void removeSender (rav::Id senderId) const;
 
-
+    /**
+     * Updates the configuration of a sender.
+     * @param senderId The id of the sender to update.
+     * @param update The configuration changes to apply.
+     */
+    void updateSenderConfiguration (rav::Id senderId, rav::RavennaSender::ConfigurationUpdate update) const;
 
     /**
      * Adds a subscriber to the audio mixer.
@@ -90,18 +96,24 @@ public:
     void audioDeviceError (const juce::String& errorMessage) override;
 
 private:
-    class Sender
+    class Sender : public rav::RavennaSender::Subscriber
     {
     public:
-        Sender (AudioSenders& owner, rav::Id senderId, std::string sessionName);
+        Sender (AudioSenders& owner, rav::Id senderId);
+        ~Sender() override;
 
         [[nodiscard]] rav::Id getSenderId() const;
         [[nodiscard]] const SenderState& getState() const;
 
+        void ravenna_sender_configuration_updated (
+            rav::Id sender_id,
+            const rav::RavennaSender::Configuration& configuration) override;
+
     private:
-        AudioSenders& owner_;
+        [[maybe_unused]] AudioSenders& owner_;
         rav::Id senderId_;
         SenderState state_;
+        MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
     };
 
     struct RealtimeSharedContext
@@ -110,6 +122,7 @@ private:
     };
 
     rav::RavennaNode& node_;
+    rav::AudioFormat deviceFormat_;
     std::vector<std::unique_ptr<Sender>> senders_;
     rav::SubscriberList<Subscriber> subscribers_;
     rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;

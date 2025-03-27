@@ -63,6 +63,8 @@ private:
         juce::TextButton startStopButton_ { "Start" };
         juce::TextButton deleteButton_ { "Delete" };
 
+        AudioSenders::SenderState senderState_;
+
         MessageThreadExecutor executor_;
     };
 

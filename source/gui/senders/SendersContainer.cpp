@@ -12,6 +12,14 @@
 
 #include "gui/lookandfeel/Constants.hpp"
 
+namespace
+{
+std::array<std::pair<std::string, rav::AudioEncoding>, 2> kAudioEncodings = { {
+    { "L16", rav::AudioEncoding::pcm_s16 },
+    { "L24", rav::AudioEncoding::pcm_s24 },
+} };
+}
+
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
     addButton.onClick = [this] {
@@ -97,6 +105,19 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     addAndMakeVisible (sessionNameLabel_);
 
     sessionNameEditor_.setIndents (8, 8);
+    sessionNameEditor_.onReturnKey = [this] {
+        rav::RavennaSender::ConfigurationUpdate update;
+        update.session_name = sessionNameEditor_.getText().toStdString();
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        sessionNameEditor_.unfocusAllComponents();
+    };
+    sessionNameEditor_.onEscapeKey = [this] {
+        sessionNameEditor_.setText (senderState_.configuration.session_name, juce::dontSendNotification);
+        sessionNameEditor_.unfocusAllComponents();
+    };
+    sessionNameEditor_.onFocusLost = [this] {
+        sessionNameEditor_.setText (senderState_.configuration.session_name, juce::dontSendNotification);
+    };
     addAndMakeVisible (sessionNameEditor_);
 
     addressLabel_.setText ("Address:", juce::dontSendNotification);
@@ -104,6 +125,19 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     addAndMakeVisible (addressLabel_);
 
     addressEditor_.setIndents (8, 8);
+    addressEditor_.onReturnKey = [this] {
+        rav::RavennaSender::ConfigurationUpdate update;
+        update.destination_address = asio::ip::make_address_v4 (addressEditor_.getText().toRawUTF8());
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        addressEditor_.unfocusAllComponents();
+    };
+    addressEditor_.onEscapeKey = [this] {
+        addressEditor_.setText (senderState_.configuration.destination_address.to_string(), juce::dontSendNotification);
+        addressEditor_.unfocusAllComponents();
+    };
+    addressEditor_.onFocusLost = [this] {
+        addressEditor_.setText (senderState_.configuration.destination_address.to_string(), juce::dontSendNotification);
+    };
     addAndMakeVisible (addressEditor_);
 
     ttlLabel_.setText ("TTL:", juce::dontSendNotification);
@@ -111,6 +145,20 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     addAndMakeVisible (ttlLabel_);
 
     ttlEditor_.setIndents (8, 8);
+    ttlEditor_.setInputRestrictions (3, "0123456789");
+    ttlEditor_.onReturnKey = [this] {
+        rav::RavennaSender::ConfigurationUpdate update;
+        update.ttl = ttlEditor_.getText().getIntValue();
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        ttlEditor_.unfocusAllComponents();
+    };
+    ttlEditor_.onEscapeKey = [this] {
+        ttlEditor_.setText (juce::String (senderState_.configuration.ttl), juce::dontSendNotification);
+        ttlEditor_.unfocusAllComponents();
+    };
+    ttlEditor_.onFocusLost = [this] {
+        ttlEditor_.setText (juce::String (senderState_.configuration.ttl), juce::dontSendNotification);
+    };
     addAndMakeVisible (ttlEditor_);
 
     payloadTypeLabel_.setText ("Payload type:", juce::dontSendNotification);
@@ -118,20 +166,47 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     addAndMakeVisible (payloadTypeLabel_);
 
     payloadTypeEditor_.setIndents (8, 8);
+    payloadTypeEditor_.setInputRestrictions (3, "0123456789");
+    payloadTypeEditor_.onReturnKey = [this] {
+        rav::RavennaSender::ConfigurationUpdate update;
+        update.payload_type = static_cast<uint8_t> (payloadTypeEditor_.getText().getIntValue());
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        payloadTypeEditor_.unfocusAllComponents();
+    };
+    payloadTypeEditor_.onEscapeKey = [this] {
+        payloadTypeEditor_.setText (juce::String (senderState_.configuration.payload_type), juce::dontSendNotification);
+        payloadTypeEditor_.unfocusAllComponents();
+    };
+    payloadTypeEditor_.onFocusLost = [this] {
+        payloadTypeEditor_.setText (juce::String (senderState_.configuration.payload_type), juce::dontSendNotification);
+    };
     addAndMakeVisible (payloadTypeEditor_);
 
-    formatLabel_.setText ("Format:", juce::dontSendNotification);
+    formatLabel_.setText ("Encoding:", juce::dontSendNotification);
     formatLabel_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (formatLabel_);
 
-    formatComboBox_.addItem ("L16", 1);
-    formatComboBox_.addItem ("L24", 2);
+    for (const auto& [name, encoding] : kAudioEncodings)
+        formatComboBox_.addItem (name, static_cast<int> (encoding));
+
+    formatComboBox_.onChange = [this] {
+        const auto selectedId = formatComboBox_.getSelectedId();
+        if (selectedId <= 0)
+            return;
+        rav::RavennaSender::ConfigurationUpdate update {};
+        update.audio_format = rav::AudioFormat {};
+        update.audio_format->encoding = static_cast<rav::AudioEncoding> (selectedId);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+    };
     addAndMakeVisible (formatComboBox_);
 
     startStopButton_.setClickingTogglesState (true);
     startStopButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::green);
     startStopButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::red);
-    startStopButton_.onClick = [] {
+    startStopButton_.onClick = [this] {
+        rav::RavennaSender::ConfigurationUpdate update;
+        update.enabled = startStopButton_.getToggleState();
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
     };
     addAndMakeVisible (startStopButton_);
 
@@ -149,8 +224,23 @@ rav::Id SendersContainer::Row::getId() const
 
 void SendersContainer::Row::update (const AudioSenders::SenderState& state)
 {
-    startStopButton_.setToggleState (state.active, juce::dontSendNotification);
-    startStopButton_.setButtonText (state.active ? "Stop" : "Start");
+    senderState_ = state;
+    sessionNameEditor_.setText (state.configuration.session_name, juce::dontSendNotification);
+    addressEditor_.setText (state.configuration.destination_address.to_string(), juce::dontSendNotification);
+    ttlEditor_.setText (juce::String (state.configuration.ttl), juce::dontSendNotification);
+    payloadTypeEditor_.setText (juce::String (state.configuration.payload_type), juce::dontSendNotification);
+
+    for (auto& encoding : kAudioEncodings)
+    {
+        if (encoding.second == state.configuration.audio_format.encoding)
+        {
+            formatComboBox_.setSelectedId (static_cast<int> (encoding.second), juce::dontSendNotification);
+            break;
+        }
+    }
+
+    startStopButton_.setToggleState (state.configuration.enabled, juce::dontSendNotification);
+    startStopButton_.setButtonText (state.configuration.enabled ? "Stop" : "Start");
 }
 
 void SendersContainer::Row::paint (juce::Graphics& g)

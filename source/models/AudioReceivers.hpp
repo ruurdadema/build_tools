@@ -133,8 +133,6 @@ private:
 
         // rav::rtp_stream_receiver::subscriber overrides
         void rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event) override;
-
-        // rav::rtp_stream_receiver::data_callback overrides
         void on_data_received (rav::WrappingUint32 timestamp) override;
         void on_data_ready (rav::WrappingUint32 timestamp) override;
 
