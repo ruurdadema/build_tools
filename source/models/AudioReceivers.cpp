@@ -114,8 +114,6 @@ void AudioReceivers::audioDeviceIOCallbackWithContext (
 {
     TRACY_ZONE_SCOPED;
 
-    // TODO: Synchronize with main thread
-
     RAV_ASSERT (numInputChannels >= 0, "Num input channels must be >= 0");
     RAV_ASSERT (numOutputChannels >= 0, "Num output channels must be >= 0");
     RAV_ASSERT (numSamples >= 0, "Num samples must be >= 0");
@@ -217,6 +215,8 @@ void AudioReceivers::Receiver::processBlock (const rav::AudioBufferView<float>& 
 {
     TRACY_ZONE_SCOPED;
 
+    outputBuffer.clear();
+
     const auto state = realtimeSharedState_.lock_realtime();
 
     if (!state->inputFormat.is_valid())
@@ -228,10 +228,7 @@ void AudioReceivers::Receiver::processBlock (const rav::AudioBufferView<float>& 
         return;
     }
 
-    if (!owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, {}).has_value())
-    {
-        outputBuffer.clear(); // Receiver not (yet) available, make sure we don't output garbage
-    }
+    std::ignore = owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, {});
 }
 
 void AudioReceivers::Receiver::rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event)
