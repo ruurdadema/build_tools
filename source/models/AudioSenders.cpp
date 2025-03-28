@@ -20,9 +20,9 @@ AudioSenders::~AudioSenders()
     node_.unsubscribe (this).wait();
 }
 
-rav::Id AudioSenders::createSender (const std::string& sessionName) const
+rav::Id AudioSenders::createSender() const
 {
-    return node_.create_sender ().get();
+    return node_.create_sender().get();
 }
 
 void AudioSenders::removeSender (const rav::Id senderId) const

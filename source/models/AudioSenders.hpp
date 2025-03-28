@@ -48,10 +48,9 @@ public:
 
     /**
      * Creates a sender.
-     * @param sessionName The session name to create the sender for. May be empty.
      * @return A valid id of the newly created sender, or an invalid id on failure.
      */
-    [[nodiscard]] rav::Id createSender (const std::string& sessionName) const;
+    [[nodiscard]] rav::Id createSender () const;
 
     /**
      * Removes a sender.

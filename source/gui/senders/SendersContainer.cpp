@@ -15,7 +15,7 @@
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
     addButton.onClick = [this] {
-        std::ignore = context_.getAudioSenders().createSender ({});
+        std::ignore = context_.getAudioSenders().createSender ();
     };
     addAndMakeVisible (addButton);
 
