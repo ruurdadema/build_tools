@@ -12,14 +12,6 @@
 
 #include "gui/lookandfeel/Constants.hpp"
 
-namespace
-{
-std::array<std::pair<std::string, rav::AudioEncoding>, 2> kAudioEncodings = { {
-    { "L16", rav::AudioEncoding::pcm_s16 },
-    { "L24", rav::AudioEncoding::pcm_s24 },
-} };
-}
-
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
     addButton.onClick = [this] {
@@ -109,14 +101,14 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
         rav::RavennaSender::ConfigurationUpdate update;
         update.session_name = sessionNameEditor_.getText().toStdString();
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
-        sessionNameEditor_.unfocusAllComponents();
+        juce::TextEditor::unfocusAllComponents();
     };
     sessionNameEditor_.onEscapeKey = [this] {
-        sessionNameEditor_.setText (senderState_.configuration.session_name, juce::dontSendNotification);
-        sessionNameEditor_.unfocusAllComponents();
+        sessionNameEditor_.setText (senderState_.senderConfiguration.session_name, juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
     };
     sessionNameEditor_.onFocusLost = [this] {
-        sessionNameEditor_.setText (senderState_.configuration.session_name, juce::dontSendNotification);
+        sessionNameEditor_.setText (senderState_.senderConfiguration.session_name, juce::dontSendNotification);
     };
     addAndMakeVisible (sessionNameEditor_);
 
@@ -129,14 +121,18 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
         rav::RavennaSender::ConfigurationUpdate update;
         update.destination_address = asio::ip::make_address_v4 (addressEditor_.getText().toRawUTF8());
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
-        addressEditor_.unfocusAllComponents();
+        juce::TextEditor::unfocusAllComponents();
     };
     addressEditor_.onEscapeKey = [this] {
-        addressEditor_.setText (senderState_.configuration.destination_address.to_string(), juce::dontSendNotification);
-        addressEditor_.unfocusAllComponents();
+        addressEditor_.setText (
+            senderState_.senderConfiguration.destination_address.to_string(),
+            juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
     };
     addressEditor_.onFocusLost = [this] {
-        addressEditor_.setText (senderState_.configuration.destination_address.to_string(), juce::dontSendNotification);
+        addressEditor_.setText (
+            senderState_.senderConfiguration.destination_address.to_string(),
+            juce::dontSendNotification);
     };
     addAndMakeVisible (addressEditor_);
 
@@ -150,14 +146,14 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
         rav::RavennaSender::ConfigurationUpdate update;
         update.ttl = ttlEditor_.getText().getIntValue();
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
-        ttlEditor_.unfocusAllComponents();
+        juce::TextEditor::unfocusAllComponents();
     };
     ttlEditor_.onEscapeKey = [this] {
-        ttlEditor_.setText (juce::String (senderState_.configuration.ttl), juce::dontSendNotification);
-        ttlEditor_.unfocusAllComponents();
+        ttlEditor_.setText (juce::String (senderState_.senderConfiguration.ttl), juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
     };
     ttlEditor_.onFocusLost = [this] {
-        ttlEditor_.setText (juce::String (senderState_.configuration.ttl), juce::dontSendNotification);
+        ttlEditor_.setText (juce::String (senderState_.senderConfiguration.ttl), juce::dontSendNotification);
     };
     addAndMakeVisible (ttlEditor_);
 
@@ -171,38 +167,89 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
         rav::RavennaSender::ConfigurationUpdate update;
         update.payload_type = static_cast<uint8_t> (payloadTypeEditor_.getText().getIntValue());
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
-        payloadTypeEditor_.unfocusAllComponents();
+        juce::TextEditor::unfocusAllComponents();
     };
     payloadTypeEditor_.onEscapeKey = [this] {
-        payloadTypeEditor_.setText (juce::String (senderState_.configuration.payload_type), juce::dontSendNotification);
-        payloadTypeEditor_.unfocusAllComponents();
+        payloadTypeEditor_.setText (
+            juce::String (senderState_.senderConfiguration.payload_type),
+            juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
     };
     payloadTypeEditor_.onFocusLost = [this] {
-        payloadTypeEditor_.setText (juce::String (senderState_.configuration.payload_type), juce::dontSendNotification);
+        payloadTypeEditor_.setText (
+            juce::String (senderState_.senderConfiguration.payload_type),
+            juce::dontSendNotification);
     };
     addAndMakeVisible (payloadTypeEditor_);
 
-    formatLabel_.setText ("Encoding:", juce::dontSendNotification);
-    formatLabel_.setJustificationType (juce::Justification::topLeft);
-    addAndMakeVisible (formatLabel_);
+    numChannelsLabel_.setText ("Channels:", juce::dontSendNotification);
+    numChannelsLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (numChannelsLabel_);
 
-    for (const auto& [name, encoding] : kAudioEncodings)
-        formatComboBox_.addItem (name, static_cast<int> (encoding));
+    numChannelsEditor_.setIndents (8, 8);
+    numChannelsEditor_.setInputRestrictions (3, "0123456789");
+    numChannelsEditor_.onReturnKey = [this] {
+        rav::RavennaSender::ConfigurationUpdate update;
+        update.audio_format = senderState_.senderConfiguration.audio_format;
+        update.audio_format->num_channels = static_cast<uint32_t> (numChannelsEditor_.getText().getIntValue());
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        juce::TextEditor::unfocusAllComponents();
+    };
+    numChannelsEditor_.onEscapeKey = [this] {
+        numChannelsEditor_.setText (
+            juce::String (senderState_.senderConfiguration.audio_format.num_channels),
+            juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
+    };
+    numChannelsEditor_.onFocusLost = [this] {
+        numChannelsEditor_.setText (
+            juce::String (senderState_.senderConfiguration.audio_format.num_channels),
+            juce::dontSendNotification);
+    };
+    addAndMakeVisible (numChannelsEditor_);
 
-    formatComboBox_.onChange = [this] {
-        const auto selectedId = formatComboBox_.getSelectedId();
+    sampleRateLabel_.setText ("Sample rate:", juce::dontSendNotification);
+    sampleRateLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (sampleRateLabel_);
+
+    sampleRateComboBox_.addItem ("44.1 kHz", 44100);
+    sampleRateComboBox_.addItem ("48 kHz", 48000);
+    sampleRateComboBox_.addItem ("96 kHz", 96000);
+    sampleRateComboBox_.onChange = [this] {
+        const auto selectedId = sampleRateComboBox_.getSelectedId();
         if (selectedId <= 0)
             return;
         rav::RavennaSender::ConfigurationUpdate update {};
-        update.audio_format = rav::AudioFormat {};
+        update.audio_format = senderState_.senderConfiguration.audio_format;
+        update.audio_format->sample_rate = static_cast<uint32_t> (selectedId);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+    };
+    addAndMakeVisible (sampleRateComboBox_);
+
+    encodingLabel_.setText ("Encoding:", juce::dontSendNotification);
+    encodingLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (encodingLabel_);
+
+    encodingComboBox_.addItem ("L16", static_cast<int> (rav::AudioEncoding::pcm_s16));
+    encodingComboBox_.addItem ("L24", static_cast<int> (rav::AudioEncoding::pcm_s24));
+
+    encodingComboBox_.onChange = [this] {
+        const auto selectedId = encodingComboBox_.getSelectedId();
+        if (selectedId <= 0)
+            return;
+        rav::RavennaSender::ConfigurationUpdate update {};
+        update.audio_format = senderState_.senderConfiguration.audio_format;
         update.audio_format->encoding = static_cast<rav::AudioEncoding> (selectedId);
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
     };
-    addAndMakeVisible (formatComboBox_);
+    addAndMakeVisible (encodingComboBox_);
+
+    statusMessage_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (statusMessage_);
 
     startStopButton_.setClickingTogglesState (true);
     startStopButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::green);
-    startStopButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::red);
+    startStopButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::yellow);
     startStopButton_.onClick = [this] {
         rav::RavennaSender::ConfigurationUpdate update;
         update.enabled = startStopButton_.getToggleState();
@@ -225,22 +272,52 @@ rav::Id SendersContainer::Row::getId() const
 void SendersContainer::Row::update (const AudioSenders::SenderState& state)
 {
     senderState_ = state;
-    sessionNameEditor_.setText (state.configuration.session_name, juce::dontSendNotification);
-    addressEditor_.setText (state.configuration.destination_address.to_string(), juce::dontSendNotification);
-    ttlEditor_.setText (juce::String (state.configuration.ttl), juce::dontSendNotification);
-    payloadTypeEditor_.setText (juce::String (state.configuration.payload_type), juce::dontSendNotification);
+    sessionNameEditor_.setText (state.senderConfiguration.session_name, juce::dontSendNotification);
+    addressEditor_.setText (state.senderConfiguration.destination_address.to_string(), juce::dontSendNotification);
+    ttlEditor_.setText (juce::String (state.senderConfiguration.ttl), juce::dontSendNotification);
+    payloadTypeEditor_.setText (juce::String (state.senderConfiguration.payload_type), juce::dontSendNotification);
+    numChannelsEditor_.setText (
+        juce::String (state.senderConfiguration.audio_format.num_channels),
+        juce::dontSendNotification);
+    sampleRateComboBox_.setSelectedId (
+        static_cast<int> (state.senderConfiguration.audio_format.sample_rate),
+        juce::dontSendNotification);
+    encodingComboBox_.setSelectedId (
+        static_cast<int> (state.senderConfiguration.audio_format.encoding),
+        juce::dontSendNotification);
+    startStopButton_.setToggleState (state.senderConfiguration.enabled, juce::dontSendNotification);
+    startStopButton_.setButtonText (state.senderConfiguration.enabled ? "Stop" : "Start");
 
-    for (auto& encoding : kAudioEncodings)
+    // Update status message and colours:
+
+    sampleRateComboBox_.setColour (
+        juce::ComboBox::ColourIds::outlineColourId,
+        findColour (juce::ComboBox::ColourIds::outlineColourId));
+
+    numChannelsEditor_.setColour (
+        juce::TextEditor::ColourIds::outlineColourId,
+        findColour (juce::TextEditor::ColourIds::outlineColourId));
+
+    if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
     {
-        if (encoding.second == state.configuration.audio_format.encoding)
-        {
-            formatComboBox_.setSelectedId (static_cast<int> (encoding.second), juce::dontSendNotification);
-            break;
-        }
+        statusMessage_.setText (
+            fmt::format ("Sample rate mismatch ({})", state.inputFormat.sample_rate),
+            juce::dontSendNotification);
+        statusMessage_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
+        sampleRateComboBox_.setColour (juce::ComboBox::ColourIds::outlineColourId, Constants::Colours::warning);
     }
-
-    startStopButton_.setToggleState (state.configuration.enabled, juce::dontSendNotification);
-    startStopButton_.setButtonText (state.configuration.enabled ? "Stop" : "Start");
+    else if (state.senderConfiguration.audio_format.num_channels != state.inputFormat.num_channels)
+    {
+        statusMessage_.setText (
+            fmt::format ("Channel count mismatch ({})", state.inputFormat.num_channels),
+            juce::dontSendNotification);
+        statusMessage_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
+        numChannelsEditor_.setColour (juce::TextEditor::ColourIds::outlineColourId, Constants::Colours::warning);
+    }
+    else
+    {
+        statusMessage_.setText ({}, juce::dontSendNotification);
+    }
 }
 
 void SendersContainer::Row::paint (juce::Graphics& g)
@@ -286,6 +363,20 @@ void SendersContainer::Row::resized()
     topRow.removeFromLeft (kMargin);
     bottomRow.removeFromLeft (kMargin);
 
-    formatLabel_.setBounds (topRow.removeFromLeft (100));
-    formatComboBox_.setBounds (bottomRow.removeFromLeft (100));
+    numChannelsLabel_.setBounds (topRow.removeFromLeft (100));
+    numChannelsEditor_.setBounds (bottomRow.removeFromLeft (100));
+
+    topRow.removeFromLeft (kMargin);
+    bottomRow.removeFromLeft (kMargin);
+
+    sampleRateLabel_.setBounds (topRow.removeFromLeft (100));
+    sampleRateComboBox_.setBounds (bottomRow.removeFromLeft (100));
+
+    topRow.removeFromLeft (kMargin);
+    bottomRow.removeFromLeft (kMargin);
+
+    encodingLabel_.setBounds (topRow.removeFromLeft (100));
+    encodingComboBox_.setBounds (bottomRow.removeFromLeft (100));
+
+    statusMessage_.setBounds (topRow);
 }

@@ -20,7 +20,8 @@ class AudioSenders : public rav::RavennaNode::Subscriber, public juce::AudioIODe
 public:
     struct SenderState
     {
-        rav::RavennaSender::Configuration configuration;
+        rav::RavennaSender::Configuration senderConfiguration;
+        rav::AudioFormat inputFormat;
     };
 
     class Subscriber
@@ -109,11 +110,14 @@ private:
             rav::Id sender_id,
             const rav::RavennaSender::Configuration& configuration) override;
 
+        void prepareInput(rav::AudioFormat inputFormat, uint32_t max_num_frames);
+        void processBlock (const rav::AudioBufferView<const float>& inputBuffer) const;
+
     private:
         [[maybe_unused]] AudioSenders& owner_;
         rav::Id senderId_;
         SenderState state_;
-        MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
+        MessageThreadExecutor executor_; // Keep last so that it's destroyed first
     };
 
     struct RealtimeSharedContext
@@ -126,7 +130,7 @@ private:
     std::vector<std::unique_ptr<Sender>> senders_;
     rav::SubscriberList<Subscriber> subscribers_;
     rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
-    MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
+    MessageThreadExecutor executor_; // Keep last so that it's destroyed first
 
     [[nodiscard]] Sender* findSender (rav::Id senderId) const;
     void updateRealtimeSharedContext();

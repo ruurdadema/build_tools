@@ -38,9 +38,7 @@ void AudioSenders::updateSenderConfiguration (const rav::Id senderId, rav::Raven
     {
         update.audio_format->byte_order = rav::AudioFormat::ByteOrder::be;
         update.audio_format->ordering = rav::AudioFormat::ChannelOrdering::interleaved;
-        update.audio_format->num_channels = deviceFormat_.num_channels;
-        update.audio_format->sample_rate = deviceFormat_.sample_rate;
-        // Don't override encoding
+        // Don't override num_channels, sample_rate and encoding
     }
 
     auto result = node_.update_sender_configuration (senderId, std::move (update)).get();
@@ -73,6 +71,7 @@ void AudioSenders::ravenna_sender_added (const rav::RavennaSender& sender)
     executor_.callAsync ([this, senderId = sender.get_id()] {
         RAV_ASSERT (findSender (senderId) == nullptr, "Receiver already exists");
         const auto& it = senders_.emplace_back (std::make_unique<Sender> (*this, senderId));
+        it->prepareInput (deviceFormat_, 0); // TODO: Number of frames
         updateRealtimeSharedContext();
     });
 }
@@ -100,18 +99,25 @@ void AudioSenders::ravenna_sender_removed (rav::Id sender_id)
 
 void AudioSenders::audioDeviceIOCallbackWithContext (
     const float* const* inputChannelData,
-    int numInputChannels,
+    const int numInputChannels,
     float* const* outputChannelData,
     int numOutputChannels,
-    int numSamples,
+    const int numSamples,
     const juce::AudioIODeviceCallbackContext& context)
 {
-    std::ignore = inputChannelData;
-    std::ignore = numInputChannels;
     std::ignore = outputChannelData;
     std::ignore = numOutputChannels;
-    std::ignore = numSamples;
     std::ignore = context;
+
+    const rav::AudioBufferView buffer (
+        inputChannelData,
+        static_cast<size_t> (numInputChannels),
+        static_cast<size_t> (numSamples));
+
+    const auto lock = realtimeSharedContext_.lock_realtime();
+
+    for (const auto* sender : lock->senders)
+        sender->processBlock (buffer);
 }
 
 void AudioSenders::audioDeviceAboutToStart (juce::AudioIODevice* device)
@@ -121,8 +127,11 @@ void AudioSenders::audioDeviceAboutToStart (juce::AudioIODevice* device)
         rav::AudioEncoding::pcm_f32,
         rav::AudioFormat::ChannelOrdering::noninterleaved,
         static_cast<uint32_t> (device->getCurrentSampleRate()),
-        static_cast<uint32_t> (device->getActiveOutputChannels().countNumberOfSetBits()),
+        static_cast<uint32_t> (device->getActiveInputChannels().countNumberOfSetBits()),
     };
+
+    for (const auto& sender : senders_)
+        sender->prepareInput (deviceFormat_, 0);
 }
 
 void AudioSenders::audioDeviceStopped() {}
@@ -130,6 +139,26 @@ void AudioSenders::audioDeviceStopped() {}
 void AudioSenders::audioDeviceError (const juce::String& errorMessage)
 {
     RAV_ERROR ("Audio device error: {}", errorMessage.toStdString());
+}
+
+AudioSenders::Sender* AudioSenders::findSender (const rav::Id senderId) const
+{
+    JUCE_ASSERT_MESSAGE_THREAD;
+    for (const auto& sender : senders_)
+        if (sender->getSenderId() == senderId)
+            return sender.get();
+    return nullptr;
+}
+
+void AudioSenders::updateRealtimeSharedContext()
+{
+    auto newContext = std::make_unique<RealtimeSharedContext>();
+    for (const auto& sender : senders_)
+        newContext->senders.push_back (sender.get());
+    if (!realtimeSharedContext_.update (std::move (newContext)))
+    {
+        RAV_ERROR ("Failed to update realtime shared context");
+    }
 }
 
 AudioSenders::Sender::Sender (AudioSenders& owner, const rav::Id senderId) : owner_ (owner), senderId_ (senderId)
@@ -161,28 +190,21 @@ void AudioSenders::Sender::ravenna_sender_configuration_updated (
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
     executor_.callAsync ([this, sender_id, configuration] {
-        state_.configuration = configuration;
+        state_.senderConfiguration = configuration;
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioSenderUpdated (sender_id, &state_);
     });
 }
 
-AudioSenders::Sender* AudioSenders::findSender (const rav::Id senderId) const
+void AudioSenders::Sender::prepareInput (const rav::AudioFormat inputFormat, [[maybe_unused]] uint32_t max_num_frames)
 {
-    JUCE_ASSERT_MESSAGE_THREAD;
-    for (const auto& sender : senders_)
-        if (sender->getSenderId() == senderId)
-            return sender.get();
-    return nullptr;
+    state_.inputFormat = inputFormat;
+
+    for (auto* subscriber : owner_.subscribers_)
+        subscriber->onAudioSenderUpdated (senderId_, &state_);
 }
 
-void AudioSenders::updateRealtimeSharedContext()
+void AudioSenders::Sender::processBlock (const rav::AudioBufferView<const float>& inputBuffer) const
 {
-    auto newContext = std::make_unique<RealtimeSharedContext>();
-    for (const auto& stream : senders_)
-        newContext->senders.push_back (stream.get());
-    if (!realtimeSharedContext_.update (std::move (newContext)))
-    {
-        RAV_ERROR ("Failed to update realtime shared context");
-    }
+    std::ignore = owner_.node_.send_audio_data_realtime (senderId_, inputBuffer, {}); // TODO: Timestamp
 }

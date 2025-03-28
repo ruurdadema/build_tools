@@ -96,7 +96,7 @@ void MainApplication::initialise (const juce::String& commandLine)
 
     juce::AudioDeviceManager::AudioDeviceSetup setup;
     setup.bufferSize = 32;
-    audioDeviceManager_.initialise (1, 2, nullptr, false, {}, &setup);
+    audioDeviceManager_.initialise (2, 2, nullptr, false, {}, &setup);
     audioDeviceManager_.addAudioCallback (audioReceivers_.get());
     audioDeviceManager_.addAudioCallback (audioSenders_.get());
 

@@ -158,6 +158,8 @@ void AudioReceivers::audioDeviceAboutToStart (juce::AudioIODevice* device)
 
     for (const auto& stream : receivers_)
         stream->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
+
+    RAV_TRACE ("Audio device about to start");
 }
 
 void AudioReceivers::audioDeviceStopped()

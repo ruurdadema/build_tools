@@ -57,11 +57,19 @@ private:
         juce::Label payloadTypeLabel_;
         juce::TextEditor payloadTypeEditor_;
 
-        juce::Label formatLabel_;
-        juce::ComboBox formatComboBox_;
+        juce::Label numChannelsLabel_;
+        juce::TextEditor numChannelsEditor_;
+
+        juce::Label sampleRateLabel_;
+        juce::ComboBox sampleRateComboBox_;
+
+        juce::Label encodingLabel_;
+        juce::ComboBox encodingComboBox_;
 
         juce::TextButton startStopButton_ { "Start" };
         juce::TextButton deleteButton_ { "Delete" };
+
+        juce::Label statusMessage_;
 
         AudioSenders::SenderState senderState_;
 
