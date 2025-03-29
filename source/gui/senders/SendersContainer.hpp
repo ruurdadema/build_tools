@@ -66,7 +66,7 @@ private:
         juce::Label encodingLabel_;
         juce::ComboBox encodingComboBox_;
 
-        juce::TextButton startStopButton_ { "Start" };
+        juce::TextButton onOffButton_ { "Start" };
         juce::TextButton deleteButton_ { "Delete" };
 
         juce::Label statusMessage_;

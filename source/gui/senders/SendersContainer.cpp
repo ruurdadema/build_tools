@@ -247,15 +247,15 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     statusMessage_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (statusMessage_);
 
-    startStopButton_.setClickingTogglesState (true);
-    startStopButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::green);
-    startStopButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::yellow);
-    startStopButton_.onClick = [this] {
+    onOffButton_.setClickingTogglesState (true);
+    onOffButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
+    onOffButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::green);
+    onOffButton_.onClick = [this] {
         rav::RavennaSender::ConfigurationUpdate update;
-        update.enabled = startStopButton_.getToggleState();
+        update.enabled = onOffButton_.getToggleState();
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
     };
-    addAndMakeVisible (startStopButton_);
+    addAndMakeVisible (onOffButton_);
 
     deleteButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::red);
     deleteButton_.onClick = [this] {
@@ -285,8 +285,8 @@ void SendersContainer::Row::update (const AudioSenders::SenderState& state)
     encodingComboBox_.setSelectedId (
         static_cast<int> (state.senderConfiguration.audio_format.encoding),
         juce::dontSendNotification);
-    startStopButton_.setToggleState (state.senderConfiguration.enabled, juce::dontSendNotification);
-    startStopButton_.setButtonText (state.senderConfiguration.enabled ? "Stop" : "Start");
+    onOffButton_.setToggleState (state.senderConfiguration.enabled, juce::dontSendNotification);
+    onOffButton_.setButtonText (state.senderConfiguration.enabled ? "On" : "Off");
 
     // Update status message and colours:
 
@@ -333,7 +333,7 @@ void SendersContainer::Row::resized()
     auto buttons = b.withTrimmedTop (b.getHeight() - kButtonHeight);
     deleteButton_.setBounds (buttons.removeFromRight (65));
     buttons.removeFromRight (kMargin);
-    startStopButton_.setBounds (buttons.removeFromRight (65));
+    onOffButton_.setBounds (buttons.removeFromRight (65));
 
     auto topRow = b.removeFromTop (24);
     b.removeFromTop (kMargin / 2);
