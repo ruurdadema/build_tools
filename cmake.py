@@ -113,7 +113,7 @@ class CMake:
         # Configure
         subprocess.run(cmd, check=True, env=self._env)
 
-    def build(self, args = None):
+    def build(self, extra_args = None):
         cmd = ['cmake']
 
         if self._path_to_build:
@@ -132,9 +132,11 @@ class CMake:
             cmd.append('--target')
             cmd.append(target)
 
-        if args:
+        if extra_args:
+            if not isinstance(extra_args, list):
+                raise ValueError('args should be a list')
             cmd.append('--')
-            cmd.append(args)
+            cmd.extend(extra_args)
 
         print('Invoke CMake build command: \"{}\"'.format(' '.join(cmd)))
 
