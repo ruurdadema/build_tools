@@ -57,10 +57,10 @@ FetchContent_Declare(
         GIT_TAG 8.0.6
 )
 
-FetchContent_MakeAvailable(JUCE)
-
 set(JUCE_ENABLE_MODULE_SOURCE_GROUPS ON)
 set_property(GLOBAL PROPERTY USE_FOLDERS YES)
+
+FetchContent_MakeAvailable(JUCE)
 
 set(JUCE_COMMON_TARGET_DEFINITIONS
         DONT_SET_USING_JUCE_NAMESPACE

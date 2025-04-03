@@ -13,16 +13,20 @@
 AudioSenders::AudioSenders (rav::RavennaNode& node) : node_ (node)
 {
     node_.subscribe (this).wait();
+    node_.subscribe_to_ptp_instance (this).wait();
 }
 
 AudioSenders::~AudioSenders()
 {
+    node_.unsubscribe_from_ptp_instance (this).wait();
     node_.unsubscribe (this).wait();
 }
 
 rav::Id AudioSenders::createSender() const
 {
-    return node_.create_sender().get();
+    rav::RavennaSender::ConfigurationUpdate config;
+    config.adjust_timestamps = true;
+    return node_.create_sender (std::move (config)).get();
 }
 
 void AudioSenders::removeSender (const rav::Id senderId) const
@@ -105,19 +109,45 @@ void AudioSenders::audioDeviceIOCallbackWithContext (
     const int numSamples,
     const juce::AudioIODeviceCallbackContext& context)
 {
+    TRACY_ZONE_SCOPED;
+
     std::ignore = outputChannelData;
     std::ignore = numOutputChannels;
     std::ignore = context;
+
+    const rav::AudioBufferView outputBuffer (
+        outputChannelData,
+        static_cast<size_t> (numOutputChannels),
+        static_cast<size_t> (numSamples));
+    outputBuffer.clear();
 
     const rav::AudioBufferView buffer (
         inputChannelData,
         static_cast<size_t> (numInputChannels),
         static_cast<size_t> (numSamples));
 
-    const auto lock = realtimeSharedContext_.lock_realtime();
+    auto lock = realtimeSharedContext_.lock_realtime();
+
+    if (!lock->deviceFormat.is_valid())
+        return;
+
+    const auto clock = get_local_clock();
+    auto rtp_ts = static_cast<uint32_t> (clock.now().to_samples (lock->deviceFormat.sample_rate));
+
+    if (!lock->rtp_ts.has_value())
+    {
+        if (!clock.is_calibrated())
+            return;
+        lock->rtp_ts = rtp_ts;
+    }
+
+    const auto diff = rav::WrappingUint32(rtp_ts).diff (rav::WrappingUint32(*lock->rtp_ts));
+    TRACY_PLOT("rtp ts diff", static_cast<int64_t>(diff));
 
     for (const auto* sender : lock->senders)
-        sender->processBlock (buffer);
+        sender->processBlock (buffer, *lock->rtp_ts);
+
+    *lock->rtp_ts += static_cast<uint32_t>(numSamples);
 }
 
 void AudioSenders::audioDeviceAboutToStart (juce::AudioIODevice* device)
@@ -132,6 +162,8 @@ void AudioSenders::audioDeviceAboutToStart (juce::AudioIODevice* device)
 
     for (const auto& sender : senders_)
         sender->prepareInput (deviceFormat_, 0);
+
+    updateRealtimeSharedContext();
 }
 
 void AudioSenders::audioDeviceStopped() {}
@@ -155,6 +187,7 @@ void AudioSenders::updateRealtimeSharedContext()
     auto newContext = std::make_unique<RealtimeSharedContext>();
     for (const auto& sender : senders_)
         newContext->senders.push_back (sender.get());
+    newContext->deviceFormat = deviceFormat_;
     if (!realtimeSharedContext_.update (std::move (newContext)))
     {
         RAV_ERROR ("Failed to update realtime shared context");
@@ -204,7 +237,8 @@ void AudioSenders::Sender::prepareInput (const rav::AudioFormat inputFormat, [[m
         subscriber->onAudioSenderUpdated (senderId_, &state_);
 }
 
-void AudioSenders::Sender::processBlock (const rav::AudioBufferView<const float>& inputBuffer) const
+void AudioSenders::Sender::processBlock (const rav::AudioBufferView<const float>& inputBuffer, const uint32_t timestamp)
+    const
 {
-    std::ignore = owner_.node_.send_audio_data_realtime (senderId_, inputBuffer, {}); // TODO: Timestamp
+    std::ignore = owner_.node_.send_audio_data_realtime (senderId_, inputBuffer, timestamp);
 }

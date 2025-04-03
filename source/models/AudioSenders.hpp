@@ -15,7 +15,10 @@
 
 #include <juce_audio_devices/juce_audio_devices.h>
 
-class AudioSenders : public rav::RavennaNode::Subscriber, public juce::AudioIODeviceCallback
+class AudioSenders :
+    public rav::RavennaNode::Subscriber,
+    public juce::AudioIODeviceCallback,
+    public rav::ptp::Instance::Subscriber
 {
 public:
     struct SenderState
@@ -43,14 +46,13 @@ public:
     };
 
     explicit AudioSenders (rav::RavennaNode& node);
-
     ~AudioSenders() override;
 
     /**
      * Creates a sender.
      * @return A valid id of the newly created sender, or an invalid id on failure.
      */
-    [[nodiscard]] rav::Id createSender () const;
+    [[nodiscard]] rav::Id createSender() const;
 
     /**
      * Removes a sender.
@@ -109,8 +111,8 @@ private:
             rav::Id sender_id,
             const rav::RavennaSender::Configuration& configuration) override;
 
-        void prepareInput(rav::AudioFormat inputFormat, uint32_t max_num_frames);
-        void processBlock (const rav::AudioBufferView<const float>& inputBuffer) const;
+        void prepareInput (rav::AudioFormat inputFormat, uint32_t max_num_frames);
+        void processBlock (const rav::AudioBufferView<const float>& inputBuffer, uint32_t timestamp) const;
 
     private:
         [[maybe_unused]] AudioSenders& owner_;
@@ -122,6 +124,8 @@ private:
     struct RealtimeSharedContext
     {
         std::vector<Sender*> senders;
+        std::optional<uint32_t> rtp_ts{};
+        rav::AudioFormat deviceFormat;
     };
 
     rav::RavennaNode& node_;

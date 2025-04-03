@@ -8,6 +8,7 @@
     "portaudio",
     "cli11",
     "asio",
-    "tl-expected"
+    "tl-expected",
+    "nanobench"
   ]
 }
