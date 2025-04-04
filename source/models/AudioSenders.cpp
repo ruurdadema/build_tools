@@ -24,9 +24,8 @@ AudioSenders::~AudioSenders()
 
 rav::Id AudioSenders::createSender() const
 {
-    rav::RavennaSender::ConfigurationUpdate config;
-    config.adjust_timestamps = true;
-    return node_.create_sender (std::move (config)).get();
+    const rav::RavennaSender::ConfigurationUpdate config;
+    return node_.create_sender (config).get();
 }
 
 void AudioSenders::removeSender (const rav::Id senderId) const
@@ -132,17 +131,19 @@ void AudioSenders::audioDeviceIOCallbackWithContext (
         return;
 
     const auto clock = get_local_clock();
-    auto rtp_ts = static_cast<uint32_t> (clock.now().to_samples (lock->deviceFormat.sample_rate));
+    auto ptp_ts = static_cast<uint32_t> (clock.now().to_samples (lock->deviceFormat.sample_rate));
 
     if (!lock->rtp_ts.has_value())
     {
         if (!clock.is_calibrated())
             return;
-        lock->rtp_ts = rtp_ts;
+        lock->rtp_ts = ptp_ts;
     }
 
-    const auto diff = rav::WrappingUint32(rtp_ts).diff (rav::WrappingUint32(*lock->rtp_ts));
-    TRACY_PLOT("rtp ts diff", static_cast<int64_t>(diff));
+    const auto drift = rav::WrappingUint32(ptp_ts).diff (rav::WrappingUint32(*lock->rtp_ts));
+    // Positive means audio device is ahead of the PTP clock, negative means behind
+
+    TRACY_PLOT("drift", static_cast<int64_t>(drift));
 
     for (const auto* sender : lock->senders)
         sender->processBlock (buffer, *lock->rtp_ts);
