@@ -132,7 +132,7 @@ private:
         void processBlock (const rav::AudioBufferView<float>& outputBuffer);
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event) override;
+        void on_rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event) override;
         void on_data_received (rav::WrappingUint32 timestamp) override;
         void on_data_ready (rav::WrappingUint32 timestamp) override;
 

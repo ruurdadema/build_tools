@@ -233,7 +233,7 @@ void AudioReceivers::Receiver::processBlock (const rav::AudioBufferView<float>& 
     std::ignore = owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, {});
 }
 
-void AudioReceivers::Receiver::rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event)
+void AudioReceivers::Receiver::on_rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
