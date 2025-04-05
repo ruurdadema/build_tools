@@ -11,6 +11,7 @@
 #pragma once
 
 #include "models/AudioReceivers.hpp"
+#include "models/AudioSenders.hpp"
 #include "models/RavennaSessions.hpp"
 
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -24,5 +25,6 @@ public:
     virtual void cloneWindow() = 0;
     virtual RavennaSessions& getSessions() = 0;
     virtual AudioReceivers& getAudioReceivers() = 0;
+    virtual AudioSenders& getAudioSenders() = 0;
     virtual juce::AudioDeviceManager& getAudioDeviceManager() = 0;
 };

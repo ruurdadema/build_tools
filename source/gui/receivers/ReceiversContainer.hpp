@@ -32,8 +32,6 @@ private:
     static constexpr int kRowHeight = 138;
     static constexpr int kMargin = 10;
 
-    ApplicationContext& context_;
-
     class SdpViewer : public juce::Component
     {
     public:
@@ -69,7 +67,7 @@ private:
 
         struct
         {
-            juce::String streamName;
+            juce::String sessionName;
             juce::String audioFormat { "..." };
             juce::String packetTimeFrames { "..." };
             juce::String address { "..." };
@@ -100,6 +98,7 @@ private:
         void update();
     };
 
+    ApplicationContext& context_;
     juce::OwnedArray<Row> rows_;
     MessageThreadExecutor executor_;
 };

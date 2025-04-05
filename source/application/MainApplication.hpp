@@ -42,12 +42,14 @@ public:
     RavennaSessions& getSessions() override;
     juce::AudioDeviceManager& getAudioDeviceManager() override;
     AudioReceivers& getAudioReceivers() override;
+    AudioSenders& getAudioSenders() override;
 
 private:
     juce::AudioDeviceManager audioDeviceManager_;
     std::unique_ptr<rav::RavennaNode> ravennaNode_;
     std::unique_ptr<RavennaSessions> sessions_;
     std::unique_ptr<AudioReceivers> audioReceivers_;
+    std::unique_ptr<AudioSenders> audioSenders_;
     std::vector<std::unique_ptr<juce::ResizableWindow>> mainWindows_;
 
     void addWindow();

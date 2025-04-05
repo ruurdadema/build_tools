@@ -70,39 +70,43 @@ bool MainApplication::moreThanOneInstanceAllowed()
 void MainApplication::initialise (const juce::String& commandLine)
 {
     CLI::App app { PROJECT_PRODUCT_NAME };
-    std::string interfaceAddress;
-    app.add_option ("--interface-addr", interfaceAddress, "The interface address");
+    std::string interfaceAddressString;
+    app.add_option ("--interface-addr", interfaceAddressString, "The interface address");
     app.parse (commandLine.toStdString(), false);
 
-    rav::rtp::Receiver::Configuration config;
-    if (!interfaceAddress.empty())
+    asio::ip::address_v4 interfaceAddress;
+    if (!interfaceAddressString.empty())
     {
         asio::error_code ec;
-        config.interface_address = asio::ip::make_address (interfaceAddress, ec);
+        interfaceAddress = asio::ip::make_address_v4 (interfaceAddressString, ec);
         if (ec)
         {
-            RAV_ERROR ("Invalid interface address: {}", interfaceAddress);
+            RAV_ERROR ("Invalid interface address: {}", interfaceAddressString);
             juce::NativeMessageBox::showMessageBoxAsync (
                 juce::AlertWindow::AlertIconType::WarningIcon,
                 "Invalid interface address",
-                "Failed to parse the interface address: " + interfaceAddress,
+                "Failed to parse the interface address: " + interfaceAddressString,
                 nullptr);
         }
     }
-    ravennaNode_ = std::make_unique<rav::RavennaNode> (std::move (config));
+    ravennaNode_ = std::make_unique<rav::RavennaNode> (interfaceAddress);
     sessions_ = std::make_unique<RavennaSessions> (*ravennaNode_);
     audioReceivers_ = std::make_unique<AudioReceivers> (*ravennaNode_);
+    audioSenders_ = std::make_unique<AudioSenders> (*ravennaNode_);
 
     juce::AudioDeviceManager::AudioDeviceSetup setup;
     setup.bufferSize = 32;
-    audioDeviceManager_.initialise (1, 2, nullptr, false, {}, &setup);
+    audioDeviceManager_.initialise (2, 2, nullptr, false, {}, &setup);
     audioDeviceManager_.addAudioCallback (audioReceivers_.get());
+    audioDeviceManager_.addAudioCallback (audioSenders_.get());
+
     addWindow();
 }
 
 void MainApplication::shutdown()
 {
     audioDeviceManager_.removeAudioCallback (audioReceivers_.get());
+    audioDeviceManager_.removeAudioCallback (audioSenders_.get());
     mainWindows_.clear();
 }
 
@@ -158,6 +162,11 @@ juce::AudioDeviceManager& MainApplication::getAudioDeviceManager()
 AudioReceivers& MainApplication::getAudioReceivers()
 {
     return *audioReceivers_;
+}
+
+AudioSenders& MainApplication::getAudioSenders()
+{
+    return *audioSenders_;
 }
 
 void MainApplication::addWindow()

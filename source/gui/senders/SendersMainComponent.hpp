@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "SendersContainer.hpp"
 #include "application/ApplicationContext.hpp"
 #include "gui/widgets/MiniAudioDeviceSelectorComponent.hpp"
 
@@ -23,5 +24,8 @@ public:
     void resized() override;
 
 private:
+    SendersContainer sendersContainer_;
+    juce::Viewport viewport_;
+
     MiniAudioDeviceSelectorComponent miniDeviceSelector_;
 };

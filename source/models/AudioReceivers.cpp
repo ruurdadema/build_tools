@@ -52,18 +52,18 @@ rav::rtp::StreamReceiver::StreamStats AudioReceivers::getStatisticsForReceiver (
     return node_.get_stats_for_receiver (receiverId).get();
 }
 
-bool AudioReceivers::addSubscriber (Subscriber* subscriber)
+bool AudioReceivers::subscribe (Subscriber* subscriber)
 {
     if (subscribers_.add (subscriber))
     {
-        for (const auto& stream : receivers_)
-            subscriber->onAudioReceiverUpdated (stream->getReceiverId(), &stream->getState());
+        for (const auto& receiver : receivers_)
+            subscriber->onAudioReceiverUpdated (receiver->getReceiverId(), &receiver->getState());
         return true;
     }
     return false;
 }
 
-bool AudioReceivers::removeSubscriber (Subscriber* subscriber)
+bool AudioReceivers::unsubscribe (Subscriber* subscriber)
 {
     return subscribers_.remove (subscriber);
 }
@@ -73,7 +73,7 @@ void AudioReceivers::ravenna_receiver_added (const rav::RavennaReceiver& receive
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
 
     executor_.callAsync ([this, streamId = receiver.get_id(), sessionName = receiver.get_session_name()] {
-        RAV_ASSERT (findRxStream (streamId) == nullptr, "Receiver already exists");
+        RAV_ASSERT (findReceiver (streamId) == nullptr, "Receiver already exists");
         const auto& it = receivers_.emplace_back (std::make_unique<Receiver> (*this, streamId, sessionName));
         if (targetFormat_.is_valid() && maxNumFramesPerBlock_ > 0)
             it->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
@@ -113,8 +113,6 @@ void AudioReceivers::audioDeviceIOCallbackWithContext (
     [[maybe_unused]] const juce::AudioIODeviceCallbackContext& context)
 {
     TRACY_ZONE_SCOPED;
-
-    // TODO: Synchronize with main thread
 
     RAV_ASSERT (numInputChannels >= 0, "Num input channels must be >= 0");
     RAV_ASSERT (numOutputChannels >= 0, "Num output channels must be >= 0");
@@ -160,6 +158,8 @@ void AudioReceivers::audioDeviceAboutToStart (juce::AudioIODevice* device)
 
     for (const auto& stream : receivers_)
         stream->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
+
+    RAV_TRACE ("Audio device about to start");
 }
 
 void AudioReceivers::audioDeviceStopped()
@@ -217,6 +217,8 @@ void AudioReceivers::Receiver::processBlock (const rav::AudioBufferView<float>& 
 {
     TRACY_ZONE_SCOPED;
 
+    outputBuffer.clear();
+
     const auto state = realtimeSharedState_.lock_realtime();
 
     if (!state->inputFormat.is_valid())
@@ -228,13 +230,10 @@ void AudioReceivers::Receiver::processBlock (const rav::AudioBufferView<float>& 
         return;
     }
 
-    if (!owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, {}).has_value())
-    {
-        outputBuffer.clear(); // Receiver not (yet) available, make sure we don't output garbage
-    }
+    std::ignore = owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, {});
 }
 
-void AudioReceivers::Receiver::rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event)
+void AudioReceivers::Receiver::on_rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
@@ -269,12 +268,12 @@ void AudioReceivers::Receiver::updateRealtimeSharedState()
     }
 }
 
-AudioReceivers::Receiver* AudioReceivers::findRxStream (const rav::Id receiverId) const
+AudioReceivers::Receiver* AudioReceivers::findReceiver (const rav::Id receiverId) const
 {
     JUCE_ASSERT_MESSAGE_THREAD;
-    for (const auto& stream : receivers_)
-        if (stream->getReceiverId() == receiverId)
-            return stream.get();
+    for (const auto& receiver : receivers_)
+        if (receiver->getReceiverId() == receiverId)
+            return receiver.get();
     return nullptr;
 }
 

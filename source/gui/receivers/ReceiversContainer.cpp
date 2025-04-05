@@ -19,7 +19,7 @@
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
 {
-    if (!context_.getAudioReceivers().addSubscriber (this))
+    if (!context_.getAudioReceivers().subscribe (this))
     {
         RAV_ERROR ("Failed to add subscriber");
     }
@@ -27,7 +27,7 @@ ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ 
 
 ReceiversContainer::~ReceiversContainer()
 {
-    if (!context_.getAudioReceivers().removeSubscriber (this))
+    if (!context_.getAudioReceivers().unsubscribe (this))
     {
         RAV_ERROR ("Failed to remove subscriber");
     }
@@ -128,7 +128,7 @@ ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id rece
     audioReceivers_ (audioReceivers),
     receiverId_ (receiverId)
 {
-    stream_.streamName = name;
+    stream_.sessionName = name;
 
     delayEditor_.setInputRestrictions (10, "0123456789");
     delayEditor_.onReturnKey = [this] {
@@ -217,7 +217,7 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
 
     g.setColour (Constants::Colours::text);
     g.setFont (juce::FontOptions (fontSize, juce::Font::bold));
-    g.drawText (stream_.streamName, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (stream_.sessionName, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText ("Stats", column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText ("Receive interval", column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText ("Settings", column4.removeFromTop (rowHeight), juce::Justification::centredLeft);

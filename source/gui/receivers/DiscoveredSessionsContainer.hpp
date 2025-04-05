@@ -33,8 +33,6 @@ private:
     static constexpr int kRowHeight = 60;
     static constexpr int kMargin = 10;
 
-    ApplicationContext& context_;
-
     class Row : public Component
     {
     public:
@@ -52,6 +50,7 @@ private:
         juce::TextButton startButton_{""};
     };
 
+    ApplicationContext& context_;
     juce::OwnedArray<Row> rows_;
     MessageThreadExecutor executor_;
 };
