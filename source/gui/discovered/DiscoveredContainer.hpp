@@ -11,23 +11,20 @@
 #pragma once
 
 #include "application/ApplicationContext.hpp"
-#include "util/MessageThreadExecutor.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class DiscoveredSessionsContainer : public juce::Component, public RavennaSessions::Subscriber
+class DiscoveredContainer : public juce::Component, public RavennaSessions::Subscriber
 {
 public:
-    explicit DiscoveredSessionsContainer (ApplicationContext& context);
-    ~DiscoveredSessionsContainer() override;
+    explicit DiscoveredContainer (ApplicationContext& context);
+    ~DiscoveredContainer() override;
 
-    void paint (juce::Graphics& g) override;
     void resized() override;
+    void resizeToFitContent();
 
-    void resizeBasedOnContent();
-
-    // Sessions::Subscriber overrides
     void onSessionUpdated (const std::string& sessionName, const RavennaSessions::SessionState* state) override;
+    void onNodeUpdated (const std::string& nodeName, const RavennaSessions::NodeState* state) override;
 
 private:
     static constexpr int kRowHeight = 60;
@@ -36,21 +33,40 @@ private:
     class Row : public Component
     {
     public:
-        explicit Row (ApplicationContext& context, const RavennaSessions::SessionState& session);
+        enum class Type
+        {
+            Session,
+            Node
+        };
 
-        juce::String getSessionName() const;
+        Row (ApplicationContext& context, Type type);
 
         void update (const RavennaSessions::SessionState& sessionState);
-        void resized() override;
+        void update (const RavennaSessions::NodeState& nodeState);
+
+        [[nodiscard]] Type getType() const
+        {
+            return type_;
+        }
+
+        [[nodiscard]] juce::String getSessionName() const
+        {
+            return sessionName_.getText();
+        }
+
         void paint (juce::Graphics& g) override;
+        void resized() override;
 
     private:
+        Type type_;
+
+        juce::Label nameLabel_;
         juce::Label sessionName_;
+        juce::Label descriptionLabel_;
         juce::Label description_;
-        juce::TextButton startButton_{""};
+        juce::TextButton createReceiverButton_ { "" };
     };
 
     ApplicationContext& context_;
     juce::OwnedArray<Row> rows_;
-    MessageThreadExecutor executor_;
 };

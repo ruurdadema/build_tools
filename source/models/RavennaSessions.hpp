@@ -16,6 +16,12 @@
 class RavennaSessions : public rav::RavennaNode::Subscriber
 {
 public:
+    struct NodeState
+    {
+        std::string name;
+        std::string host;
+    };
+
     struct SessionState
     {
         std::string name;
@@ -27,6 +33,7 @@ public:
     public:
         virtual ~Subscriber() = default;
         virtual void onSessionUpdated ([[maybe_unused]] const std::string& sessionName, [[maybe_unused]] const SessionState* state) {}
+        virtual void onNodeUpdated ([[maybe_unused]] const std::string& nodeName, [[maybe_unused]] const NodeState* state) {}
     };
 
     explicit RavennaSessions (rav::RavennaNode& ravennaNode);
@@ -38,12 +45,16 @@ public:
     // rav::ravenna_node::subscriber overrides
     void ravenna_session_discovered (const rav::dnssd::Browser::ServiceResolved& event) override;
     void ravenna_session_removed (const rav::dnssd::Browser::ServiceRemoved& event) override;
+    void ravenna_node_discovered (const rav::dnssd::Browser::ServiceResolved& event) override;
+    void ravenna_node_removed (const rav::dnssd::Browser::ServiceRemoved& event) override;
 
 private:
     rav::RavennaNode& node_;
     rav::SubscriberList<Subscriber> subscribers_;
     std::vector<SessionState> sessions_;
+    std::vector<NodeState> nodes_;
     MessageThreadExecutor executor_;
 
     SessionState* findSession (const std::string& sessionName);
+    NodeState* findNode (const std::string& nodeName);
 };

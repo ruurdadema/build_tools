@@ -27,6 +27,8 @@ bool RavennaSessions::addSubscriber (Subscriber* subscriber)
     {
         for (const auto& session : sessions_)
             subscriber->onSessionUpdated (session.name, &session);
+        for (const auto& node : nodes_)
+            subscriber->onNodeUpdated (node.name, &node);
         return true;
     }
     return false;
@@ -73,13 +75,55 @@ void RavennaSessions::ravenna_session_removed (const rav::dnssd::Browser::Servic
     });
 }
 
+void RavennaSessions::ravenna_node_discovered (const rav::dnssd::Browser::ServiceResolved& event)
+{
+    RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
+    executor_.callAsync ([this, desc = event.description] {
+        if (auto* node = findNode (desc.name))
+        {
+            node->host = desc.host_target;
+            for (auto* subscriber : subscribers_)
+                subscriber->onNodeUpdated (desc.name, node);
+            return;
+        }
+
+        const auto& it = nodes_.emplace_back (NodeState { desc.name, desc.host_target });
+        for (auto* subscriber : subscribers_)
+            subscriber->onNodeUpdated (desc.name, &it);
+    });
+}
+
+void RavennaSessions::ravenna_node_removed (const rav::dnssd::Browser::ServiceRemoved& event)
+{
+    RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
+    executor_.callAsync ([this, desc = event.description] {
+        for (auto it = nodes_.begin(); it != nodes_.end(); ++it)
+        {
+            if (it->name == desc.name)
+            {
+                nodes_.erase (it);
+                for (auto* subscriber : subscribers_)
+                    subscriber->onNodeUpdated (desc.name, nullptr);
+                return;
+            }
+        }
+    });
+}
+
 RavennaSessions::SessionState* RavennaSessions::findSession (const std::string& sessionName)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     for (auto& session : sessions_)
-    {
         if (session.name == sessionName)
             return &session;
-    }
+    return nullptr;
+}
+
+RavennaSessions::NodeState* RavennaSessions::findNode (const std::string& nodeName)
+{
+    JUCE_ASSERT_MESSAGE_THREAD;
+    for (auto& node : nodes_)
+        if (node.name == nodeName)
+            return &node;
     return nullptr;
 }

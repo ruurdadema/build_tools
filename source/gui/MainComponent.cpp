@@ -10,6 +10,7 @@
 
 #include "MainComponent.hpp"
 
+#include "discovered/DiscoveredMainComponent.hpp"
 #include "ravennakit/core/tracy.hpp"
 #include "receivers/ReceiversMainComponent.hpp"
 #include "senders/SendersMainComponent.hpp"
@@ -17,6 +18,9 @@
 
 MainComponent::MainComponent (ApplicationContext& context) : context_ (context), topRightSection_ (context)
 {
+    menu_.addItem ("Discovered", "discovered", [this] {
+        showContent (std::make_unique<DiscoveredMainComponent> (context_));
+    });
     menu_.addItem ("Receivers", "receivers", [this] {
         showContent (std::make_unique<ReceiversMainComponent> (context_));
     });

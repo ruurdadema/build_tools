@@ -10,22 +10,19 @@
 
 #pragma once
 
-#include "ReceiversContainer.hpp"
+#include "DiscoveredContainer.hpp"
 #include "application/ApplicationContext.hpp"
-#include "gui/widgets/MiniAudioDeviceSelectorComponent.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class ReceiversMainComponent : public juce::Component {
+class DiscoveredMainComponent : public juce::Component
+{
 public:
-    explicit ReceiversMainComponent(ApplicationContext& context);
+    explicit DiscoveredMainComponent (ApplicationContext& context);
 
-    void paint (juce::Graphics& g) override;
     void resized() override;
 
 private:
-    ReceiversContainer streamsContainer_;
+    DiscoveredContainer discoveredContainer_;
     juce::Viewport viewport_;
-
-    MiniAudioDeviceSelectorComponent miniDeviceSelector_;
 };

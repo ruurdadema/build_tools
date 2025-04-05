@@ -45,6 +45,7 @@ private:
     private:
         AudioSenders& audioSenders_;
         rav::Id senderId_;
+
         juce::Label sessionNameLabel_;
         juce::TextEditor sessionNameEditor_;
 

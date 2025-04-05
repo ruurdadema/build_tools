@@ -31,6 +31,6 @@ void SendersMainComponent::resized()
 
     viewport_.setBounds (b);
 
-    sendersContainer_.setSize (viewport_.getWidth() - 10, 10);
+    sendersContainer_.setSize (viewport_.getWidth(), 10);
     sendersContainer_.resizeToFitContent();
 }
