@@ -63,6 +63,7 @@ private:
         rav::Id receiverId_;
         uint32_t delay_ { 0 };
         juce::TextButton showSdpButton_ { "" };
+        juce::TextButton onOffButton_ { "Start" };
         juce::TextButton deleteButton_ { "" };
 
         struct

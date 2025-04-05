@@ -34,11 +34,14 @@ void AudioReceivers::removeReceiver (const rav::Id receiverId) const
     node_.remove_receiver (receiverId).wait();
 }
 
-void AudioReceivers::setReceiverDelay (const rav::Id receiverId, const uint32_t delaySamples) const
+void AudioReceivers::updateReceiverConfiguration (
+    const rav::Id senderId,
+    rav::RavennaReceiver::ConfigurationUpdate update) const
 {
-    if (!node_.set_receiver_delay (receiverId, delaySamples).get())
+    auto result = node_.update_receiver_configuration (senderId, std::move (update)).get();
+    if (!result)
     {
-        RAV_ERROR ("Failed to set receiver delay");
+        RAV_ERROR ("Failed to update receiver configuration: {}", result.error());
     }
 }
 
@@ -47,7 +50,7 @@ std::optional<std::string> AudioReceivers::getSdpTextForReceiver (const rav::Id 
     return node_.get_sdp_text_for_receiver (receiverId).get();
 }
 
-rav::rtp::StreamReceiver::StreamStats AudioReceivers::getStatisticsForReceiver (const rav::Id receiverId) const
+rav::RavennaReceiver::StreamStats AudioReceivers::getStatisticsForReceiver (const rav::Id receiverId) const
 {
     return node_.get_stats_for_receiver (receiverId).get();
 }
@@ -72,9 +75,9 @@ void AudioReceivers::ravenna_receiver_added (const rav::RavennaReceiver& receive
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
 
-    executor_.callAsync ([this, streamId = receiver.get_id(), sessionName = receiver.get_session_name()] {
+    executor_.callAsync ([this, streamId = receiver.get_id()] {
         RAV_ASSERT (findReceiver (streamId) == nullptr, "Receiver already exists");
-        const auto& it = receivers_.emplace_back (std::make_unique<Receiver> (*this, streamId, sessionName));
+        const auto& it = receivers_.emplace_back (std::make_unique<Receiver> (*this, streamId));
         if (targetFormat_.is_valid() && maxNumFramesPerBlock_ > 0)
             it->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
         updateRealtimeSharedContext();
@@ -119,13 +122,13 @@ void AudioReceivers::audioDeviceIOCallbackWithContext (
     RAV_ASSERT (numSamples >= 0, "Num samples must be >= 0");
 
     rav::AudioBufferView outputBuffer { outputChannelData,
-                                          static_cast<uint32_t> (numOutputChannels),
-                                          static_cast<uint32_t> (numSamples) };
+                                        static_cast<uint32_t> (numOutputChannels),
+                                        static_cast<uint32_t> (numSamples) };
 
     outputBuffer.clear();
 
     const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
-                                  .with_num_frames (static_cast<size_t> (numSamples));
+                                        .with_num_frames (static_cast<size_t> (numSamples));
 
     const auto lock = realtimeSharedContext_.lock_realtime();
 
@@ -168,12 +171,10 @@ void AudioReceivers::audioDeviceStopped()
     RAV_TRACE ("Audio device stopped");
 }
 
-AudioReceivers::Receiver::Receiver (AudioReceivers& owner, const rav::Id receiverId, std::string sessionName) :
+AudioReceivers::Receiver::Receiver (AudioReceivers& owner, const rav::Id receiverId) :
     owner_ (owner),
     receiverId_ (receiverId)
 {
-    state_.sessionName = std::move (sessionName);
-
     JUCE_ASSERT_MESSAGE_THREAD;
     owner_.node_.subscribe_to_receiver (receiverId_, this).wait();
 }
@@ -233,19 +234,34 @@ void AudioReceivers::Receiver::processBlock (const rav::AudioBufferView<float>& 
     std::ignore = owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, {});
 }
 
-void AudioReceivers::Receiver::on_rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event)
+void AudioReceivers::Receiver::ravenna_receiver_stream_updated (const rav::RavennaReceiver::StreamParameters& streamParameters)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
-    executor_.callAsync ([this, event] {
-        state_.delaySamples = event.delay_samples;
-        state_.packetTimeFrames = event.packet_time_frames;
-        state_.state = event.state;
-        state_.session = event.session;
-        if (event.selected_audio_format.is_valid() && state_.inputFormat != event.selected_audio_format)
-            prepareInput (event.selected_audio_format);
+    executor_.callAsync ([this, streamParameters] {
+        state_.packetTimeFrames = streamParameters.packet_time_frames;
+        state_.session = streamParameters.session;
+        state_.state = streamParameters.state;
+        if (streamParameters.audio_format.is_valid() && state_.inputFormat != streamParameters.audio_format)
+            prepareInput (streamParameters.audio_format);
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioReceiverUpdated (receiverId_, &state_);
+    });
+}
+
+void AudioReceivers::Receiver::ravenna_receiver_configuration_updated (
+    rav::Id receiver_id,
+    const rav::RavennaReceiver::Configuration& configuration)
+{
+    RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
+
+    executor_.callAsync ([this, receiver_id, configuration] {
+        RAV_ASSERT (receiver_id == receiverId_, "Receiver ID mismatch");
+        state_.sessionName = configuration.session_name;
+        state_.enabled = configuration.enabled;
+        state_.delayFrames = configuration.delay_frames;
+        for (auto* subscriber : owner_.subscribers_)
+            subscriber->onAudioReceiverUpdated (receiver_id, &state_);
     });
 }
 

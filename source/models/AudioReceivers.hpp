@@ -13,7 +13,6 @@
 #include "ravennakit/core/audio/audio_buffer.hpp"
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
-#include "ravennakit/rtp/rtp_stream_receiver.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -31,8 +30,9 @@ public:
         rav::AudioFormat outputFormat;
         rav::rtp::Session session;
         uint16_t packetTimeFrames = 0;
-        uint32_t delaySamples = 0;
-        rav::rtp::StreamReceiver::ReceiverState state {};
+        uint32_t delayFrames = 0;
+        rav::RavennaReceiver::ReceiverState state {};
+        bool enabled = false;
     };
 
     class Subscriber
@@ -67,11 +67,11 @@ public:
     void removeReceiver (rav::Id receiverId) const;
 
     /**
-     * Sets the delay for a receiver.
-     * @param receiverId The receiver to set the delay for.
-     * @param delaySamples The delay in samples.
+     * Updates the configuration of a sender.
+     * @param senderId The id of the sender to update.
+     * @param update The configuration changes to apply.
      */
-    void setReceiverDelay (rav::Id receiverId, uint32_t delaySamples) const;
+    void updateReceiverConfiguration (rav::Id senderId, rav::RavennaReceiver::ConfigurationUpdate update) const;
 
     /**
      * Gets the packet statistics for a receiver.
@@ -85,7 +85,7 @@ public:
      * @param receiverId The receiver to get the packet statistics for.
      * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
      */
-    [[nodiscard]] rav::rtp::StreamReceiver::StreamStats getStatisticsForReceiver (rav::Id receiverId) const;
+    [[nodiscard]] rav::RavennaReceiver::StreamStats getStatisticsForReceiver (rav::Id receiverId) const;
 
     /**
      * Adds a subscriber.
@@ -117,10 +117,10 @@ public:
     void audioDeviceStopped() override;
 
 private:
-    class Receiver : public rav::rtp::StreamReceiver::Subscriber
+    class Receiver : public rav::RavennaReceiver::Subscriber
     {
     public:
-        explicit Receiver (AudioReceivers& owner, rav::Id receiverId, std::string sessionName);
+        explicit Receiver (AudioReceivers& owner, rav::Id receiverId);
         ~Receiver() override;
 
         [[nodiscard]] rav::Id getReceiverId() const;
@@ -132,7 +132,10 @@ private:
         void processBlock (const rav::AudioBufferView<float>& outputBuffer);
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void on_rtp_stream_receiver_updated (const rav::rtp::StreamReceiver::StreamUpdatedEvent& event) override;
+        void ravenna_receiver_stream_updated (const rav::RavennaReceiver::StreamParameters& streamParameters) override;
+        void ravenna_receiver_configuration_updated (
+            rav::Id receiver_id,
+            const rav::RavennaReceiver::Configuration& configuration) override;
         void on_data_received (rav::WrappingUint32 timestamp) override;
         void on_data_ready (rav::WrappingUint32 timestamp) override;
 

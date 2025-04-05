@@ -133,7 +133,9 @@ ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id rece
     delayEditor_.setInputRestrictions (10, "0123456789");
     delayEditor_.onReturnKey = [this] {
         const auto value = static_cast<uint32_t> (delayEditor_.getText().getIntValue());
-        audioReceivers_.setReceiverDelay (receiverId_, value);
+        rav::RavennaReceiver::ConfigurationUpdate update;
+        update.delay_frames = value;
+        audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (update));
     };
     delayEditor_.onEscapeKey = [this] {
         delayEditor_.setText (juce::String (delay_));
@@ -166,6 +168,17 @@ ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id rece
     };
     addAndMakeVisible (showSdpButton_);
 
+    onOffButton_.setButtonText ("On");
+    onOffButton_.setClickingTogglesState (true);
+    onOffButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
+    onOffButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::green);
+    onOffButton_.onClick = [this] {
+        rav::RavennaReceiver::ConfigurationUpdate update;
+        update.enabled = onOffButton_.getToggleState();
+        audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (update));
+    };
+    addAndMakeVisible (onOffButton_);
+
     deleteButton_.setButtonText ("Delete");
     deleteButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::red);
     deleteButton_.onClick = [this] {
@@ -188,16 +201,20 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
     stream_.audioFormat = state.inputFormat.to_string();
     stream_.packetTimeFrames = "ptime: " + juce::String (state.packetTimeFrames);
     stream_.address = state.session.connection_address.to_string();
-    stream_.state = juce::String ("State: ") + rav::rtp::StreamReceiver::to_string (state.state);
+    stream_.state = juce::String ("State: ") + rav::RavennaReceiver::to_string (state.state);
 
     if (state.inputFormat.sample_rate != state.outputFormat.sample_rate)
         stream_.warning = "Warning: sample rate mismatch";
     else
         stream_.warning.clear();
 
-    delay_ = state.delaySamples;
+    delay_ = state.delayFrames;
     if (!delayEditor_.hasKeyboardFocus (true))
-        delayEditor_.setText (juce::String (state.delaySamples));
+        delayEditor_.setText (juce::String (state.delayFrames));
+
+    onOffButton_.setToggleState (state.enabled, juce::dontSendNotification);
+    onOffButton_.setButtonText (state.enabled ? "On" : "Off");
+
     repaint();
 }
 
@@ -254,6 +271,8 @@ void ReceiversContainer::Row::resized()
 
     auto bottom = b.removeFromBottom (27);
     deleteButton_.setBounds (bottom.removeFromRight (65));
+    bottom.removeFromRight (6);
+    onOffButton_.setBounds (bottom.removeFromRight (65));
     bottom.removeFromRight (6);
     showSdpButton_.setBounds (bottom.removeFromRight (89));
 }
