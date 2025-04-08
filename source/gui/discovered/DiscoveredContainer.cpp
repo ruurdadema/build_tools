@@ -13,14 +13,16 @@
 #include "gui/lookandfeel/Constants.hpp"
 #include <juce_gui_extra/juce_gui_extra.h>
 
-DiscoveredContainer::DiscoveredContainer (ApplicationContext& context) : context_ (context)
+DiscoveredContainer::DiscoveredContainer (ApplicationContext& context, WindowContext& windowContext) :
+    appContext_ (context),
+    windowContext_ (windowContext)
 {
-    context_.getSessions().addSubscriber (this);
+    appContext_.getSessions().addSubscriber (this);
 }
 
 DiscoveredContainer::~DiscoveredContainer()
 {
-    context_.getSessions().removeSubscriber (this);
+    appContext_.getSessions().removeSubscriber (this);
 }
 
 void DiscoveredContainer::resized()
@@ -51,7 +53,7 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_, Row::Type::Session));
+        auto* row = rows_.add (std::make_unique<Row> (appContext_, windowContext_, Row::Type::Session));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
@@ -84,7 +86,7 @@ void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const Rave
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_, Row::Type::Node));
+        auto* row = rows_.add (std::make_unique<Row> (appContext_, windowContext_, Row::Type::Node));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
@@ -104,7 +106,8 @@ void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const Rave
     }
 }
 
-DiscoveredContainer::Row::Row (ApplicationContext& context, const Type type) : type_ (type)
+DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windowContext, const Type type) :
+    type_ (type)
 {
     nameLabel_.setText (type == Type::Session ? "Session" : "Node", juce::dontSendNotification);
     nameLabel_.setJustificationType (juce::Justification::topRight);
@@ -122,9 +125,10 @@ DiscoveredContainer::Row::Row (ApplicationContext& context, const Type type) : t
     addAndMakeVisible (description_);
 
     createReceiverButton_.setButtonText ("Create Receiver");
-    createReceiverButton_.onClick = [this, &context] {
+    createReceiverButton_.onClick = [this, &context, &windowContext] {
         const auto id = context.getAudioReceivers().createReceiver (getSessionName().toStdString());
         RAV_TRACE ("Created receiver with id: {}", id.value());
+        windowContext.navigateTo ("receivers");
     };
     addAndMakeVisible (createReceiverButton_);
 }

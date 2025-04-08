@@ -35,6 +35,19 @@ void HorizontalMenu::addItem (const juce::String& name, const juce::String& path
     resized();
 }
 
+bool HorizontalMenu::navigateTo (const juce::String& path)
+{
+    for (auto* item : buttons_)
+    {
+        if (item->getPath() == path)
+        {
+            item->triggerClick();
+            return true;
+        }
+    }
+    return false;
+}
+
 void HorizontalMenu::paint (juce::Graphics& g)
 {
     g.drawRect (getLocalBounds().removeFromBottom (1));

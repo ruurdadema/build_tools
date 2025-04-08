@@ -21,6 +21,8 @@ public:
 
     void addItem (const juce::String& name, const juce::String& path, std::function<void()> onClick);
 
+    bool navigateTo (const juce::String& path);
+
     void paint (juce::Graphics& g) override;
     void resized() override;
 

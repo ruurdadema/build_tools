@@ -11,13 +11,14 @@
 #pragma once
 
 #include "application/ApplicationContext.hpp"
+#include "gui/window/WindowContext.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
 class DiscoveredContainer : public juce::Component, public RavennaSessions::Subscriber
 {
 public:
-    explicit DiscoveredContainer (ApplicationContext& context);
+explicit DiscoveredContainer (ApplicationContext& context, WindowContext& windowContext);
     ~DiscoveredContainer() override;
 
     void resized() override;
@@ -39,7 +40,7 @@ private:
             Node
         };
 
-        Row (ApplicationContext& context, Type type);
+        Row (ApplicationContext& context, WindowContext& windowContext, Type type);
 
         void update (const RavennaSessions::SessionState& sessionState);
         void update (const RavennaSessions::NodeState& nodeState);
@@ -67,6 +68,7 @@ private:
         juce::TextButton createReceiverButton_ { "" };
     };
 
-    ApplicationContext& context_;
+    ApplicationContext& appContext_;
+    WindowContext& windowContext_;
     juce::OwnedArray<Row> rows_;
 };

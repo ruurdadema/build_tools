@@ -10,7 +10,8 @@
 
 #include "DiscoveredMainComponent.hpp"
 
-DiscoveredMainComponent::DiscoveredMainComponent (ApplicationContext& context) : discoveredContainer_ (context)
+DiscoveredMainComponent::DiscoveredMainComponent (ApplicationContext& appContext, WindowContext& windowContext) :
+    discoveredContainer_ (appContext, windowContext)
 {
     viewport_.setViewedComponent (&discoveredContainer_, false);
     addAndMakeVisible (viewport_);
