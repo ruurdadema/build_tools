@@ -19,7 +19,7 @@
 MainComponent::MainComponent (ApplicationContext& context) : context_ (context), topRightSection_ (context)
 {
     menu_.addItem ("Discovered", "discovered", [this] {
-        showContent (std::make_unique<DiscoveredMainComponent> (context_));
+        showContent (std::make_unique<DiscoveredMainComponent> (context_, *this));
     });
     menu_.addItem ("Receivers", "receivers", [this] {
         showContent (std::make_unique<ReceiversMainComponent> (context_));
@@ -50,6 +50,11 @@ void MainComponent::resized()
     menu_.setBounds (top);
     if (content_ != nullptr)
         content_->setBounds (b);
+}
+
+bool MainComponent::navigateTo (const juce::String& path)
+{
+    return menu_.navigateTo (path);
 }
 
 MainComponent::TopRightSection::TopRightSection (ApplicationContext& context)

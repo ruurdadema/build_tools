@@ -49,7 +49,7 @@ private:
     class Row : public Component, public juce::Timer
     {
     public:
-        explicit Row (AudioReceivers& audioReceivers, rav::Id receiverId, const std::string& name);
+        explicit Row (AudioReceivers& audioReceivers, rav::Id receiverId);
 
         rav::Id getId() const;
 
@@ -101,5 +101,8 @@ private:
 
     ApplicationContext& context_;
     juce::OwnedArray<Row> rows_;
+    juce::Label emptyLabel_;
     MessageThreadExecutor executor_;
+
+    void updateGuiState();
 };

@@ -10,19 +10,11 @@
 
 #pragma once
 
-#include "DiscoveredContainer.hpp"
-#include "application/ApplicationContext.hpp"
-
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class DiscoveredMainComponent : public juce::Component
+class WindowContext
 {
 public:
-    explicit DiscoveredMainComponent (ApplicationContext& appContext, WindowContext& windowContext);
-
-    void resized() override;
-
-private:
-    DiscoveredContainer discoveredContainer_;
-    juce::Viewport viewport_;
+    virtual ~WindowContext() = default;
+    virtual bool navigateTo (const juce::String& path) = 0;
 };

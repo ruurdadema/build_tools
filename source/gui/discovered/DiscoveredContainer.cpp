@@ -13,19 +13,30 @@
 #include "gui/lookandfeel/Constants.hpp"
 #include <juce_gui_extra/juce_gui_extra.h>
 
-DiscoveredContainer::DiscoveredContainer (ApplicationContext& context) : context_ (context)
+DiscoveredContainer::DiscoveredContainer (ApplicationContext& context, WindowContext& windowContext) :
+    appContext_ (context),
+    windowContext_ (windowContext)
 {
-    context_.getSessions().addSubscriber (this);
+    emptyLabel_.setText ("No discovered RAVENNA sessions.", juce::dontSendNotification);
+    emptyLabel_.setColour (juce::Label::textColourId, juce::Colours::grey);
+    emptyLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (emptyLabel_);
+    updateGuiState();
+
+    appContext_.getSessions().addSubscriber (this);
 }
 
 DiscoveredContainer::~DiscoveredContainer()
 {
-    context_.getSessions().removeSubscriber (this);
+    appContext_.getSessions().removeSubscriber (this);
 }
 
 void DiscoveredContainer::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
+
+    emptyLabel_.setBounds (b.reduced (kMargin));
+
     for (auto i = 0; i < rows_.size(); ++i)
     {
         rows_.getUnchecked (i)->setBounds (b.removeFromTop (kRowHeight));
@@ -35,7 +46,8 @@ void DiscoveredContainer::resized()
 
 void DiscoveredContainer::resizeToFitContent()
 {
-    setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
+    const auto calculateHeight = rows_.size() * kRowHeight + kMargin + kMargin * rows_.size();
+    setSize (getWidth(), std::max (calculateHeight, 100)); // Min to leave space for the empty label
 }
 
 void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const RavennaSessions::SessionState* state)
@@ -51,7 +63,7 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_, Row::Type::Session));
+        auto* row = rows_.add (std::make_unique<Row> (appContext_, windowContext_, Row::Type::Session));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
@@ -69,6 +81,8 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
             }
         }
     }
+
+    updateGuiState();
 }
 
 void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const RavennaSessions::NodeState* state)
@@ -84,7 +98,7 @@ void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const Rave
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_, Row::Type::Node));
+        auto* row = rows_.add (std::make_unique<Row> (appContext_, windowContext_, Row::Type::Node));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
@@ -102,9 +116,12 @@ void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const Rave
             }
         }
     }
+
+    updateGuiState();
 }
 
-DiscoveredContainer::Row::Row (ApplicationContext& context, const Type type) : type_ (type)
+DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windowContext, const Type type) :
+    type_ (type)
 {
     nameLabel_.setText (type == Type::Session ? "Session" : "Node", juce::dontSendNotification);
     nameLabel_.setJustificationType (juce::Justification::topRight);
@@ -122,9 +139,10 @@ DiscoveredContainer::Row::Row (ApplicationContext& context, const Type type) : t
     addAndMakeVisible (description_);
 
     createReceiverButton_.setButtonText ("Create Receiver");
-    createReceiverButton_.onClick = [this, &context] {
+    createReceiverButton_.onClick = [this, &context, &windowContext] {
         const auto id = context.getAudioReceivers().createReceiver (getSessionName().toStdString());
         RAV_TRACE ("Created receiver with id: {}", id.value());
+        windowContext.navigateTo ("receivers");
     };
     addAndMakeVisible (createReceiverButton_);
 }
@@ -148,6 +166,11 @@ void DiscoveredContainer::Row::resized()
 
     sessionName_.setBounds (b.removeFromTop (20));
     description_.setBounds (b);
+}
+
+void DiscoveredContainer::updateGuiState()
+{
+    emptyLabel_.setVisible (rows_.isEmpty());
 }
 
 void DiscoveredContainer::Row::update (const RavennaSessions::SessionState& sessionState)

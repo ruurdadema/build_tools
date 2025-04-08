@@ -12,16 +12,19 @@
 
 #include "application/ApplicationContext.hpp"
 #include "widgets/HorizontalMenu.hpp"
+#include "window/WindowContext.hpp"
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
-class MainComponent final : public juce::Component
+class MainComponent final : public juce::Component, public WindowContext
 {
 public:
     explicit MainComponent(ApplicationContext& context);
 
     void paint (juce::Graphics&) override;
     void resized() override;
+
+    bool navigateTo (const juce::String& path) override;
 
 private:
     class TopRightSection final : public juce::Component

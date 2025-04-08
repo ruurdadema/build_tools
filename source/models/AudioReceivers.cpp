@@ -26,7 +26,10 @@ AudioReceivers::~AudioReceivers()
 
 rav::Id AudioReceivers::createReceiver (const std::string& sessionName) const
 {
-    return node_.create_receiver (sessionName).get();
+    rav::RavennaReceiver::ConfigurationUpdate config;
+    config.session_name = sessionName;
+    config.enabled = true;
+    return node_.create_receiver (config).get();
 }
 
 void AudioReceivers::removeReceiver (const rav::Id receiverId) const
@@ -132,9 +135,10 @@ void AudioReceivers::audioDeviceIOCallbackWithContext (
 
     const auto lock = realtimeSharedContext_.lock_realtime();
 
+    std::optional<uint32_t> atTimestamp;
     for (auto* receiver : lock->receivers)
     {
-        receiver->processBlock (intermediateBuffer);
+        atTimestamp = receiver->processBlock (intermediateBuffer, atTimestamp);
         outputBuffer.add (intermediateBuffer);
     }
 }
@@ -214,7 +218,9 @@ void AudioReceivers::Receiver::prepareOutput (const rav::AudioFormat& format, co
     updateRealtimeSharedState();
 }
 
-void AudioReceivers::Receiver::processBlock (const rav::AudioBufferView<float>& outputBuffer)
+std::optional<uint32_t> AudioReceivers::Receiver::processBlock (
+    const rav::AudioBufferView<float>& outputBuffer,
+    const std::optional<uint32_t> atTimestamp)
 {
     TRACY_ZONE_SCOPED;
 
@@ -223,18 +229,19 @@ void AudioReceivers::Receiver::processBlock (const rav::AudioBufferView<float>& 
     const auto state = realtimeSharedState_.lock_realtime();
 
     if (!state->inputFormat.is_valid())
-        return;
+        return std::nullopt;
 
     if (state->inputFormat.sample_rate != state->outputFormat.sample_rate)
     {
         // Sample rate mismatch, can't process
-        return;
+        return std::nullopt;
     }
 
-    std::ignore = owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, {});
+    return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, atTimestamp);
 }
 
-void AudioReceivers::Receiver::ravenna_receiver_stream_updated (const rav::RavennaReceiver::StreamParameters& streamParameters)
+void AudioReceivers::Receiver::ravenna_receiver_stream_updated (
+    const rav::RavennaReceiver::StreamParameters& streamParameters)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 

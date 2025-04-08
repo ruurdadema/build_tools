@@ -129,7 +129,9 @@ private:
         void prepareInput (const rav::AudioFormat& format);
         void prepareOutput (const rav::AudioFormat& format, uint32_t maxNumFramesPerBlock);
 
-        void processBlock (const rav::AudioBufferView<float>& outputBuffer);
+        std::optional<uint32_t> processBlock (
+            const rav::AudioBufferView<float>& outputBuffer,
+            std::optional<uint32_t> atTimestamp);
 
         // rav::rtp_stream_receiver::subscriber overrides
         void ravenna_receiver_stream_updated (const rav::RavennaReceiver::StreamParameters& streamParameters) override;

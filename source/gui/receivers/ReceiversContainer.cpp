@@ -19,6 +19,11 @@
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
 {
+    emptyLabel_.setText ("Create a receiver on the \"Discovered\" page.", juce::dontSendNotification);
+    emptyLabel_.setColour (juce::Label::textColourId, juce::Colours::grey);
+    emptyLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (emptyLabel_);
+
     if (!context_.getAudioReceivers().subscribe (this))
     {
         RAV_ERROR ("Failed to add subscriber");
@@ -36,6 +41,9 @@ ReceiversContainer::~ReceiversContainer()
 void ReceiversContainer::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
+
+    emptyLabel_.setBounds (b.reduced (kMargin));
+
     for (auto i = 0; i < rows_.size(); ++i)
     {
         rows_.getUnchecked (i)->setBounds (b.removeFromTop (kRowHeight));
@@ -45,7 +53,8 @@ void ReceiversContainer::resized()
 
 void ReceiversContainer::resizeToFitContent()
 {
-    setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
+    const auto calculatedHeight = rows_.size() * kRowHeight + kMargin + kMargin * rows_.size();
+    setSize (getWidth(), std::max (calculatedHeight, 100)); // Min to leave space for the empty label
 }
 
 void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const AudioReceivers::ReceiverState* state)
@@ -63,7 +72,7 @@ void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const Audio
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_.getAudioReceivers(), receiverId, state->sessionName));
+        auto* row = rows_.add (std::make_unique<Row> (context_.getAudioReceivers(), receiverId));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
@@ -124,12 +133,10 @@ void ReceiversContainer::SdpViewer::paint (juce::Graphics& g)
     g.drawMultiLineText (sdpText_, b.getX(), b.getY() + 10, b.getWidth(), juce::Justification::topLeft);
 }
 
-ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id receiverId, const std::string& name) :
+ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id receiverId) :
     audioReceivers_ (audioReceivers),
     receiverId_ (receiverId)
 {
-    stream_.sessionName = name;
-
     delayEditor_.setInputRestrictions (10, "0123456789");
     delayEditor_.onReturnKey = [this] {
         const auto value = static_cast<uint32_t> (delayEditor_.getText().getIntValue());
@@ -198,12 +205,14 @@ rav::Id ReceiversContainer::Row::getId() const
 void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
+
+    stream_.sessionName = state.sessionName;
     stream_.audioFormat = state.inputFormat.to_string();
     stream_.packetTimeFrames = "ptime: " + juce::String (state.packetTimeFrames);
     stream_.address = state.session.connection_address.to_string();
     stream_.state = juce::String ("State: ") + rav::RavennaReceiver::to_string (state.state);
 
-    if (state.inputFormat.sample_rate != state.outputFormat.sample_rate)
+    if (state.inputFormat.is_valid() && state.inputFormat.sample_rate != state.outputFormat.sample_rate)
         stream_.warning = "Warning: sample rate mismatch";
     else
         stream_.warning.clear();
@@ -245,7 +254,7 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     g.drawText (stream_.address, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (stream_.state, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
-    g.setColour(Constants::Colours::warning);
+    g.setColour (Constants::Colours::warning);
     g.drawText (stream_.warning, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.setColour (Constants::Colours::text);
 
@@ -302,4 +311,9 @@ void ReceiversContainer::Row::update()
     interval_stats_.stddev = "stddev: " + juce::String (stats.packet_interval_stats.stddev);
 
     repaint();
+}
+
+void ReceiversContainer::updateGuiState()
+{
+    emptyLabel_.setVisible (rows_.isEmpty());
 }
