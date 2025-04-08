@@ -39,7 +39,8 @@ public:
     // ApplicationContext overrides
     void cloneWindow() override;
     void closeWindow (juce::Component* window) override;
-    RavennaSessions& getSessions() override;
+    rav::RavennaNode& getRavennaNode() override;
+    DiscoveredSessions& getSessions() override;
     juce::AudioDeviceManager& getAudioDeviceManager() override;
     AudioReceivers& getAudioReceivers() override;
     AudioSenders& getAudioSenders() override;
@@ -47,7 +48,7 @@ public:
 private:
     juce::AudioDeviceManager audioDeviceManager_;
     std::unique_ptr<rav::RavennaNode> ravennaNode_;
-    std::unique_ptr<RavennaSessions> sessions_;
+    std::unique_ptr<DiscoveredSessions> sessions_;
     std::unique_ptr<AudioReceivers> audioReceivers_;
     std::unique_ptr<AudioSenders> audioSenders_;
     std::vector<std::unique_ptr<juce::ResizableWindow>> mainWindows_;

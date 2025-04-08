@@ -50,7 +50,7 @@ void DiscoveredContainer::resizeToFitContent()
     setSize (getWidth(), std::max (calculateHeight, 100)); // Min to leave space for the empty label
 }
 
-void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const RavennaSessions::SessionState* state)
+void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const DiscoveredSessions::SessionState* state)
 {
     if (state != nullptr)
     {
@@ -85,7 +85,7 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
     updateGuiState();
 }
 
-void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const RavennaSessions::NodeState* state)
+void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const DiscoveredSessions::NodeState* state)
 {
     if (state != nullptr)
     {
@@ -173,7 +173,7 @@ void DiscoveredContainer::updateGuiState()
     emptyLabel_.setVisible (rows_.isEmpty());
 }
 
-void DiscoveredContainer::Row::update (const RavennaSessions::SessionState& sessionState)
+void DiscoveredContainer::Row::update (const DiscoveredSessions::SessionState& sessionState)
 {
     nameLabel_.setText ("Session name: ", juce::dontSendNotification);
     sessionName_.setText (sessionState.name, juce::dontSendNotification);
@@ -181,7 +181,7 @@ void DiscoveredContainer::Row::update (const RavennaSessions::SessionState& sess
     createReceiverButton_.setVisible (true);
 }
 
-void DiscoveredContainer::Row::update (const RavennaSessions::NodeState& nodeState)
+void DiscoveredContainer::Row::update (const DiscoveredSessions::NodeState& nodeState)
 {
     nameLabel_.setText ("Node name: ", juce::dontSendNotification);
     sessionName_.setText (nodeState.name, juce::dontSendNotification);

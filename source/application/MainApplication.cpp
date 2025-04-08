@@ -90,7 +90,7 @@ void MainApplication::initialise (const juce::String& commandLine)
         }
     }
     ravennaNode_ = std::make_unique<rav::RavennaNode> (interfaceAddress);
-    sessions_ = std::make_unique<RavennaSessions> (*ravennaNode_);
+    sessions_ = std::make_unique<DiscoveredSessions> (*ravennaNode_);
     audioReceivers_ = std::make_unique<AudioReceivers> (*ravennaNode_);
     audioSenders_ = std::make_unique<AudioSenders> (*ravennaNode_);
 
@@ -149,7 +149,12 @@ void MainApplication::closeWindow (juce::Component* window)
     }
 }
 
-RavennaSessions& MainApplication::getSessions()
+rav::RavennaNode& MainApplication::getRavennaNode()
+{
+    return *ravennaNode_;
+}
+
+DiscoveredSessions& MainApplication::getSessions()
 {
     return *sessions_;
 }
