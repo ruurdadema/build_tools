@@ -63,7 +63,7 @@ void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const Audio
             }
         }
 
-        auto* row = rows_.add (std::make_unique<Row> (context_.getAudioReceivers(), receiverId, state->sessionName));
+        auto* row = rows_.add (std::make_unique<Row> (context_.getAudioReceivers(), receiverId));
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
@@ -124,12 +124,10 @@ void ReceiversContainer::SdpViewer::paint (juce::Graphics& g)
     g.drawMultiLineText (sdpText_, b.getX(), b.getY() + 10, b.getWidth(), juce::Justification::topLeft);
 }
 
-ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id receiverId, const std::string& name) :
+ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id receiverId) :
     audioReceivers_ (audioReceivers),
     receiverId_ (receiverId)
 {
-    stream_.sessionName = name;
-
     delayEditor_.setInputRestrictions (10, "0123456789");
     delayEditor_.onReturnKey = [this] {
         const auto value = static_cast<uint32_t> (delayEditor_.getText().getIntValue());
@@ -198,6 +196,8 @@ rav::Id ReceiversContainer::Row::getId() const
 void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
+
+    stream_.sessionName = state.sessionName;
     stream_.audioFormat = state.inputFormat.to_string();
     stream_.packetTimeFrames = "ptime: " + juce::String (state.packetTimeFrames);
     stream_.address = state.session.connection_address.to_string();

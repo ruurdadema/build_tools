@@ -49,7 +49,7 @@ private:
     class Row : public Component, public juce::Timer
     {
     public:
-        explicit Row (AudioReceivers& audioReceivers, rav::Id receiverId, const std::string& name);
+        explicit Row (AudioReceivers& audioReceivers, rav::Id receiverId);
 
         rav::Id getId() const;
 

@@ -26,7 +26,10 @@ AudioReceivers::~AudioReceivers()
 
 rav::Id AudioReceivers::createReceiver (const std::string& sessionName) const
 {
-    return node_.create_receiver (sessionName).get();
+    rav::RavennaReceiver::ConfigurationUpdate config;
+    config.session_name = sessionName;
+    config.enabled = true;
+    return node_.create_receiver (config).get();
 }
 
 void AudioReceivers::removeReceiver (const rav::Id receiverId) const
