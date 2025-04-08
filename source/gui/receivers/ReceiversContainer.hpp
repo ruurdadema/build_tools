@@ -101,5 +101,8 @@ private:
 
     ApplicationContext& context_;
     juce::OwnedArray<Row> rows_;
+    juce::Label emptyLabel_;
     MessageThreadExecutor executor_;
+
+    void updateGuiState();
 };

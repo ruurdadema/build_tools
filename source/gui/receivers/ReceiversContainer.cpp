@@ -19,6 +19,11 @@
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
 {
+    emptyLabel_.setText ("Create a receiver on the \"Discovered\" page.", juce::dontSendNotification);
+    emptyLabel_.setColour (juce::Label::textColourId, juce::Colours::grey);
+    emptyLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (emptyLabel_);
+
     if (!context_.getAudioReceivers().subscribe (this))
     {
         RAV_ERROR ("Failed to add subscriber");
@@ -36,6 +41,9 @@ ReceiversContainer::~ReceiversContainer()
 void ReceiversContainer::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
+
+    emptyLabel_.setBounds (b.reduced (kMargin));
+
     for (auto i = 0; i < rows_.size(); ++i)
     {
         rows_.getUnchecked (i)->setBounds (b.removeFromTop (kRowHeight));
@@ -45,7 +53,8 @@ void ReceiversContainer::resized()
 
 void ReceiversContainer::resizeToFitContent()
 {
-    setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
+    const auto calculatedHeight = rows_.size() * kRowHeight + kMargin + kMargin * rows_.size();
+    setSize (getWidth(), std::max (calculatedHeight, 100)); // Min to leave space for the empty label
 }
 
 void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const AudioReceivers::ReceiverState* state)
@@ -302,4 +311,9 @@ void ReceiversContainer::Row::update()
     interval_stats_.stddev = "stddev: " + juce::String (stats.packet_interval_stats.stddev);
 
     repaint();
+}
+
+void ReceiversContainer::updateGuiState()
+{
+    emptyLabel_.setVisible (rows_.isEmpty());
 }

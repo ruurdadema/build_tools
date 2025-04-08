@@ -18,7 +18,7 @@
 class DiscoveredContainer : public juce::Component, public RavennaSessions::Subscriber
 {
 public:
-explicit DiscoveredContainer (ApplicationContext& context, WindowContext& windowContext);
+    explicit DiscoveredContainer (ApplicationContext& context, WindowContext& windowContext);
     ~DiscoveredContainer() override;
 
     void resized() override;
@@ -71,4 +71,7 @@ private:
     ApplicationContext& appContext_;
     WindowContext& windowContext_;
     juce::OwnedArray<Row> rows_;
+    juce::Label emptyLabel_;
+
+    void updateGuiState();
 };

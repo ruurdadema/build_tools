@@ -17,6 +17,12 @@ DiscoveredContainer::DiscoveredContainer (ApplicationContext& context, WindowCon
     appContext_ (context),
     windowContext_ (windowContext)
 {
+    emptyLabel_.setText ("No discovered RAVENNA sessions.", juce::dontSendNotification);
+    emptyLabel_.setColour (juce::Label::textColourId, juce::Colours::grey);
+    emptyLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (emptyLabel_);
+    updateGuiState();
+
     appContext_.getSessions().addSubscriber (this);
 }
 
@@ -28,6 +34,9 @@ DiscoveredContainer::~DiscoveredContainer()
 void DiscoveredContainer::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
+
+    emptyLabel_.setBounds (b.reduced (kMargin));
+
     for (auto i = 0; i < rows_.size(); ++i)
     {
         rows_.getUnchecked (i)->setBounds (b.removeFromTop (kRowHeight));
@@ -37,7 +46,8 @@ void DiscoveredContainer::resized()
 
 void DiscoveredContainer::resizeToFitContent()
 {
-    setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size());
+    const auto calculateHeight = rows_.size() * kRowHeight + kMargin + kMargin * rows_.size();
+    setSize (getWidth(), std::max (calculateHeight, 100)); // Min to leave space for the empty label
 }
 
 void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const RavennaSessions::SessionState* state)
@@ -71,6 +81,8 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
             }
         }
     }
+
+    updateGuiState();
 }
 
 void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const RavennaSessions::NodeState* state)
@@ -104,6 +116,8 @@ void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const Rave
             }
         }
     }
+
+    updateGuiState();
 }
 
 DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windowContext, const Type type) :
@@ -152,6 +166,11 @@ void DiscoveredContainer::Row::resized()
 
     sessionName_.setBounds (b.removeFromTop (20));
     description_.setBounds (b);
+}
+
+void DiscoveredContainer::updateGuiState()
+{
+    emptyLabel_.setVisible (rows_.isEmpty());
 }
 
 void DiscoveredContainer::Row::update (const RavennaSessions::SessionState& sessionState)
