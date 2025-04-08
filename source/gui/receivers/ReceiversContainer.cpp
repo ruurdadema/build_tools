@@ -203,7 +203,7 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
     stream_.address = state.session.connection_address.to_string();
     stream_.state = juce::String ("State: ") + rav::RavennaReceiver::to_string (state.state);
 
-    if (state.inputFormat.sample_rate != state.outputFormat.sample_rate)
+    if (state.inputFormat.is_valid() && state.inputFormat.sample_rate != state.outputFormat.sample_rate)
         stream_.warning = "Warning: sample rate mismatch";
     else
         stream_.warning.clear();
@@ -245,7 +245,7 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     g.drawText (stream_.address, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (stream_.state, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
-    g.setColour(Constants::Colours::warning);
+    g.setColour (Constants::Colours::warning);
     g.drawText (stream_.warning, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.setColour (Constants::Colours::text);
 
