@@ -32,7 +32,7 @@ private:
     juce::ComboBox primaryNetworkInterfaceComboBox_;
     juce::Label secondaryNetworkInterfaceLabel_;
     juce::ComboBox secondaryNetworkInterfaceComboBox_;
-    std::vector<rav::NetworkInterface> networkInterfaces_;
+    juce::Array<rav::NetworkInterface::Identifier> networkInterfaces_;
 
     void updateNetworkInterfaces();
     void selectNetworkInterfaces() const;

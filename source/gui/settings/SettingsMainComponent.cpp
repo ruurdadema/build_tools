@@ -68,55 +68,69 @@ void SettingsMainComponent::network_interface_config_updated (const rav::Ravenna
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (context_.getRavennaNode());
 
-    SafePointer weakThis (this);
-    juce::MessageManager::callAsync ([weakThis, config] {
-        if (!weakThis)
+    SafePointer safeThis (this);
+    juce::MessageManager::callAsync ([safeThis, config] {
+        if (!safeThis)
             return;
+
+        const auto networkInterfaces = rav::NetworkInterfaceList::get_system_interfaces();
 
         if (config.primary_interface)
         {
-            weakThis->primaryNetworkInterfaceComboBox_.setText (
-                config.primary_interface->get_extended_display_name(),
-                juce::dontSendNotification);
+            if (auto* iface = networkInterfaces.get_interface (*config.primary_interface))
+            {
+                safeThis->primaryNetworkInterfaceComboBox_.setText (
+                    iface->get_extended_display_name(),
+                    juce::dontSendNotification);
+            }
+            else
+            {
+                safeThis->primaryNetworkInterfaceComboBox_.setText (
+                    *config.primary_interface + " (not found)",
+                    juce::dontSendNotification);
+            }
         }
 
         if (config.secondary_interface)
         {
-            weakThis->secondaryNetworkInterfaceComboBox_.setText (
-                config.secondary_interface->get_extended_display_name(),
-                juce::dontSendNotification);
+            if (auto* iface = networkInterfaces.get_interface (*config.secondary_interface))
+            {
+                safeThis->primaryNetworkInterfaceComboBox_.setText (
+                    iface->get_extended_display_name(),
+                    juce::dontSendNotification);
+            }
+            else
+            {
+                safeThis->primaryNetworkInterfaceComboBox_.setText (
+                    *config.secondary_interface + " (not found)",
+                    juce::dontSendNotification);
+            }
         }
     });
 }
 
 void SettingsMainComponent::updateNetworkInterfaces()
 {
-    auto ifaces = rav::NetworkInterface::get_all();
-    if (!ifaces)
-    {
-        juce::NativeMessageBox::showMessageBoxAsync (
-            juce::AlertWindow::WarningIcon,
-            "Network Interfaces",
-            "Failed to retrieve network interfaces: " + std::to_string (ifaces.error()));
-        return;
-    }
+    const auto systemInterfaces = rav::NetworkInterfaceList::get_system_interfaces().get_interfaces();
 
-    networkInterfaces_ = std::move (*ifaces);
+    juce::Array<rav::NetworkInterface::Identifier> ids;
 
     primaryNetworkInterfaceComboBox_.clear();
     secondaryNetworkInterfaceComboBox_.clear();
 
-    for (size_t i = 0; i < networkInterfaces_.size(); ++i)
+    for (auto& iface : systemInterfaces)
     {
-        auto& iface = networkInterfaces_[i];
         if (iface.get_type() != rav::NetworkInterface::Type::wired_ethernet)
             continue;
         if (iface.get_display_name().empty())
             continue;
+        ids.add (iface.get_identifier());
         auto extended = iface.get_extended_display_name();
-        primaryNetworkInterfaceComboBox_.addItem (extended, static_cast<int> (i + 1));
-        secondaryNetworkInterfaceComboBox_.addItem (extended, static_cast<int> (i + 1));
+        primaryNetworkInterfaceComboBox_.addItem (extended, ids.size());
+        secondaryNetworkInterfaceComboBox_.addItem (extended, ids.size());
     }
+
+    networkInterfaces_ = std::move (ids);
 }
 
 void SettingsMainComponent::selectNetworkInterfaces() const
@@ -124,12 +138,13 @@ void SettingsMainComponent::selectNetworkInterfaces() const
     rav::RavennaConfig::NetworkInterfaceConfig config;
 
     auto id = primaryNetworkInterfaceComboBox_.getSelectedId();
-    config.primary_interface = id > 0 ? networkInterfaces_.at (static_cast<uint32_t> (id - 1))
-                                      : std::optional<rav::NetworkInterface>();
+    RAV_ASSERT (id <= networkInterfaces_.size(), "Invalid id");
+    config.primary_interface = id > 0 ? networkInterfaces_[id - 1] : std::optional<rav::NetworkInterface::Identifier>();
 
     id = secondaryNetworkInterfaceComboBox_.getSelectedId();
-    config.secondary_interface = id > 0 ? networkInterfaces_.at (static_cast<uint32_t> (id - 1))
-                                        : std::optional<rav::NetworkInterface>();
+    RAV_ASSERT (id <= networkInterfaces_.size(), "Invalid id");
+    config.secondary_interface = id > 0 ? networkInterfaces_[id - 1]
+                                        : std::optional<rav::NetworkInterface::Identifier>();
 
     context_.getRavennaNode().set_network_interface_config (config).wait();
 }
