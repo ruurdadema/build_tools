@@ -27,13 +27,13 @@ SettingsMainComponent::SettingsMainComponent (ApplicationContext& context) : con
     addAndMakeVisible (primaryNetworkInterfaceComboBox_);
 
     secondaryNetworkInterfaceLabel_.setText ("Secondary Network Interface", juce::dontSendNotification);
-    addAndMakeVisible (secondaryNetworkInterfaceLabel_);
+    // addAndMakeVisible (secondaryNetworkInterfaceLabel_);
 
     secondaryNetworkInterfaceComboBox_.setTextWhenNothingSelected ("Secondary Network Interface");
     secondaryNetworkInterfaceComboBox_.onChange = [this] {
         selectNetworkInterfaces();
     };
-    addAndMakeVisible (secondaryNetworkInterfaceComboBox_);
+    // addAndMakeVisible (secondaryNetworkInterfaceComboBox_);
 
     updateNetworkInterfaces();
 

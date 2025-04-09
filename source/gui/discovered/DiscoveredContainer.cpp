@@ -160,7 +160,7 @@ void DiscoveredContainer::Row::resized()
     if (createReceiverButton_.isVisible())
         createReceiverButton_.setBounds (b.removeFromRight (152));
 
-    auto leftColumn = b.removeFromLeft (100);
+    auto leftColumn = b.removeFromLeft (61);
     nameLabel_.setBounds (leftColumn.removeFromTop (20));
     descriptionLabel_.setBounds (leftColumn);
 
@@ -175,7 +175,7 @@ void DiscoveredContainer::updateGuiState()
 
 void DiscoveredContainer::Row::update (const DiscoveredSessions::SessionState& sessionState)
 {
-    nameLabel_.setText ("Session name: ", juce::dontSendNotification);
+    nameLabel_.setText ("Session: ", juce::dontSendNotification);
     sessionName_.setText (sessionState.name, juce::dontSendNotification);
     description_.setText (sessionState.host, juce::dontSendNotification);
     createReceiverButton_.setVisible (true);
@@ -183,7 +183,7 @@ void DiscoveredContainer::Row::update (const DiscoveredSessions::SessionState& s
 
 void DiscoveredContainer::Row::update (const DiscoveredSessions::NodeState& nodeState)
 {
-    nameLabel_.setText ("Node name: ", juce::dontSendNotification);
+    nameLabel_.setText ("Node: ", juce::dontSendNotification);
     sessionName_.setText (nodeState.name, juce::dontSendNotification);
     description_.setText (nodeState.host, juce::dontSendNotification);
     createReceiverButton_.setVisible (false);
