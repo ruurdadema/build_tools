@@ -9,6 +9,7 @@
     "cli11",
     "asio",
     "tl-expected",
-    "nanobench"
+    "nanobench",
+    "nlohmann-json"
   ]
 }

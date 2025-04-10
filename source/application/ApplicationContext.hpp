@@ -28,4 +28,6 @@ public:
     virtual AudioReceivers& getAudioReceivers() = 0;
     virtual AudioSenders& getAudioSenders() = 0;
     virtual juce::AudioDeviceManager& getAudioDeviceManager() = 0;
+    virtual void saveToFile(const juce::File& file) = 0;
+    virtual void loadFromFile(const juce::File& file) = 0;
 };
