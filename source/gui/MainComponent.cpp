@@ -73,7 +73,16 @@ MainComponent::TopRightSection::TopRightSection (ApplicationContext& context)
             const auto file = chooser.getResult();
             if (file.getFullPathName().isEmpty())
                 return; // Canceled
-            context.saveToFile (file);
+            if (auto result = context.saveToFile (file); !result)
+            {
+                juce::NativeMessageBox::showAsync (
+                    juce::MessageBoxOptions()
+                        .withTitle ("Error")
+                        .withMessage ("Failed to save to file: " + result.error())
+                        .withIconType (juce::MessageBoxIconType::WarningIcon)
+                        .withParentComponent (nullptr),
+                    [] (int) {});
+            }
         });
     };
     addAndMakeVisible (saveButton_);
@@ -91,7 +100,16 @@ MainComponent::TopRightSection::TopRightSection (ApplicationContext& context)
             const auto file = chooser.getResult();
             if (file.getFullPathName().isEmpty())
                 return; // Canceled
-            context.loadFromFile (file);
+            if (auto result = context.loadFromFile (file); !result)
+            {
+                juce::NativeMessageBox::showAsync (
+                    juce::MessageBoxOptions()
+                        .withTitle ("Error")
+                        .withMessage ("Failed to load from file: " + result.error())
+                        .withIconType (juce::MessageBoxIconType::WarningIcon)
+                        .withParentComponent (nullptr),
+                    [] (int) {});
+            }
         });
     };
     addAndMakeVisible (loadButton_);

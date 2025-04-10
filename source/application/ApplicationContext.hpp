@@ -23,11 +23,11 @@ public:
     virtual ~ApplicationContext() = default;
     virtual void closeWindow(juce::Component* window) = 0;
     virtual void cloneWindow() = 0;
-    virtual rav::RavennaNode& getRavennaNode() = 0;
-    virtual DiscoveredSessions& getSessions() = 0;
-    virtual AudioReceivers& getAudioReceivers() = 0;
-    virtual AudioSenders& getAudioSenders() = 0;
-    virtual juce::AudioDeviceManager& getAudioDeviceManager() = 0;
-    virtual void saveToFile(const juce::File& file) = 0;
-    virtual void loadFromFile(const juce::File& file) = 0;
+    [[nodiscard]] virtual rav::RavennaNode& getRavennaNode() = 0;
+    [[nodiscard]] virtual DiscoveredSessions& getSessions() = 0;
+    [[nodiscard]] virtual AudioReceivers& getAudioReceivers() = 0;
+    [[nodiscard]] virtual AudioSenders& getAudioSenders() = 0;
+    [[nodiscard]] virtual juce::AudioDeviceManager& getAudioDeviceManager() = 0;
+    [[nodiscard]] virtual tl::expected<void, std::string> saveToFile (const juce::File& file) = 0;
+    [[nodiscard]] virtual tl::expected<void, std::string> loadFromFile (const juce::File& file) = 0;
 };

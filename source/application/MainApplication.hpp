@@ -44,8 +44,8 @@ public:
     juce::AudioDeviceManager& getAudioDeviceManager() override;
     AudioReceivers& getAudioReceivers() override;
     AudioSenders& getAudioSenders() override;
-    void saveToFile (const juce::File& file) override;
-    void loadFromFile (const juce::File& file) override;
+    tl::expected<void, std::string> saveToFile (const juce::File& file) override;
+    tl::expected<void, std::string> loadFromFile (const juce::File& file) override;
 
 private:
     juce::AudioDeviceManager audioDeviceManager_;
@@ -60,6 +60,4 @@ private:
     bool restoreFromJson (const nlohmann::json& json);
 
     static const juce::File& getApplicationStateFile();
-    tl::expected<void, std::string> loadApplicationState (const juce::File& fileToLoadFrom);
-    tl::expected<void, std::string> saveApplicationState (const juce::File& fileToSaveTo) const;
 };

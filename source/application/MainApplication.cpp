@@ -79,7 +79,7 @@ void MainApplication::initialise (const juce::String& commandLine)
     // Load previous state
     if (const auto applicationStateFile = getApplicationStateFile(); applicationStateFile.existsAsFile())
     {
-        if (const auto result = loadApplicationState (applicationStateFile); !result)
+        if (const auto result = loadFromFile (applicationStateFile); !result)
             RAV_ERROR ("Failed to load previous state: {}", result.error());
     }
 
@@ -95,7 +95,7 @@ void MainApplication::initialise (const juce::String& commandLine)
 
 void MainApplication::shutdown()
 {
-    if (const auto result = saveApplicationState (getApplicationStateFile()); !result)
+    if (const auto result = saveToFile (getApplicationStateFile()); !result)
         RAV_ERROR ("Failed to save application state: {}", result.error());
 
     audioDeviceManager_.removeAudioCallback (audioReceivers_.get());
@@ -167,46 +167,34 @@ AudioSenders& MainApplication::getAudioSenders()
     return *audioSenders_;
 }
 
-void MainApplication::saveToFile (const juce::File& file)
+tl::expected<void, std::string> MainApplication::saveToFile (const juce::File& file)
 {
     const auto json = toJson().dump (4);
     if (!file.replaceWithText (json))
-    {
-        RAV_ERROR ("Failed to save to file: {}", file.getFullPathName().toRawUTF8());
-        return;
-    }
+        return tl::unexpected ("Failed to save to file: " + file.getFullPathName().toStdString());
     RAV_TRACE ("Saved to file: {}", file.getFullPathName().toRawUTF8());
+    return {};
 }
 
-void MainApplication::loadFromFile (const juce::File& file)
+tl::expected<void, std::string> MainApplication::loadFromFile (const juce::File& file)
 {
     if (!file.existsAsFile())
-    {
-        RAV_ERROR ("File does not exist: {}", file.getFullPathName().toRawUTF8());
-        return;
-    }
+        return tl::unexpected ("File does not exist: " + file.getFullPathName().toStdString());
 
     const auto jsonData = file.loadFileAsString();
     if (jsonData.isEmpty())
-    {
-        RAV_ERROR ("Failed to load file: {}", file.getFullPathName().toRawUTF8());
-        return;
-    }
+        return tl::unexpected ("Failed to load file: " + file.getFullPathName().toStdString());
 
     const auto json = nlohmann::json::parse (jsonData.toRawUTF8());
     if (json.is_null())
-    {
-        RAV_ERROR ("Failed to parse JSON from file: {}", file.getFullPathName().toRawUTF8());
-        return;
-    }
+        return tl::unexpected ("Failed to parse JSON from file: " + file.getFullPathName().toStdString());
 
     if (!restoreFromJson (json))
-    {
-        RAV_ERROR ("Failed to restore from JSON: {}", file.getFullPathName().toRawUTF8());
-        return;
-    }
+        return tl::unexpected ("Failed to restore from JSON: " + file.getFullPathName().toStdString());
 
     RAV_TRACE ("Loaded from file: {}", file.getFullPathName().toRawUTF8());
+
+    return {};
 }
 
 void MainApplication::addWindow()
@@ -222,8 +210,6 @@ void MainApplication::addWindow()
 
 nlohmann::json MainApplication::toJson() const
 {
-    nlohmann::json json;
-    json["ravenna_node"] = ravennaNode_->to_json().get();
     auto windows = nlohmann::json::array();
     for (auto& window : mainWindows_)
     {
@@ -231,17 +217,33 @@ nlohmann::json MainApplication::toJson() const
         windowJson["state"] = window->getWindowStateAsString().toStdString();
         windows.push_back (windowJson);
     }
-    json["windows"] = windows;
-    return json;
+
+    nlohmann::json state;
+    state["ravenna_node"] = ravennaNode_->to_json().get();
+    state["windows"] = windows;
+
+    nlohmann::json application;
+    application["version"] = PROJECT_VERSION_STRING;
+    application["name"] = PROJECT_PRODUCT_NAME;
+    application["company"] = PROJECT_COMPANY_NAME;
+    application["state"] = state;
+
+    nlohmann::json root;
+    root["ravennakit_juce_demo"] = application;
+
+    return root;
 }
 
 bool MainApplication::restoreFromJson (const nlohmann::json& json)
 {
     try
     {
-        if (json.contains ("windows"))
+        const auto application = json.at ("ravennakit_juce_demo");
+        const auto state = application.at ("state");
+
+        if (state.contains ("windows"))
         {
-            auto windows = json.at ("windows").get<std::vector<nlohmann::json>>();
+            auto windows = state.at ("windows").get<std::vector<nlohmann::json>>();
 
             // Add windows if needed
             while (mainWindows_.size() < windows.size())
@@ -260,7 +262,8 @@ bool MainApplication::restoreFromJson (const nlohmann::json& json)
             }
         }
 
-        auto result = ravennaNode_->restore_from_json (json.at ("ravenna_node")).get();
+        const auto ravennaNode = state.at ("ravenna_node");
+        auto result = ravennaNode_->restore_from_json (ravennaNode).get();
         if (!result)
         {
             RAV_ERROR ("Failed to restore from JSON: {}", result.error());
@@ -284,40 +287,6 @@ const juce::File& MainApplication::getApplicationStateFile()
                                                      .getChildFile (PROJECT_PRODUCT_NAME)
                                                      .getChildFile ("application_state.json");
     return applicationStateFilePath;
-}
-
-tl::expected<void, std::string> MainApplication::loadApplicationState (const juce::File& fileToLoadFrom)
-{
-    if (!fileToLoadFrom.existsAsFile())
-        return tl::unexpected ("File does not exist");
-
-    const auto jsonData = fileToLoadFrom.loadFileAsString();
-    if (jsonData.isEmpty())
-        return tl::unexpected ("Failed to load file");
-
-    const auto json = nlohmann::json::parse (jsonData.toRawUTF8());
-    if (json.is_null())
-        return tl::unexpected ("Failed to parse JSON from file");
-
-    if (!restoreFromJson (json))
-        return tl::unexpected ("Failed to restore from JSON");
-
-    RAV_TRACE ("Loaded from file: {}", fileToLoadFrom.getFullPathName().toRawUTF8());
-
-    return {};
-}
-
-tl::expected<void, std::string> MainApplication::saveApplicationState (const juce::File& fileToSaveTo) const
-{
-    if (!fileToSaveTo.getParentDirectory().createDirectory())
-        return tl::unexpected ("Failed to create parent directories");
-
-    if (!fileToSaveTo.replaceWithText (toJson().dump(4)))
-        return tl::unexpected ("Saving state failed");
-
-    RAV_TRACE ("Saved application state to: {}", fileToSaveTo.getFullPathName().toRawUTF8());
-
-    return {};
 }
 
 START_JUCE_APPLICATION (MainApplication)
