@@ -76,6 +76,10 @@ void MainApplication::initialise (const juce::String& commandLine)
     audioReceivers_ = std::make_unique<AudioReceivers> (*ravennaNode_);
     audioSenders_ = std::make_unique<AudioSenders> (*ravennaNode_);
 
+    juce::AudioDeviceManager::AudioDeviceSetup setup;
+    setup.bufferSize = 32;
+    audioDeviceManager_.initialise (2, 2, nullptr, false, {}, &setup);
+
     // Load previous state
     if (const auto applicationStateFile = getApplicationStateFile(); applicationStateFile.existsAsFile())
     {
@@ -83,14 +87,11 @@ void MainApplication::initialise (const juce::String& commandLine)
             RAV_ERROR ("Failed to load previous state: {}", result.error());
     }
 
-    juce::AudioDeviceManager::AudioDeviceSetup setup;
-    setup.bufferSize = 32;
-    audioDeviceManager_.initialise (2, 2, nullptr, false, {}, &setup);
-    audioDeviceManager_.addAudioCallback (audioReceivers_.get());
-    audioDeviceManager_.addAudioCallback (audioSenders_.get());
-
     if (mainWindows_.empty())
         addWindow();
+
+    audioDeviceManager_.addAudioCallback (audioReceivers_.get());
+    audioDeviceManager_.addAudioCallback (audioSenders_.get());
 }
 
 void MainApplication::shutdown()
@@ -222,6 +223,13 @@ nlohmann::json MainApplication::toJson() const
     state["ravenna_node"] = ravennaNode_->to_json().get();
     state["windows"] = windows;
 
+    const auto audioDeviceManagerState = audioDeviceManager_.createStateXml();
+    if (audioDeviceManagerState != nullptr)
+    {
+        const auto format = juce::XmlElement::TextFormat().singleLine();
+        state["audio_device_manager_state"] = audioDeviceManagerState->toString (format).toStdString();
+    }
+
     nlohmann::json application;
     application["version"] = PROJECT_VERSION_STRING;
     application["name"] = PROJECT_PRODUCT_NAME;
@@ -260,6 +268,13 @@ bool MainApplication::restoreFromJson (const nlohmann::json& json)
                     window->restoreWindowStateFromString (windows[i].at ("state").get<std::string>());
                 }
             }
+        }
+
+        if (state.contains ("audio_device_manager_state"))
+        {
+            const auto xml = juce::parseXML (state.at ("audio_device_manager_state").get<std::string>());
+            if (xml != nullptr)
+                audioDeviceManager_.initialise (2, 0, xml.get(), true);
         }
 
         const auto ravennaNode = state.at ("ravenna_node");
