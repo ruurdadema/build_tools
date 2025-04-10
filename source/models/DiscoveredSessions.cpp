@@ -8,19 +8,19 @@
  * Copyright (c) 2025 Owllab. All rights reserved.
  */
 
-#include "RavennaSessions.hpp"
+#include "DiscoveredSessions.hpp"
 
-RavennaSessions::RavennaSessions (rav::RavennaNode& ravennaNode) : node_ (ravennaNode)
+DiscoveredSessions::DiscoveredSessions (rav::RavennaNode& ravennaNode) : node_ (ravennaNode)
 {
     node_.subscribe (this).wait();
 }
 
-RavennaSessions::~RavennaSessions()
+DiscoveredSessions::~DiscoveredSessions()
 {
     node_.unsubscribe (this).wait();
 }
 
-bool RavennaSessions::addSubscriber (Subscriber* subscriber)
+bool DiscoveredSessions::addSubscriber (Subscriber* subscriber)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     if (subscribers_.add (subscriber))
@@ -34,13 +34,13 @@ bool RavennaSessions::addSubscriber (Subscriber* subscriber)
     return false;
 }
 
-bool RavennaSessions::removeSubscriber (Subscriber* subscriber)
+bool DiscoveredSessions::removeSubscriber (Subscriber* subscriber)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     return subscribers_.remove (subscriber);
 }
 
-void RavennaSessions::ravenna_session_discovered (const rav::dnssd::Browser::ServiceResolved& event)
+void DiscoveredSessions::ravenna_session_discovered (const rav::dnssd::Browser::ServiceResolved& event)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
     executor_.callAsync ([this, desc = event.description] {
@@ -58,7 +58,7 @@ void RavennaSessions::ravenna_session_discovered (const rav::dnssd::Browser::Ser
     });
 }
 
-void RavennaSessions::ravenna_session_removed (const rav::dnssd::Browser::ServiceRemoved& event)
+void DiscoveredSessions::ravenna_session_removed (const rav::dnssd::Browser::ServiceRemoved& event)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
     executor_.callAsync ([this, desc = event.description] {
@@ -75,7 +75,7 @@ void RavennaSessions::ravenna_session_removed (const rav::dnssd::Browser::Servic
     });
 }
 
-void RavennaSessions::ravenna_node_discovered (const rav::dnssd::Browser::ServiceResolved& event)
+void DiscoveredSessions::ravenna_node_discovered (const rav::dnssd::Browser::ServiceResolved& event)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
     executor_.callAsync ([this, desc = event.description] {
@@ -93,7 +93,7 @@ void RavennaSessions::ravenna_node_discovered (const rav::dnssd::Browser::Servic
     });
 }
 
-void RavennaSessions::ravenna_node_removed (const rav::dnssd::Browser::ServiceRemoved& event)
+void DiscoveredSessions::ravenna_node_removed (const rav::dnssd::Browser::ServiceRemoved& event)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
     executor_.callAsync ([this, desc = event.description] {
@@ -110,7 +110,7 @@ void RavennaSessions::ravenna_node_removed (const rav::dnssd::Browser::ServiceRe
     });
 }
 
-RavennaSessions::SessionState* RavennaSessions::findSession (const std::string& sessionName)
+DiscoveredSessions::SessionState* DiscoveredSessions::findSession (const std::string& sessionName)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     for (auto& session : sessions_)
@@ -119,7 +119,7 @@ RavennaSessions::SessionState* RavennaSessions::findSession (const std::string& 
     return nullptr;
 }
 
-RavennaSessions::NodeState* RavennaSessions::findNode (const std::string& nodeName)
+DiscoveredSessions::NodeState* DiscoveredSessions::findNode (const std::string& nodeName)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     for (auto& node : nodes_)

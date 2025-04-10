@@ -50,7 +50,7 @@ void DiscoveredContainer::resizeToFitContent()
     setSize (getWidth(), std::max (calculateHeight, 100)); // Min to leave space for the empty label
 }
 
-void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const RavennaSessions::SessionState* state)
+void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const DiscoveredSessions::SessionState* state)
 {
     if (state != nullptr)
     {
@@ -85,7 +85,7 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
     updateGuiState();
 }
 
-void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const RavennaSessions::NodeState* state)
+void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const DiscoveredSessions::NodeState* state)
 {
     if (state != nullptr)
     {
@@ -160,7 +160,7 @@ void DiscoveredContainer::Row::resized()
     if (createReceiverButton_.isVisible())
         createReceiverButton_.setBounds (b.removeFromRight (152));
 
-    auto leftColumn = b.removeFromLeft (100);
+    auto leftColumn = b.removeFromLeft (61);
     nameLabel_.setBounds (leftColumn.removeFromTop (20));
     descriptionLabel_.setBounds (leftColumn);
 
@@ -173,17 +173,17 @@ void DiscoveredContainer::updateGuiState()
     emptyLabel_.setVisible (rows_.isEmpty());
 }
 
-void DiscoveredContainer::Row::update (const RavennaSessions::SessionState& sessionState)
+void DiscoveredContainer::Row::update (const DiscoveredSessions::SessionState& sessionState)
 {
-    nameLabel_.setText ("Session name: ", juce::dontSendNotification);
+    nameLabel_.setText ("Session: ", juce::dontSendNotification);
     sessionName_.setText (sessionState.name, juce::dontSendNotification);
     description_.setText (sessionState.host, juce::dontSendNotification);
     createReceiverButton_.setVisible (true);
 }
 
-void DiscoveredContainer::Row::update (const RavennaSessions::NodeState& nodeState)
+void DiscoveredContainer::Row::update (const DiscoveredSessions::NodeState& nodeState)
 {
-    nameLabel_.setText ("Node name: ", juce::dontSendNotification);
+    nameLabel_.setText ("Node: ", juce::dontSendNotification);
     sessionName_.setText (nodeState.name, juce::dontSendNotification);
     description_.setText (nodeState.host, juce::dontSendNotification);
     createReceiverButton_.setVisible (false);

@@ -69,28 +69,10 @@ bool MainApplication::moreThanOneInstanceAllowed()
 
 void MainApplication::initialise (const juce::String& commandLine)
 {
-    CLI::App app { PROJECT_PRODUCT_NAME };
-    std::string interfaceAddressString;
-    app.add_option ("--interface-addr", interfaceAddressString, "The interface address");
-    app.parse (commandLine.toStdString(), false);
+    std::ignore = commandLine;
 
-    asio::ip::address_v4 interfaceAddress;
-    if (!interfaceAddressString.empty())
-    {
-        asio::error_code ec;
-        interfaceAddress = asio::ip::make_address_v4 (interfaceAddressString, ec);
-        if (ec)
-        {
-            RAV_ERROR ("Invalid interface address: {}", interfaceAddressString);
-            juce::NativeMessageBox::showMessageBoxAsync (
-                juce::AlertWindow::AlertIconType::WarningIcon,
-                "Invalid interface address",
-                "Failed to parse the interface address: " + interfaceAddressString,
-                nullptr);
-        }
-    }
-    ravennaNode_ = std::make_unique<rav::RavennaNode> (interfaceAddress);
-    sessions_ = std::make_unique<RavennaSessions> (*ravennaNode_);
+    ravennaNode_ = std::make_unique<rav::RavennaNode>();
+    sessions_ = std::make_unique<DiscoveredSessions> (*ravennaNode_);
     audioReceivers_ = std::make_unique<AudioReceivers> (*ravennaNode_);
     audioSenders_ = std::make_unique<AudioSenders> (*ravennaNode_);
 
@@ -149,7 +131,12 @@ void MainApplication::closeWindow (juce::Component* window)
     }
 }
 
-RavennaSessions& MainApplication::getSessions()
+rav::RavennaNode& MainApplication::getRavennaNode()
+{
+    return *ravennaNode_;
+}
+
+DiscoveredSessions& MainApplication::getSessions()
 {
     return *sessions_;
 }

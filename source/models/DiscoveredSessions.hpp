@@ -13,7 +13,7 @@
 #include "ravennakit/ravenna/ravenna_node.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
-class RavennaSessions : public rav::RavennaNode::Subscriber
+class DiscoveredSessions : public rav::RavennaNode::Subscriber
 {
 public:
     struct NodeState
@@ -36,8 +36,8 @@ public:
         virtual void onNodeUpdated ([[maybe_unused]] const std::string& nodeName, [[maybe_unused]] const NodeState* state) {}
     };
 
-    explicit RavennaSessions (rav::RavennaNode& ravennaNode);
-    ~RavennaSessions() override;
+    explicit DiscoveredSessions (rav::RavennaNode& ravennaNode);
+    ~DiscoveredSessions() override;
 
     bool addSubscriber (Subscriber* subscriber);
     bool removeSubscriber (Subscriber* subscriber);

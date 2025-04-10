@@ -15,7 +15,7 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class DiscoveredContainer : public juce::Component, public RavennaSessions::Subscriber
+class DiscoveredContainer : public juce::Component, public DiscoveredSessions::Subscriber
 {
 public:
     explicit DiscoveredContainer (ApplicationContext& context, WindowContext& windowContext);
@@ -24,8 +24,8 @@ public:
     void resized() override;
     void resizeToFitContent();
 
-    void onSessionUpdated (const std::string& sessionName, const RavennaSessions::SessionState* state) override;
-    void onNodeUpdated (const std::string& nodeName, const RavennaSessions::NodeState* state) override;
+    void onSessionUpdated (const std::string& sessionName, const DiscoveredSessions::SessionState* state) override;
+    void onNodeUpdated (const std::string& nodeName, const DiscoveredSessions::NodeState* state) override;
 
 private:
     static constexpr int kRowHeight = 60;
@@ -42,8 +42,8 @@ private:
 
         Row (ApplicationContext& context, WindowContext& windowContext, Type type);
 
-        void update (const RavennaSessions::SessionState& sessionState);
-        void update (const RavennaSessions::NodeState& nodeState);
+        void update (const DiscoveredSessions::SessionState& sessionState);
+        void update (const DiscoveredSessions::NodeState& nodeState);
 
         [[nodiscard]] Type getType() const
         {
