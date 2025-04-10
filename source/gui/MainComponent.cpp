@@ -69,7 +69,7 @@ MainComponent::TopRightSection::TopRightSection (ApplicationContext& context)
             "*.json");
         constexpr int flags = juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting |
                               juce::FileBrowserComponent::doNotClearFileNameOnRootChange;
-        chooser_->launchAsync (flags, [this, &context] (const juce::FileChooser& chooser) {
+        chooser_->launchAsync (flags, [&context] (const juce::FileChooser& chooser) {
             const auto file = chooser.getResult();
             if (file.getFullPathName().isEmpty())
                 return; // Canceled
@@ -87,7 +87,7 @@ MainComponent::TopRightSection::TopRightSection (ApplicationContext& context)
             juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
             "*.json");
         constexpr int flags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
-        chooser_->launchAsync (flags, [this, &context] (const juce::FileChooser& chooser) {
+        chooser_->launchAsync (flags, [&context] (const juce::FileChooser& chooser) {
             const auto file = chooser.getResult();
             if (file.getFullPathName().isEmpty())
                 return; // Canceled

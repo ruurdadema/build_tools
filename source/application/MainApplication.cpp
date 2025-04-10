@@ -76,17 +76,28 @@ void MainApplication::initialise (const juce::String& commandLine)
     audioReceivers_ = std::make_unique<AudioReceivers> (*ravennaNode_);
     audioSenders_ = std::make_unique<AudioSenders> (*ravennaNode_);
 
+    // Load previous state
+    if (const auto applicationStateFile = getApplicationStateFile(); applicationStateFile.existsAsFile())
+    {
+        if (const auto result = loadApplicationState (applicationStateFile); !result)
+            RAV_ERROR ("Failed to load previous state: {}", result.error());
+    }
+
     juce::AudioDeviceManager::AudioDeviceSetup setup;
     setup.bufferSize = 32;
     audioDeviceManager_.initialise (2, 2, nullptr, false, {}, &setup);
     audioDeviceManager_.addAudioCallback (audioReceivers_.get());
     audioDeviceManager_.addAudioCallback (audioSenders_.get());
 
-    addWindow();
+    if (mainWindows_.empty())
+        addWindow();
 }
 
 void MainApplication::shutdown()
 {
+    if (const auto result = saveApplicationState (getApplicationStateFile()); !result)
+        RAV_ERROR ("Failed to save application state: {}", result.error());
+
     audioDeviceManager_.removeAudioCallback (audioReceivers_.get());
     audioDeviceManager_.removeAudioCallback (audioSenders_.get());
     mainWindows_.clear();
@@ -230,7 +241,7 @@ bool MainApplication::restoreFromJson (const nlohmann::json& json)
     {
         if (json.contains ("windows"))
         {
-            auto windows = json.at("windows").get<std::vector<nlohmann::json>>();
+            auto windows = json.at ("windows").get<std::vector<nlohmann::json>>();
 
             // Add windows if needed
             while (mainWindows_.size() < windows.size())
@@ -244,7 +255,7 @@ bool MainApplication::restoreFromJson (const nlohmann::json& json)
             {
                 if (const auto& window = mainWindows_[i])
                 {
-                    window->restoreWindowStateFromString (windows[i].at("state").get<std::string>());
+                    window->restoreWindowStateFromString (windows[i].at ("state").get<std::string>());
                 }
             }
         }
@@ -263,6 +274,50 @@ bool MainApplication::restoreFromJson (const nlohmann::json& json)
     }
 
     return true;
+}
+
+const juce::File& MainApplication::getApplicationStateFile()
+{
+    const static auto applicationStateFilePath = juce::File::getSpecialLocation (
+                                                     juce::File::userApplicationDataDirectory)
+                                                     .getChildFile (PROJECT_COMPANY_NAME)
+                                                     .getChildFile (PROJECT_PRODUCT_NAME)
+                                                     .getChildFile ("application_state.json");
+    return applicationStateFilePath;
+}
+
+tl::expected<void, std::string> MainApplication::loadApplicationState (const juce::File& fileToLoadFrom)
+{
+    if (!fileToLoadFrom.existsAsFile())
+        return tl::unexpected ("File does not exist");
+
+    const auto jsonData = fileToLoadFrom.loadFileAsString();
+    if (jsonData.isEmpty())
+        return tl::unexpected ("Failed to load file");
+
+    const auto json = nlohmann::json::parse (jsonData.toRawUTF8());
+    if (json.is_null())
+        return tl::unexpected ("Failed to parse JSON from file");
+
+    if (!restoreFromJson (json))
+        return tl::unexpected ("Failed to restore from JSON");
+
+    RAV_TRACE ("Loaded from file: {}", fileToLoadFrom.getFullPathName().toRawUTF8());
+
+    return {};
+}
+
+tl::expected<void, std::string> MainApplication::saveApplicationState (const juce::File& fileToSaveTo) const
+{
+    if (!fileToSaveTo.getParentDirectory().createDirectory())
+        return tl::unexpected ("Failed to create parent directories");
+
+    if (!fileToSaveTo.replaceWithText (toJson().dump(4)))
+        return tl::unexpected ("Saving state failed");
+
+    RAV_TRACE ("Saved application state to: {}", fileToSaveTo.getFullPathName().toRawUTF8());
+
+    return {};
 }
 
 START_JUCE_APPLICATION (MainApplication)

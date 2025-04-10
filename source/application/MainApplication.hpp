@@ -58,4 +58,8 @@ private:
     void addWindow();
     nlohmann::json toJson() const;
     bool restoreFromJson (const nlohmann::json& json);
+
+    static const juce::File& getApplicationStateFile();
+    tl::expected<void, std::string> loadApplicationState (const juce::File& fileToLoadFrom);
+    tl::expected<void, std::string> saveApplicationState (const juce::File& fileToSaveTo) const;
 };
