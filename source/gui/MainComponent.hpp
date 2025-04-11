@@ -36,7 +36,10 @@ private:
         void paint (juce::Graphics& g) override;
 
     private:
+        juce::TextButton saveButton_ {"Save"};
+        juce::TextButton loadButton_ {"Load"};
         juce::TextButton cloneWindowButton_ {"Clone Window"};
+        std::unique_ptr<juce::FileChooser> chooser_;
     };
 
     ApplicationContext& context_;

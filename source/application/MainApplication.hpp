@@ -44,6 +44,8 @@ public:
     juce::AudioDeviceManager& getAudioDeviceManager() override;
     AudioReceivers& getAudioReceivers() override;
     AudioSenders& getAudioSenders() override;
+    tl::expected<void, std::string> saveToFile (const juce::File& file) override;
+    tl::expected<void, std::string> loadFromFile (const juce::File& file) override;
 
 private:
     juce::AudioDeviceManager audioDeviceManager_;
@@ -54,4 +56,8 @@ private:
     std::vector<std::unique_ptr<juce::ResizableWindow>> mainWindows_;
 
     void addWindow();
+    nlohmann::json toJson() const;
+    bool restoreFromJson (const nlohmann::json& json);
+
+    static const juce::File& getApplicationStateFile();
 };

@@ -46,7 +46,7 @@ void MainComponent::resized()
 {
     auto b = getLocalBounds();
     auto top = b.removeFromTop (49);
-    topRightSection_.setBounds (top.removeFromRight (82));
+    topRightSection_.setBounds (top.removeFromRight (274));
     menu_.setBounds (top);
     if (content_ != nullptr)
         content_->setBounds (b);
@@ -59,6 +59,61 @@ bool MainComponent::navigateTo (const juce::String& path)
 
 MainComponent::TopRightSection::TopRightSection (ApplicationContext& context)
 {
+    saveButton_.setButtonText ("Save");
+    saveButton_.setColour (juce::TextButton::ColourIds::buttonColourId, juce::Colour (0xFF8E8F9A));
+    saveButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, juce::Colour (0xFF8E8F9A));
+    saveButton_.onClick = [this, &context] {
+        chooser_ = std::make_unique<juce::FileChooser> (
+            "Please select the file to save to...",
+            juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
+            "*.json");
+        constexpr int flags = juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting |
+                              juce::FileBrowserComponent::doNotClearFileNameOnRootChange;
+        chooser_->launchAsync (flags, [&context] (const juce::FileChooser& chooser) {
+            const auto file = chooser.getResult();
+            if (file.getFullPathName().isEmpty())
+                return; // Canceled
+            if (auto result = context.saveToFile (file); !result)
+            {
+                juce::NativeMessageBox::showAsync (
+                    juce::MessageBoxOptions()
+                        .withTitle ("Error")
+                        .withMessage ("Failed to save to file: " + result.error())
+                        .withIconType (juce::MessageBoxIconType::WarningIcon)
+                        .withParentComponent (nullptr),
+                    [] (int) {});
+            }
+        });
+    };
+    addAndMakeVisible (saveButton_);
+
+    loadButton_.setButtonText ("Load");
+    loadButton_.setColour (juce::TextButton::ColourIds::buttonColourId, juce::Colour (0xFF8E8F9A));
+    loadButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, juce::Colour (0xFF8E8F9A));
+    loadButton_.onClick = [this, &context] {
+        chooser_ = std::make_unique<juce::FileChooser> (
+            "Please select the file to load from...",
+            juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
+            "*.json");
+        constexpr int flags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
+        chooser_->launchAsync (flags, [&context] (const juce::FileChooser& chooser) {
+            const auto file = chooser.getResult();
+            if (file.getFullPathName().isEmpty())
+                return; // Canceled
+            if (auto result = context.loadFromFile (file); !result)
+            {
+                juce::NativeMessageBox::showAsync (
+                    juce::MessageBoxOptions()
+                        .withTitle ("Error")
+                        .withMessage ("Failed to load from file: " + result.error())
+                        .withIconType (juce::MessageBoxIconType::WarningIcon)
+                        .withParentComponent (nullptr),
+                    [] (int) {});
+            }
+        });
+    };
+    addAndMakeVisible (loadButton_);
+
     cloneWindowButton_.setButtonText ("Clone window");
     cloneWindowButton_.setColour (juce::TextButton::ColourIds::buttonColourId, juce::Colour (0xFF8E8F9A));
     cloneWindowButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, juce::Colour (0xFF8E8F9A));
@@ -70,8 +125,13 @@ MainComponent::TopRightSection::TopRightSection (ApplicationContext& context)
 
 void MainComponent::TopRightSection::resized()
 {
-    const auto b = getLocalBounds().reduced (8);
-    cloneWindowButton_.setBounds (b);
+    auto b = getLocalBounds().reduced (8);
+
+    cloneWindowButton_.setBounds (b.removeFromRight (82));
+    b.removeFromRight (6);
+    loadButton_.setBounds (b.removeFromRight (82));
+    b.removeFromRight (6);
+    saveButton_.setBounds (b.removeFromRight (82));
 }
 
 void MainComponent::TopRightSection::paint (juce::Graphics& g)

@@ -204,7 +204,7 @@ AudioSenders::Sender::Sender (AudioSenders& owner, const rav::Id senderId) : own
 AudioSenders::Sender::~Sender()
 {
     JUCE_ASSERT_MESSAGE_THREAD;
-    owner_.node_.remove_sender (senderId_).wait();
+    owner_.node_.unsubscribe_from_sender (senderId_, this).wait();
 }
 
 rav::Id AudioSenders::Sender::getSenderId() const
