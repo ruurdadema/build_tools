@@ -53,7 +53,7 @@ std::optional<std::string> AudioReceivers::getSdpTextForReceiver (const rav::Id 
     return node_.get_sdp_text_for_receiver (receiverId).get();
 }
 
-rav::RavennaReceiver::StreamStats AudioReceivers::getStatisticsForReceiver (const rav::Id receiverId) const
+rav::rtp::AudioReceiver::StreamStats AudioReceivers::getStatisticsForReceiver (const rav::Id receiverId) const
 {
     return node_.get_stats_for_receiver (receiverId).get();
 }
@@ -241,7 +241,7 @@ std::optional<uint32_t> AudioReceivers::Receiver::processBlock (
 }
 
 void AudioReceivers::Receiver::ravenna_receiver_stream_updated (
-    const rav::RavennaReceiver::StreamParameters& streamParameters)
+    const rav::rtp::AudioReceiver::StreamParameters& streamParameters)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
