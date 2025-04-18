@@ -31,7 +31,7 @@ public:
         rav::rtp::Session session;
         uint16_t packetTimeFrames = 0;
         uint32_t delayFrames = 0;
-        rav::rtp::AudioReceiver::ReceiverState state {};
+        rav::rtp::AudioReceiver::State state {};
         bool enabled = false;
     };
 
@@ -39,10 +39,10 @@ public:
     {
     public:
         virtual ~Subscriber() = default;
-        virtual void onAudioReceiverUpdated (
-            [[maybe_unused]] rav::Id streamId,
-            [[maybe_unused]] const ReceiverState* state)
+        virtual void onAudioReceiverUpdated (const rav::Id streamId, const ReceiverState* state)
         {
+            std::ignore = streamId;
+            std::ignore = state;
         }
     };
 
@@ -85,7 +85,7 @@ public:
      * @param receiverId The receiver to get the packet statistics for.
      * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
      */
-    [[nodiscard]] rav::rtp::AudioReceiver::StreamStats getStatisticsForReceiver (rav::Id receiverId) const;
+    [[nodiscard]] rav::rtp::AudioReceiver::Stats getStatisticsForReceiver (rav::Id receiverId) const;
 
     /**
      * Adds a subscriber.
@@ -134,10 +134,11 @@ private:
             std::optional<uint32_t> atTimestamp);
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void ravenna_receiver_stream_updated (const rav::rtp::AudioReceiver::StreamParameters& streamParameters) override;
+        void ravenna_receiver_stream_updated (const rav::rtp::AudioReceiver::Parameters& streamParameters) override;
         void ravenna_receiver_configuration_updated (
             rav::Id receiver_id,
             const rav::RavennaReceiver::Configuration& configuration) override;
+        void ravenna_receiver_state_updated (const rav::rtp::AudioReceiver::State state) override;
         void on_data_received (rav::WrappingUint32 timestamp) override;
         void on_data_ready (rav::WrappingUint32 timestamp) override;
 
