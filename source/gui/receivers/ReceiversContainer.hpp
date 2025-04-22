@@ -71,7 +71,8 @@ private:
             juce::String sessionName;
             juce::String audioFormat { "..." };
             juce::String packetTimeFrames { "..." };
-            juce::String address { "..." };
+            juce::String session_pri { "..." };
+            juce::String session_sec { "..." };
             juce::String state { "..." };
             juce::String warning {};
         } stream_;

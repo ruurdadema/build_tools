@@ -206,23 +206,49 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
 {
     JUCE_ASSERT_MESSAGE_THREAD;
 
-    stream_.sessionName = state.sessionName;
-    stream_.audioFormat = state.inputFormat.to_string();
-    stream_.packetTimeFrames = "ptime: " + juce::String (state.packetTimeFrames);
-    stream_.address = state.session.connection_address.to_string();
-    stream_.state = juce::String ("State: ") + rav::rtp::AudioReceiver::to_string (state.state);
+    stream_.sessionName = state.configuration.session_name;
 
-    if (state.inputFormat.is_valid() && state.inputFormat.sample_rate != state.outputFormat.sample_rate)
-        stream_.warning = "Warning: sample rate mismatch";
-    else
-        stream_.warning.clear();
+    if (!state.streams.empty())
+    {
+        auto& stream = state.streams.front();
 
-    delay_ = state.delayFrames;
+        if (stream.stream.audio_format.is_valid() &&
+            stream.stream.audio_format.sample_rate != state.outputFormat.sample_rate)
+            stream_.warning = "Warning: sample rate mismatch";
+        else
+            stream_.warning.clear();
+    }
+
+    const auto* pri = state.find_stream_for_rank (rav::Rank (0));
+    const auto* sec = state.find_stream_for_rank (rav::Rank (1));
+
+    if (pri)
+    {
+        stream_.audioFormat = pri->stream.audio_format.to_string();
+        stream_.packetTimeFrames = "ptime: " + juce::String (pri->stream.packet_time_frames);
+    }
+    else if (sec)
+    {
+        stream_.audioFormat = sec->stream.audio_format.to_string();
+        stream_.packetTimeFrames = "ptime: " + juce::String (sec->stream.packet_time_frames);
+    }
+
+    stream_.session_pri = pri ? "pri: " + pri->stream.session.to_string() : "pri: n/a";
+    stream_.session_sec = sec ? "sec: " + sec->stream.session.to_string() : "sec: n/a";
+
+    juce::String stateString("State: ");
+    stateString += pri ? rav::rtp::AudioReceiver::to_string (pri->state) : "n/a";
+    stateString += " | ";
+    stateString += sec ? rav::rtp::AudioReceiver::to_string (sec->state) : "n/a";
+    stream_.state = stateString;
+
+    delay_ = state.configuration.delay_frames;
+
     if (!delayEditor_.hasKeyboardFocus (true))
-        delayEditor_.setText (juce::String (state.delayFrames));
+        delayEditor_.setText (juce::String (state.configuration.delay_frames));
 
-    onOffButton_.setToggleState (state.enabled, juce::dontSendNotification);
-    onOffButton_.setButtonText (state.enabled ? "On" : "Off");
+    onOffButton_.setToggleState (state.configuration.enabled, juce::dontSendNotification);
+    onOffButton_.setButtonText (state.configuration.enabled ? "On" : "Off");
 
     repaint();
 }
@@ -251,7 +277,8 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     g.setFont (juce::FontOptions (fontSize, juce::Font::plain));
     g.drawText (stream_.audioFormat, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (stream_.packetTimeFrames, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (stream_.address, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (stream_.session_pri, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    g.drawText (stream_.session_sec, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (stream_.state, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
     g.setColour (Constants::Colours::warning);

@@ -13,6 +13,16 @@
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/core/audio/audio_data.hpp"
 
+const AudioReceivers::StreamState* AudioReceivers::ReceiverState::find_stream_for_rank (const rav::Rank rank) const
+{
+    for (auto& stream : streams)
+    {
+        if (stream.stream.rank == rank)
+            return &stream;
+    }
+    return nullptr;
+}
+
 AudioReceivers::AudioReceivers (rav::RavennaNode& node) : node_ (node)
 {
     node_.subscribe (this).wait();
@@ -52,7 +62,7 @@ std::optional<std::string> AudioReceivers::getSdpTextForReceiver (const rav::Id 
     return node_.get_sdp_text_for_receiver (receiverId).get();
 }
 
-rav::rtp::AudioReceiver::Stats AudioReceivers::getStatisticsForReceiver (const rav::Id receiverId) const
+rav::rtp::AudioReceiver::SessionStats AudioReceivers::getStatisticsForReceiver (const rav::Id receiverId) const
 {
     return node_.get_stats_for_receiver (receiverId).get();
 }
@@ -62,13 +72,15 @@ bool AudioReceivers::subscribe (Subscriber* subscriber)
     if (subscribers_.add (subscriber))
     {
         for (const auto& receiver : receivers_)
+        {
             subscriber->onAudioReceiverUpdated (receiver->getReceiverId(), &receiver->getState());
+        }
         return true;
     }
     return false;
 }
 
-bool AudioReceivers::unsubscribe (Subscriber* subscriber)
+bool AudioReceivers::unsubscribe (const Subscriber* subscriber)
 {
     return subscribers_.remove (subscriber);
 }
@@ -239,16 +251,20 @@ std::optional<uint32_t> AudioReceivers::Receiver::processBlock (
     return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, atTimestamp);
 }
 
-void AudioReceivers::Receiver::ravenna_receiver_stream_updated (
-    const rav::rtp::AudioReceiver::Parameters& streamParameters)
+void AudioReceivers::Receiver::ravenna_receiver_streams_updated (
+    const std::vector<rav::rtp::AudioReceiver::Stream>& streams)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
-    executor_.callAsync ([this, streamParameters] {
-        state_.packetTimeFrames = streamParameters.packet_time_frames;
-        state_.session = streamParameters.session;
-        if (streamParameters.audio_format.is_valid() && state_.inputFormat != streamParameters.audio_format)
-            prepareInput (streamParameters.audio_format);
+    executor_.callAsync ([this, streams] {
+        state_.streams.clear();
+        for (const auto& stream : streams)
+            state_.streams.push_back (StreamState { stream, {}});
+
+        if (!streams.empty())
+            if (streams.front().audio_format.is_valid() && state_.inputFormat != streams.front().audio_format)
+                prepareInput (streams.front().audio_format);
+
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioReceiverUpdated (receiverId_, &state_);
     });
@@ -262,22 +278,32 @@ void AudioReceivers::Receiver::ravenna_receiver_configuration_updated (
 
     executor_.callAsync ([this, receiver_id, configuration] {
         RAV_ASSERT (receiver_id == receiverId_, "Receiver ID mismatch");
-        state_.sessionName = configuration.session_name;
-        state_.enabled = configuration.enabled;
-        state_.delayFrames = configuration.delay_frames;
+        state_.configuration = configuration;
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioReceiverUpdated (receiver_id, &state_);
     });
 }
 
-void AudioReceivers::Receiver::ravenna_receiver_state_updated (const rav::rtp::AudioReceiver::State state)
+void AudioReceivers::Receiver::ravenna_receiver_stream_state_updated (
+    const rav::rtp::AudioReceiver::Stream& stream,
+    const rav::rtp::AudioReceiver::State state)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
-    executor_.callAsync ([this, state] {
-        if (state_.state == state)
+    executor_.callAsync ([this, stream, state] {
+        bool changed = false;
+        for (auto& streamState : state_.streams)
+        {
+            if (streamState.stream.session == stream.session)
+            {
+                streamState.state = state;
+                changed = true;
+            }
+        }
+
+        if (!changed)
             return;
-        state_.state = state;
+
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioReceiverUpdated (receiverId_, &state_);
     });

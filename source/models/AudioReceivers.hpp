@@ -18,30 +18,34 @@
 #include <juce_audio_devices/juce_audio_devices.h>
 
 /**
- * This is a high level class connecting an audio device to a ravenna_node.
+ * High(er) level class connecting an audio device to a ravenna_node.
  */
 class AudioReceivers : public rav::RavennaNode::Subscriber, public juce::AudioIODeviceCallback
 {
 public:
+    struct StreamState
+    {
+        rav::rtp::AudioReceiver::Stream stream;
+        rav::rtp::AudioReceiver::State state;
+    };
+
     struct ReceiverState
     {
-        std::string sessionName;
+        rav::RavennaReceiver::Configuration configuration;
+        std::vector<StreamState> streams;
         rav::AudioFormat inputFormat;
         rav::AudioFormat outputFormat;
-        rav::rtp::Session session;
-        uint16_t packetTimeFrames = 0;
-        uint32_t delayFrames = 0;
-        rav::rtp::AudioReceiver::State state {};
-        bool enabled = false;
+
+        const AudioReceivers::StreamState* find_stream_for_rank (rav::Rank rank) const;
     };
 
     class Subscriber
     {
     public:
         virtual ~Subscriber() = default;
-        virtual void onAudioReceiverUpdated (const rav::Id streamId, const ReceiverState* state)
+        virtual void onAudioReceiverUpdated (const rav::Id receiverId, const ReceiverState* state)
         {
-            std::ignore = streamId;
+            std::ignore = receiverId;
             std::ignore = state;
         }
     };
@@ -85,7 +89,7 @@ public:
      * @param receiverId The receiver to get the packet statistics for.
      * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
      */
-    [[nodiscard]] rav::rtp::AudioReceiver::Stats getStatisticsForReceiver (rav::Id receiverId) const;
+    [[nodiscard]] rav::rtp::AudioReceiver::SessionStats getStatisticsForReceiver (rav::Id receiverId) const;
 
     /**
      * Adds a subscriber.
@@ -99,7 +103,7 @@ public:
      * @param subscriber The subscriber to remove.
      * @return true if the subscriber was removed, or false if it was not in the list.
      */
-    [[nodiscard]] bool unsubscribe (Subscriber* subscriber);
+    [[nodiscard]] bool unsubscribe (const Subscriber* subscriber);
 
     // rav::ravenna_node::subscriber overrides
     void ravenna_receiver_added (const rav::RavennaReceiver& receiver) override;
@@ -134,11 +138,13 @@ private:
             std::optional<uint32_t> atTimestamp);
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void ravenna_receiver_stream_updated (const rav::rtp::AudioReceiver::Parameters& streamParameters) override;
+        void ravenna_receiver_streams_updated (const std::vector<rav::rtp::AudioReceiver::Stream>& streams) override;
         void ravenna_receiver_configuration_updated (
             rav::Id receiver_id,
             const rav::RavennaReceiver::Configuration& configuration) override;
-        void ravenna_receiver_state_updated (const rav::rtp::AudioReceiver::State state) override;
+        void ravenna_receiver_stream_state_updated (
+            const rav::rtp::AudioReceiver::Stream& stream,
+            rav::rtp::AudioReceiver::State state) override;
         void on_data_received (rav::WrappingUint32 timestamp) override;
         void on_data_ready (rav::WrappingUint32 timestamp) override;
 
