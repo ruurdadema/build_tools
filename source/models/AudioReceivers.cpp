@@ -251,19 +251,18 @@ std::optional<uint32_t> AudioReceivers::Receiver::processBlock (
     return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, atTimestamp);
 }
 
-void AudioReceivers::Receiver::ravenna_receiver_streams_updated (
-    const std::vector<rav::rtp::AudioReceiver::Stream>& streams)
+void AudioReceivers::Receiver::ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::Parameters& parameters)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
-    executor_.callAsync ([this, streams] {
+    executor_.callAsync ([this, parameters] {
         state_.streams.clear();
-        for (const auto& stream : streams)
-            state_.streams.push_back (StreamState { stream, {}});
 
-        if (!streams.empty())
-            if (streams.front().audio_format.is_valid() && state_.inputFormat != streams.front().audio_format)
-                prepareInput (streams.front().audio_format);
+        for (const auto& stream : parameters.streams)
+            state_.streams.push_back (StreamState { stream, {} });
+
+        if (parameters.audio_format.is_valid() && state_.inputFormat != parameters.audio_format)
+            prepareInput (parameters.audio_format);
 
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioReceiverUpdated (receiverId_, &state_);

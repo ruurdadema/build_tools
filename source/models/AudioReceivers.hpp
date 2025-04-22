@@ -36,7 +36,7 @@ public:
         rav::AudioFormat inputFormat;
         rav::AudioFormat outputFormat;
 
-        const AudioReceivers::StreamState* find_stream_for_rank (rav::Rank rank) const;
+        const StreamState* find_stream_for_rank (rav::Rank rank) const;
     };
 
     class Subscriber
@@ -138,7 +138,7 @@ private:
             std::optional<uint32_t> atTimestamp);
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void ravenna_receiver_streams_updated (const std::vector<rav::rtp::AudioReceiver::Stream>& streams) override;
+        void ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::Parameters& parameters) override;
         void ravenna_receiver_configuration_updated (
             rav::Id receiver_id,
             const rav::RavennaReceiver::Configuration& configuration) override;

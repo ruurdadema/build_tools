@@ -208,39 +208,28 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
 
     stream_.sessionName = state.configuration.session_name;
 
-    if (!state.streams.empty())
-    {
-        auto& stream = state.streams.front();
-
-        if (stream.stream.audio_format.is_valid() &&
-            stream.stream.audio_format.sample_rate != state.outputFormat.sample_rate)
-            stream_.warning = "Warning: sample rate mismatch";
-        else
-            stream_.warning.clear();
-    }
+    if (state.inputFormat.is_valid() && state.inputFormat.sample_rate != state.outputFormat.sample_rate)
+        stream_.warning = "Warning: sample rate mismatch";
+    else
+        stream_.warning.clear();
 
     const auto* pri = state.find_stream_for_rank (rav::Rank (0));
     const auto* sec = state.find_stream_for_rank (rav::Rank (1));
 
+    stream_.audioFormat = state.inputFormat.to_string();
+
     if (pri)
-    {
-        stream_.audioFormat = pri->stream.audio_format.to_string();
         stream_.packetTimeFrames = "ptime: " + juce::String (pri->stream.packet_time_frames);
-    }
     else if (sec)
-    {
-        stream_.audioFormat = sec->stream.audio_format.to_string();
         stream_.packetTimeFrames = "ptime: " + juce::String (sec->stream.packet_time_frames);
-    }
 
     stream_.session_pri = pri ? "pri: " + pri->stream.session.to_string() : "pri: n/a";
     stream_.session_sec = sec ? "sec: " + sec->stream.session.to_string() : "sec: n/a";
 
-    juce::String stateString("State: ");
-    stateString += pri ? rav::rtp::AudioReceiver::to_string (pri->state) : "n/a";
-    stateString += " | ";
-    stateString += sec ? rav::rtp::AudioReceiver::to_string (sec->state) : "n/a";
-    stream_.state = stateString;
+    stream_.state = "State: ";
+    stream_.state += pri ? rav::rtp::AudioReceiver::to_string (pri->state) : "n/a";
+    stream_.state += " | ";
+    stream_.state += sec ? rav::rtp::AudioReceiver::to_string (sec->state) : "n/a";
 
     delay_ = state.configuration.delay_frames;
 
