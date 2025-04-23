@@ -29,10 +29,10 @@ public:
     void onAudioReceiverUpdated (rav::Id receiverId, const AudioReceivers::ReceiverState* state) override;
 
 private:
-    static constexpr int kRowHeight = 138;
+    static constexpr int kRowHeight = 158;
     static constexpr int kMargin = 10;
 
-    class SdpViewer : public juce::Component
+    class SdpViewer : public Component
     {
     public:
         explicit SdpViewer (const std::string& sdpText);
@@ -44,6 +44,36 @@ private:
         juce::String sdpText_;
         juce::TextButton closeButton_ { "Close" };
         juce::TextButton copyButton_ { "Copy" };
+    };
+
+    class SessionInfoComponent : public Component
+    {
+    public:
+        explicit SessionInfoComponent (const juce::String& title);
+        void update (const AudioReceivers::StreamState* state);
+        void resized() override;
+
+    private:
+        juce::Label titleLabel_ { "title" };
+        juce::Label sessionInfoLabel_ { "session_info" };
+        juce::Label packetTimeLabel_ { " packet_time" };
+        juce::Label statusLabel_ { "status" };
+    };
+
+    class PacketStatsComponent : public Component
+    {
+    public:
+        PacketStatsComponent();
+        void update (const rav::rtp::AudioReceiver::SessionStats* stats);
+        void resized() override;
+
+    private:
+        juce::Label titleLabel_ { "title" };
+        juce::Label jitterMaxLabel_ { "jitter_max" };
+        juce::Label droppedLabel_ { "dropped" };
+        juce::Label duplicatesLabel_ { "duplicates" };
+        juce::Label outOfOrderLabel_ { "out_of_order" };
+        juce::Label tooLateLabel_ { "too_late" };
     };
 
     class Row : public Component, public juce::Timer
@@ -62,37 +92,26 @@ private:
         juce::TextEditor delayEditor_;
         rav::Id receiverId_;
         uint32_t delay_ { 0 };
+
+        // Session
+        juce::Label sessionNameLabel_ { "session_name" };
+        juce::Label audioFormatLabel_ { "audio_format" };
+        juce::Label settingsLabel_ { "settings" };
+        juce::Label delaySettingLabel_ { "delay" };
+
+        // Buttons
         juce::TextButton showSdpButton_ { "" };
         juce::TextButton onOffButton_ { "Start" };
         juce::TextButton deleteButton_ { "" };
 
-        struct
-        {
-            juce::String sessionName;
-            juce::String audioFormat { "..." };
-            juce::String packetTimeFrames { "..." };
-            juce::String session_pri { "..." };
-            juce::String session_sec { "..." };
-            juce::String state { "..." };
-            juce::String warning {};
-        } stream_;
+        // Warning
+        juce::Label warningLabel_ { "warning" };
 
-        struct
-        {
-            juce::String dropped;
-            juce::String duplicates;
-            juce::String outOfOrder;
-            juce::String tooLate;
-        } packet_stats_;
+        SessionInfoComponent primarySessionInfo_ { "Primary" };
+        PacketStatsComponent primaryPacketStats_;
 
-        struct
-        {
-            juce::String avg;
-            juce::String median;
-            juce::String min;
-            juce::String max;
-            juce::String stddev;
-        } interval_stats_;
+        SessionInfoComponent secondarySessionInfo_ { "Secondary" };
+        PacketStatsComponent secondaryPacketStats_;
 
         MessageThreadExecutor executor_;
 

@@ -133,10 +133,105 @@ void ReceiversContainer::SdpViewer::paint (juce::Graphics& g)
     g.drawMultiLineText (sdpText_, b.getX(), b.getY() + 10, b.getWidth(), juce::Justification::topLeft);
 }
 
+ReceiversContainer::SessionInfoComponent::SessionInfoComponent (const juce::String& title)
+{
+    titleLabel_.setText (title, juce::dontSendNotification);
+    titleLabel_.setFont (juce::FontOptions (14.0f, juce::Font::bold));
+    addAndMakeVisible (titleLabel_);
+
+    sessionInfoLabel_.setText ("Session: ", juce::dontSendNotification);
+    addAndMakeVisible (sessionInfoLabel_);
+
+    packetTimeLabel_.setText ("Packet time: ", juce::dontSendNotification);
+    addAndMakeVisible (packetTimeLabel_);
+
+    statusLabel_.setText ("Status: ", juce::dontSendNotification);
+    addAndMakeVisible (statusLabel_);
+}
+
+void ReceiversContainer::SessionInfoComponent::update (const AudioReceivers::StreamState* state)
+{
+    if (state == nullptr)
+        return;
+
+    sessionInfoLabel_.setText ("Session: " + state->stream.session.to_string(), juce::dontSendNotification);
+    packetTimeLabel_.setText (
+        "Packet time: " + juce::String (state->stream.packet_time_frames),
+        juce::dontSendNotification);
+    statusLabel_.setText (
+        juce::String ("Status: ") + rav::rtp::AudioReceiver::to_string (state->state),
+        juce::dontSendNotification);
+}
+
+void ReceiversContainer::SessionInfoComponent::resized()
+{
+    auto b = getLocalBounds();
+    titleLabel_.setBounds (b.removeFromTop (20));
+    sessionInfoLabel_.setBounds (b.removeFromTop (20));
+    packetTimeLabel_.setBounds (b.removeFromTop (20));
+    statusLabel_.setBounds (b.removeFromTop (20));
+}
+
+ReceiversContainer::PacketStatsComponent::PacketStatsComponent()
+{
+    titleLabel_.setText ("Packet Stats", juce::dontSendNotification);
+    titleLabel_.setFont (juce::FontOptions (14.0f, juce::Font::bold));
+    addAndMakeVisible (titleLabel_);
+
+    addAndMakeVisible (jitterMaxLabel_);
+    addAndMakeVisible (droppedLabel_);
+    addAndMakeVisible (duplicatesLabel_);
+    addAndMakeVisible (outOfOrderLabel_);
+    addAndMakeVisible (tooLateLabel_);
+}
+
+void ReceiversContainer::PacketStatsComponent::update (const rav::rtp::AudioReceiver::SessionStats* stats)
+{
+    if (stats == nullptr)
+        return;
+
+    jitterMaxLabel_.setText (
+        "Max interval (ms): " + juce::String (stats->packet_interval_stats.max),
+        juce::dontSendNotification);
+    droppedLabel_.setText ("Dropped: " + juce::String (stats->packet_stats.dropped), juce::dontSendNotification);
+    duplicatesLabel_.setText (
+        "Duplicates: " + juce::String (stats->packet_stats.duplicates),
+        juce::dontSendNotification);
+    outOfOrderLabel_.setText (
+        "Out of Order: " + juce::String (stats->packet_stats.out_of_order),
+        juce::dontSendNotification);
+    tooLateLabel_.setText ("Too Late: " + juce::String (stats->packet_stats.too_late), juce::dontSendNotification);
+}
+
+void ReceiversContainer::PacketStatsComponent::resized()
+{
+    auto b = getLocalBounds();
+    titleLabel_.setBounds (b.removeFromTop (20));
+    jitterMaxLabel_.setBounds (b.removeFromTop (20));
+    droppedLabel_.setBounds (b.removeFromTop (20));
+    duplicatesLabel_.setBounds (b.removeFromTop (20));
+    outOfOrderLabel_.setBounds (b.removeFromTop (20));
+    tooLateLabel_.setBounds (b.removeFromTop (20));
+}
+
 ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id receiverId) :
     audioReceivers_ (audioReceivers),
     receiverId_ (receiverId)
 {
+    constexpr float fontSize = 14.0f;
+
+    sessionNameLabel_.setFont (juce::FontOptions (fontSize, juce::Font::bold));
+    addAndMakeVisible (sessionNameLabel_);
+
+    addAndMakeVisible (audioFormatLabel_);
+
+    settingsLabel_.setFont (juce::FontOptions (fontSize, juce::Font::bold));
+    settingsLabel_.setText ("Settings", juce::dontSendNotification);
+    addAndMakeVisible (settingsLabel_);
+
+    delaySettingLabel_.setText ("Delay (samples)", juce::dontSendNotification);
+    addAndMakeVisible (delaySettingLabel_);
+
     delayEditor_.setInputRestrictions (10, "0123456789");
     delayEditor_.onReturnKey = [this] {
         const auto value = static_cast<uint32_t> (delayEditor_.getText().getIntValue());
@@ -193,6 +288,15 @@ ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id rece
     };
     addAndMakeVisible (deleteButton_);
 
+    addAndMakeVisible (primarySessionInfo_);
+    addAndMakeVisible (primaryPacketStats_);
+
+    addAndMakeVisible (secondarySessionInfo_);
+    addAndMakeVisible (secondaryPacketStats_);
+
+    warningLabel_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
+    addAndMakeVisible (warningLabel_);
+
     update();
     startTimer (1000);
 }
@@ -206,48 +310,23 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
 {
     JUCE_ASSERT_MESSAGE_THREAD;
 
-    stream_.sessionName = state.configuration.session_name;
+    sessionNameLabel_.setText (state.configuration.session_name, juce::dontSendNotification);
 
     if (state.inputFormat.is_valid() && state.inputFormat.sample_rate != state.outputFormat.sample_rate)
-        stream_.warning = "Warning: sample rate mismatch";
+        warningLabel_.setText ("Warning: sample rate mismatch", juce::dontSendNotification);
     else
-        stream_.warning.clear();
+        warningLabel_.setText ({}, juce::dontSendNotification);
 
-    const auto* pri = state.find_stream_for_rank (rav::Rank (0));
-    const auto* sec = state.find_stream_for_rank (rav::Rank (1));
+    const auto* pri = state.find_stream_for_rank (rav::Rank::primary());
+    const auto* sec = state.find_stream_for_rank (rav::Rank::secondary());
 
-    stream_.audioFormat = state.inputFormat.to_string();
+    audioFormatLabel_.setText (state.inputFormat.to_string(), juce::dontSendNotification);
 
-    stream_.packetTimeFrames = "ptime: ";
-    if (pri)
-    {
-        stream_.packetTimeFrames += juce::String (pri->stream.packet_time_frames);
-    }
-    if (sec)
-    {
-        if (pri)
-            stream_.packetTimeFrames += " | ";
-        stream_.packetTimeFrames += juce::String (sec->stream.packet_time_frames);
-    }
-    if (!pri && !sec)
-        stream_.packetTimeFrames += "n/a";
+    primarySessionInfo_.update (pri);
+    secondarySessionInfo_.update (sec);
 
-    stream_.session_pri = pri ? "pri: " + pri->stream.session.to_string() : "";
-    stream_.session_sec = sec ? "sec: " + sec->stream.session.to_string() : "";
-
-    stream_.state = "State: ";
-    if (pri)
-        stream_.state += rav::rtp::AudioReceiver::to_string (pri->state);
-
-    if (sec)
-    {
-        if (pri)
-            stream_.state += " | ";
-        stream_.state += rav::rtp::AudioReceiver::to_string (sec->state);
-    }
-
-    if (stream_.state.isEmpty())
-        stream_.state = "State: n/a";
+    secondarySessionInfo_.setVisible (sec != nullptr);
+    secondaryPacketStats_.setVisible (sec != nullptr);
 
     delay_ = state.configuration.delay_frames;
 
@@ -262,64 +341,52 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
 
 void ReceiversContainer::Row::paint (juce::Graphics& g)
 {
-    constexpr float fontSize = 14.0f;
-    constexpr int rowHeight = 20;
-
     g.setColour (Constants::Colours::rowBackground);
     g.fillRoundedRectangle (getLocalBounds().toFloat(), 5.0f);
-
-    auto b = getLocalBounds().reduced (kMargin + 5, kMargin);
-    auto column1 = b.removeFromLeft (250);
-    auto column2 = b.removeFromLeft (200);
-    auto column3 = b.removeFromLeft (200);
-    auto column4 = b.removeFromLeft (200);
-
-    g.setColour (Constants::Colours::text);
-    g.setFont (juce::FontOptions (fontSize, juce::Font::bold));
-    g.drawText (stream_.sessionName, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("Stats", column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("Receive interval", column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText ("Settings", column4.removeFromTop (rowHeight), juce::Justification::centredLeft);
-
-    g.setFont (juce::FontOptions (fontSize, juce::Font::plain));
-    g.drawText (stream_.audioFormat, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (stream_.packetTimeFrames, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    if (stream_.session_pri.isNotEmpty())
-        g.drawText (stream_.session_pri, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    if (stream_.session_sec.isNotEmpty())
-        g.drawText (stream_.session_sec, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (stream_.state, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-
-    g.setColour (Constants::Colours::warning);
-    g.drawText (stream_.warning, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.setColour (Constants::Colours::text);
-
-    g.drawText (packet_stats_.dropped, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (packet_stats_.duplicates, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (packet_stats_.outOfOrder, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (packet_stats_.tooLate, column2.removeFromTop (rowHeight), juce::Justification::centredLeft);
-
-    g.drawText (interval_stats_.avg, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (interval_stats_.median, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (interval_stats_.min, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (interval_stats_.max, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (interval_stats_.stddev, column3.removeFromTop (rowHeight), juce::Justification::centredLeft);
-
-    g.drawText ("delay (samples)", column4.removeFromTop (rowHeight), juce::Justification::centredLeft);
 }
 
 void ReceiversContainer::Row::resized()
 {
-    auto b = getLocalBounds().reduced (kMargin);
-    b.removeFromTop (18);
-    delayEditor_.setBounds (b.withLeft (768).withHeight (24).withWidth (60));
+    constexpr int rowHeight = 20;
+    constexpr int buttonHeight = 28;
 
-    auto bottom = b.removeFromBottom (27);
-    deleteButton_.setBounds (bottom.removeFromRight (65));
-    bottom.removeFromRight (6);
-    onOffButton_.setBounds (bottom.removeFromRight (65));
-    bottom.removeFromRight (6);
-    showSdpButton_.setBounds (bottom.removeFromRight (89));
+    auto b = getLocalBounds().reduced (kMargin);
+
+    auto buttonBounds = b.removeFromRight (89);
+    onOffButton_.setBounds (buttonBounds.removeFromTop (buttonHeight));
+    buttonBounds.removeFromTop (6);
+    deleteButton_.setBounds (buttonBounds.removeFromTop (buttonHeight));
+    buttonBounds.removeFromTop (6);
+    showSdpButton_.setBounds (buttonBounds.removeFromTop (buttonHeight));
+
+    constexpr int kColumnWidth = 250;
+
+    auto leftSection = b.removeFromLeft (kColumnWidth * 2);
+    auto rightSection = b;
+
+    warningLabel_.setBounds (rightSection.removeFromBottom (16).withTrimmedLeft (1));
+
+    auto column1 = leftSection.removeFromLeft (kColumnWidth);
+    auto column2 = leftSection.removeFromLeft (kColumnWidth);
+    auto column3 = rightSection.removeFromLeft (kColumnWidth);
+    auto column4 = rightSection.removeFromLeft (kColumnWidth);
+
+    sessionNameLabel_.setBounds (column1.removeFromTop (rowHeight));
+    audioFormatLabel_.setBounds (column1.removeFromTop (rowHeight));
+
+    settingsLabel_.setBounds (column2.removeFromTop (rowHeight));
+    auto delayBounds = column2.removeFromTop (rowHeight);
+    delaySettingLabel_.setBounds (delayBounds.removeFromLeft (115));
+    delayEditor_.setBounds (delayBounds.withHeight (24).withWidth (60).translated (0, -1));
+
+    column1.removeFromTop (17);
+    column2.removeFromTop (17);
+
+    primarySessionInfo_.setBounds (column1.removeFromTop (rowHeight * 4));
+    secondarySessionInfo_.setBounds (column2.removeFromTop (rowHeight * 4));
+
+    primaryPacketStats_.setBounds (column3.removeFromTop (rowHeight * 6));
+    secondaryPacketStats_.setBounds (column4.removeFromTop (rowHeight * 6));
 }
 
 void ReceiversContainer::Row::timerCallback()
@@ -333,18 +400,8 @@ void ReceiversContainer::Row::update()
 
     const auto stats = audioReceivers_.getStatisticsForReceiver (receiverId_);
 
-    // Packet stats
-    packet_stats_.dropped = "dropped: " + juce::String (stats.packet_stats.dropped);
-    packet_stats_.duplicates = "duplicates: " + juce::String (stats.packet_stats.duplicates);
-    packet_stats_.outOfOrder = "out of order: " + juce::String (stats.packet_stats.out_of_order);
-    packet_stats_.tooLate = "too late: " + juce::String (stats.packet_stats.too_late);
-
-    // Interval stats
-    interval_stats_.avg = "avg: " + juce::String (stats.packet_interval_stats.average);
-    interval_stats_.median = "median: " + juce::String (stats.packet_interval_stats.median);
-    interval_stats_.min = "min: " + juce::String (stats.packet_interval_stats.min);
-    interval_stats_.max = "max: " + juce::String (stats.packet_interval_stats.max);
-    interval_stats_.stddev = "stddev: " + juce::String (stats.packet_interval_stats.stddev);
+    primaryPacketStats_.update (&stats);
+    secondaryPacketStats_.update (&stats);
 
     repaint();
 }

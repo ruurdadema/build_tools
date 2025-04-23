@@ -26,7 +26,7 @@ public:
     struct StreamState
     {
         rav::rtp::AudioReceiver::Stream stream;
-        rav::rtp::AudioReceiver::State state;
+        rav::rtp::AudioReceiver::State state{};
     };
 
     struct ReceiverState
@@ -36,7 +36,7 @@ public:
         rav::AudioFormat inputFormat;
         rav::AudioFormat outputFormat;
 
-        const StreamState* find_stream_for_rank (rav::Rank rank) const;
+        [[nodiscard]] const StreamState* find_stream_for_rank (rav::Rank rank) const;
     };
 
     class Subscriber
