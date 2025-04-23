@@ -218,18 +218,36 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
 
     stream_.audioFormat = state.inputFormat.to_string();
 
+    stream_.packetTimeFrames = "ptime: ";
     if (pri)
-        stream_.packetTimeFrames = "ptime: " + juce::String (pri->stream.packet_time_frames);
-    else if (sec)
-        stream_.packetTimeFrames = "ptime: " + juce::String (sec->stream.packet_time_frames);
+    {
+        stream_.packetTimeFrames += juce::String (pri->stream.packet_time_frames);
+    }
+    if (sec)
+    {
+        if (pri)
+            stream_.packetTimeFrames += " | ";
+        stream_.packetTimeFrames += juce::String (sec->stream.packet_time_frames);
+    }
+    if (!pri && !sec)
+        stream_.packetTimeFrames += "n/a";
 
-    stream_.session_pri = pri ? "pri: " + pri->stream.session.to_string() : "pri: n/a";
-    stream_.session_sec = sec ? "sec: " + sec->stream.session.to_string() : "sec: n/a";
+    stream_.session_pri = pri ? "pri: " + pri->stream.session.to_string() : "";
+    stream_.session_sec = sec ? "sec: " + sec->stream.session.to_string() : "";
 
     stream_.state = "State: ";
-    stream_.state += pri ? rav::rtp::AudioReceiver::to_string (pri->state) : "n/a";
-    stream_.state += " | ";
-    stream_.state += sec ? rav::rtp::AudioReceiver::to_string (sec->state) : "n/a";
+    if (pri)
+        stream_.state += rav::rtp::AudioReceiver::to_string (pri->state);
+
+    if (sec)
+    {
+        if (pri)
+            stream_.state += " | ";
+        stream_.state += rav::rtp::AudioReceiver::to_string (sec->state);
+    }
+
+    if (stream_.state.isEmpty())
+        stream_.state = "State: n/a";
 
     delay_ = state.configuration.delay_frames;
 
@@ -266,8 +284,10 @@ void ReceiversContainer::Row::paint (juce::Graphics& g)
     g.setFont (juce::FontOptions (fontSize, juce::Font::plain));
     g.drawText (stream_.audioFormat, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (stream_.packetTimeFrames, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (stream_.session_pri, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
-    g.drawText (stream_.session_sec, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    if (stream_.session_pri.isNotEmpty())
+        g.drawText (stream_.session_pri, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
+    if (stream_.session_sec.isNotEmpty())
+        g.drawText (stream_.session_sec, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
     g.drawText (stream_.state, column1.removeFromTop (rowHeight), juce::Justification::centredLeft);
 
     g.setColour (Constants::Colours::warning);
