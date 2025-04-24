@@ -398,10 +398,11 @@ void ReceiversContainer::Row::update()
 {
     TRACY_ZONE_SCOPED;
 
-    const auto stats = audioReceivers_.getStatisticsForReceiver (receiverId_);
+    const auto stats_pri = audioReceivers_.getStatisticsForReceiver (receiverId_, rav::Rank::primary());
+    primaryPacketStats_.update (&stats_pri);
 
-    primaryPacketStats_.update (&stats);
-    secondaryPacketStats_.update (&stats);
+    const auto stats_sec = audioReceivers_.getStatisticsForReceiver (receiverId_, rav::Rank::secondary());
+    secondaryPacketStats_.update (&stats_sec);
 
     repaint();
 }

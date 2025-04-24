@@ -26,7 +26,7 @@ public:
     struct StreamState
     {
         rav::rtp::AudioReceiver::Stream stream;
-        rav::rtp::AudioReceiver::State state{};
+        rav::rtp::AudioReceiver::State state {};
     };
 
     struct ReceiverState
@@ -87,9 +87,11 @@ public:
     /**
      * Gets the packet statistics for a receiver.
      * @param receiverId The receiver to get the packet statistics for.
+     * @param rank The rank of the stream to get the statistics for.
      * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
      */
-    [[nodiscard]] rav::rtp::AudioReceiver::SessionStats getStatisticsForReceiver (rav::Id receiverId) const;
+    [[nodiscard]] rav::rtp::AudioReceiver::SessionStats getStatisticsForReceiver (rav::Id receiverId, rav::Rank rank)
+        const;
 
     /**
      * Adds a subscriber.

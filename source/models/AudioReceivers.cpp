@@ -62,9 +62,11 @@ std::optional<std::string> AudioReceivers::getSdpTextForReceiver (const rav::Id 
     return node_.get_sdp_text_for_receiver (receiverId).get();
 }
 
-rav::rtp::AudioReceiver::SessionStats AudioReceivers::getStatisticsForReceiver (const rav::Id receiverId) const
+rav::rtp::AudioReceiver::SessionStats AudioReceivers::getStatisticsForReceiver (
+    const rav::Id receiverId,
+    const rav::Rank rank) const
 {
-    return node_.get_stats_for_receiver (receiverId).get();
+    return node_.get_stats_for_receiver (receiverId, rank).get();
 }
 
 bool AudioReceivers::subscribe (Subscriber* subscriber)
@@ -251,7 +253,8 @@ std::optional<uint32_t> AudioReceivers::Receiver::processBlock (
     return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, atTimestamp);
 }
 
-void AudioReceivers::Receiver::ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::Parameters& parameters)
+void AudioReceivers::Receiver::ravenna_receiver_parameters_updated (
+    const rav::rtp::AudioReceiver::Parameters& parameters)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
