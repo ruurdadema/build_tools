@@ -65,7 +65,7 @@ Note: adjust the parameters to match your environment.
 
 ```
 # From the project root (generates build folder if necessary)
-cmake -B win-build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="submodules\ravennakit\submodules\vcpkg\scripts\buildsystems\vcpkg.cmake" -DVCPKG_OVERLAY_TRIPLETS=submodules\ravennakit\triplets -DVCPKG_TARGET_TRIPLET=windows-x64
+cmake -B win-build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="ravennakit\submodules\vcpkg\scripts\buildsystems\vcpkg.cmake" -DVCPKG_OVERLAY_TRIPLETS="ravennakit\triplets" -DVCPKG_TARGET_TRIPLET=windows-x64
 cmake --build win-build --config Release
 ```
 
