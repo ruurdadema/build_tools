@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.22)
 
-include(ravennakit/submodules/build_tools/cmake/git_version.cmake)
+if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ravennakit/cmake/helpers.cmake")
+    message(FATAL_ERROR "Please replace the folder 'ravennakit' with the actual RAVENNAKIT SDK. See README.md for more details.")
+endif ()
+
+include(cmake/version.cmake)
 include(ravennakit/cmake/helpers.cmake)
 include(FetchContent)
 
