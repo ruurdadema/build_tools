@@ -205,7 +205,7 @@ void MainApplication::addWindow()
         bounds = mainWindows_.back()->getBounds();
     const auto& it = mainWindows_.emplace_back (std::make_unique<MainWindow> (getApplicationName(), *this));
     it->setVisible (true);
-    it->setResizeLimits (1100, 400, 99999, 99999);
+    it->setResizeLimits (1080, 400, 99999, 99999);
     bounds ? it->setBounds (bounds->translated (20, 20)) : it->centreWithSize (1200, 800);
 }
 

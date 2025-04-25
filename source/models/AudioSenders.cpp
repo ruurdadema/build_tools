@@ -24,8 +24,7 @@ AudioSenders::~AudioSenders()
 
 rav::Id AudioSenders::createSender() const
 {
-    const rav::RavennaSender::ConfigurationUpdate config;
-    return node_.create_sender (config).get();
+    return node_.create_sender ({}).get();
 }
 
 void AudioSenders::removeSender (const rav::Id senderId) const

@@ -27,7 +27,7 @@ public:
     void resized() override;
 
 private:
-    static constexpr int kRowHeight = 80;
+    static constexpr int kRowHeight = 120;
     static constexpr int kMargin = 10;
     static constexpr int kButtonHeight = 30;
 
@@ -49,8 +49,14 @@ private:
         juce::Label sessionNameLabel_;
         juce::TextEditor sessionNameEditor_;
 
-        juce::Label addressLabel_;
-        juce::TextEditor addressEditor_;
+        juce::Label txPortLabel_;
+        juce::ComboBox txPortComboBox_;
+
+        juce::Label primaryAddressLabel_;
+        juce::TextEditor primaryAddressEditor_;
+
+        juce::Label secondaryAddressLabel_;
+        juce::TextEditor secondaryAddressEditor_;
 
         juce::Label ttlLabel_;
         juce::TextEditor ttlEditor_;
