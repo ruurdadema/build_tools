@@ -138,6 +138,8 @@ void MainApplication::closeWindow (juce::Component* window)
         if (it->get() == window)
         {
             mainWindows_.erase (it);
+            if (mainWindows_.empty())
+                quit(); // Quit the application if no windows are left
             break;
         }
     }
