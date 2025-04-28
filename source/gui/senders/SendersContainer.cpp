@@ -11,6 +11,7 @@
 #include "SendersContainer.hpp"
 
 #include "gui/lookandfeel/Constants.hpp"
+#include "ravennakit/core/containers/detail/stl_helpers.hpp"
 
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
@@ -123,8 +124,21 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
         const auto selectedId = txPortComboBox_.getSelectedId();
         if (selectedId <= 0)
             return;
+
+        auto destinations = senderState_.senderConfiguration.destinations;
+
+        RAV_ASSERT (destinations.size() == 2, "Expected two destinations");
+
+        std::bitset<2> ports (selectedId);
+
+        for (auto& dst : destinations)
+        {
+            RAV_ASSERT (dst.interface_by_rank.value() < 2, "Invalid interface rank");
+            dst.enabled = ports[dst.interface_by_rank.value()];
+        }
+
         rav::RavennaSender::ConfigurationUpdate update {};
-        update.ports = selectedId;
+        update.destinations = std::move (destinations);
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
     };
     addAndMakeVisible (txPortComboBox_);
@@ -135,20 +149,45 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
 
     primaryAddressEditor_.setIndents (8, 8);
     primaryAddressEditor_.onReturnKey = [this] {
+        auto destinations = senderState_.senderConfiguration.destinations;
+
+        const auto it = std::find_if (
+            destinations.begin(),
+            destinations.end(),
+            [] (const rav::RavennaSender::Destination& dst) {
+                return dst.interface_by_rank == rav::Rank::primary();
+            });
+
+        if (it == destinations.end())
+        {
+            RAV_ERROR ("Primary destination not found");
+            return;
+        }
+
+        if (primaryAddressEditor_.isEmpty())
+        {
+            it->endpoint.address (asio::ip::address_v4());
+        }
+        else
+        {
+            const auto addr = asio::ip::make_address_v4 (primaryAddressEditor_.getText().toRawUTF8());
+            it->endpoint.address (addr);
+        }
+
         rav::RavennaSender::ConfigurationUpdate update;
-        update.destination_address_pri = asio::ip::make_address_v4 (primaryAddressEditor_.getText().toRawUTF8());
+        update.destinations = std::move (destinations);
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
         juce::TextEditor::unfocusAllComponents();
     };
     primaryAddressEditor_.onEscapeKey = [this] {
         primaryAddressEditor_.setText (
-            senderState_.senderConfiguration.destination_address_pri.to_string(),
+            getDestinationAddress (rav::Rank::primary()).to_string(),
             juce::dontSendNotification);
         juce::TextEditor::unfocusAllComponents();
     };
     primaryAddressEditor_.onFocusLost = [this] {
         primaryAddressEditor_.setText (
-            senderState_.senderConfiguration.destination_address_pri.to_string(),
+            getDestinationAddress (rav::Rank::primary()).to_string(),
             juce::dontSendNotification);
     };
     addAndMakeVisible (primaryAddressEditor_);
@@ -159,20 +198,45 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
 
     secondaryAddressEditor_.setIndents (8, 8);
     secondaryAddressEditor_.onReturnKey = [this] {
+        auto destinations = senderState_.senderConfiguration.destinations;
+
+        const auto it = std::find_if (
+            destinations.begin(),
+            destinations.end(),
+            [] (const rav::RavennaSender::Destination& dst) {
+                return dst.interface_by_rank == rav::Rank::secondary();
+            });
+
+        if (it == destinations.end())
+        {
+            RAV_ERROR ("Primary destination not found");
+            return;
+        }
+
+        if (secondaryAddressEditor_.isEmpty())
+        {
+            it->endpoint.address (asio::ip::address_v4());
+        }
+        else
+        {
+            const auto addr = asio::ip::make_address_v4 (secondaryAddressEditor_.getText().toRawUTF8());
+            it->endpoint.address (addr);
+        }
+
         rav::RavennaSender::ConfigurationUpdate update;
-        update.destination_address_sec = asio::ip::make_address_v4 (secondaryAddressEditor_.getText().toRawUTF8());
+        update.destinations = std::move (destinations);
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
         juce::TextEditor::unfocusAllComponents();
     };
     secondaryAddressEditor_.onEscapeKey = [this] {
         secondaryAddressEditor_.setText (
-            senderState_.senderConfiguration.destination_address_sec.to_string(),
+            getDestinationAddress (rav::Rank::secondary()).to_string(),
             juce::dontSendNotification);
         juce::TextEditor::unfocusAllComponents();
     };
     secondaryAddressEditor_.onFocusLost = [this] {
         secondaryAddressEditor_.setText (
-            senderState_.senderConfiguration.destination_address_sec.to_string(),
+            getDestinationAddress (rav::Rank::secondary()).to_string(),
             juce::dontSendNotification);
     };
     addAndMakeVisible (secondaryAddressEditor_);
@@ -314,15 +378,28 @@ void SendersContainer::Row::update (const AudioSenders::SenderState& state)
 {
     senderState_ = state;
     sessionNameEditor_.setText (state.senderConfiguration.session_name, juce::dontSendNotification);
-    txPortComboBox_.setSelectedId (
-        static_cast<int> (state.senderConfiguration.ports.to_ulong()),
-        juce::dontSendNotification);
+
+    std::bitset<2> ports;
+
+    for (auto& dst : state.senderConfiguration.destinations)
+    {
+        if (dst.interface_by_rank.value() >= ports.size())
+            continue;
+        ports[dst.interface_by_rank.value()] = dst.enabled;
+    }
+
+    txPortComboBox_.setSelectedId (static_cast<int> (ports.to_ulong()), juce::dontSendNotification);
+
+    // Primary address editor
     primaryAddressEditor_.setText (
-        state.senderConfiguration.destination_address_pri.to_string(),
+        getDestinationAddress (rav::Rank::primary()).to_string(),
         juce::dontSendNotification);
+
+    // Secondary address editor
     secondaryAddressEditor_.setText (
-        state.senderConfiguration.destination_address_sec.to_string(),
+        getDestinationAddress (rav::Rank::secondary()).to_string(),
         juce::dontSendNotification);
+
     ttlEditor_.setText (juce::String (state.senderConfiguration.ttl), juce::dontSendNotification);
     payloadTypeEditor_.setText (juce::String (state.senderConfiguration.payload_type), juce::dontSendNotification);
     numChannelsEditor_.setText (
@@ -443,4 +520,11 @@ void SendersContainer::Row::resized()
     payloadTypeEditor_.setBounds (row2.removeFromLeft (100));
 
     statusMessage_.setBounds (b);
+}
+asio::ip::address_v4 SendersContainer::Row::getDestinationAddress (const rav::Rank rank) const
+{
+    for (auto& dst : senderState_.senderConfiguration.destinations)
+        if (dst.interface_by_rank == rank)
+            return dst.endpoint.address().to_v4();
+    return asio::ip::address_v4();
 }
