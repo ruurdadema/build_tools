@@ -129,7 +129,7 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
 
         RAV_ASSERT (destinations.size() == 2, "Expected two destinations");
 
-        std::bitset<2> ports (selectedId);
+        std::bitset<2> ports (static_cast<size_t> (selectedId));
 
         for (auto& dst : destinations)
         {
@@ -394,11 +394,15 @@ void SendersContainer::Row::update (const AudioSenders::SenderState& state)
     primaryAddressEditor_.setText (
         getDestinationAddress (rav::Rank::primary()).to_string(),
         juce::dontSendNotification);
+    primaryAddressEditor_.setEnabled (ports[0]);
+    primaryAddressLabel_.setEnabled (ports[0]);
 
     // Secondary address editor
     secondaryAddressEditor_.setText (
         getDestinationAddress (rav::Rank::secondary()).to_string(),
         juce::dontSendNotification);
+    secondaryAddressEditor_.setEnabled (ports[1]);
+    secondaryAddressLabel_.setEnabled (ports[1]);
 
     ttlEditor_.setText (juce::String (state.senderConfiguration.ttl), juce::dontSendNotification);
     payloadTypeEditor_.setText (juce::String (state.senderConfiguration.payload_type), juce::dontSendNotification);
@@ -424,7 +428,12 @@ void SendersContainer::Row::update (const AudioSenders::SenderState& state)
         juce::TextEditor::ColourIds::outlineColourId,
         findColour (juce::TextEditor::ColourIds::outlineColourId));
 
-    if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
+    if (!state.statusMessage.empty())
+    {
+        statusMessage_.setText (rav::string_to_upper (state.statusMessage, 1), juce::dontSendNotification);
+        statusMessage_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
+    }
+    else if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
     {
         statusMessage_.setText (
             fmt::format ("Sample rate mismatch ({})", state.inputFormat.sample_rate),
@@ -498,14 +507,14 @@ void SendersContainer::Row::resized()
     row1.removeFromLeft (kMargin);
     row2.removeFromLeft (kMargin);
 
-    primaryAddressLabel_.setBounds (row1.removeFromLeft (120));
-    primaryAddressEditor_.setBounds (row2.removeFromLeft (120));
+    primaryAddressLabel_.setBounds (row1.removeFromLeft (130));
+    primaryAddressEditor_.setBounds (row2.removeFromLeft (130));
 
     row1.removeFromLeft (kMargin);
     row2.removeFromLeft (kMargin);
 
-    secondaryAddressLabel_.setBounds (row1.removeFromLeft (120));
-    secondaryAddressEditor_.setBounds (row2.removeFromLeft (120));
+    secondaryAddressLabel_.setBounds (row1.removeFromLeft (130));
+    secondaryAddressEditor_.setBounds (row2.removeFromLeft (130));
 
     row1.removeFromLeft (kMargin);
     row2.removeFromLeft (kMargin);
@@ -521,10 +530,11 @@ void SendersContainer::Row::resized()
 
     statusMessage_.setBounds (b);
 }
+
 asio::ip::address_v4 SendersContainer::Row::getDestinationAddress (const rav::Rank rank) const
 {
     for (auto& dst : senderState_.senderConfiguration.destinations)
         if (dst.interface_by_rank == rank)
             return dst.endpoint.address().to_v4();
-    return asio::ip::address_v4();
+    return {};
 }

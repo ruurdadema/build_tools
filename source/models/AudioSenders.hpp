@@ -25,6 +25,7 @@ public:
     {
         rav::RavennaSender::Configuration senderConfiguration;
         rav::AudioFormat inputFormat;
+        std::string statusMessage;
     };
 
     class Subscriber
@@ -110,6 +111,8 @@ private:
         void ravenna_sender_configuration_updated (
             rav::Id sender_id,
             const rav::RavennaSender::Configuration& configuration) override;
+
+        void ravenna_sender_status_message_updated (const rav::Id sender_id, const std::string& message) override;
 
         void prepareInput (rav::AudioFormat inputFormat, uint32_t max_num_frames);
         void processBlock (const rav::AudioBufferView<const float>& inputBuffer, uint32_t timestamp) const;

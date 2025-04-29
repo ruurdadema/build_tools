@@ -39,13 +39,13 @@ ThisLookAndFeel::ThisLookAndFeel()
     setColour (juce::CaretComponent::ColourIds::caretColourId, Constants::Colours::blue);
 
     // ComboBox
-    setColour(juce::ComboBox::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
+    setColour (juce::ComboBox::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
 
     // PopupMenu
-    setColour(juce::PopupMenu::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
+    setColour (juce::PopupMenu::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
 
     // ListBox
-    setColour(juce::ListBox::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
+    setColour (juce::ListBox::ColourIds::backgroundColourId, Constants::Colours::rowBackground);
 }
 
 void ThisLookAndFeel::drawButtonBackground (
@@ -64,4 +64,31 @@ void ThisLookAndFeel::drawButtonBackground (
         graphics.setColour (backgroundColour);
 
     graphics.fillRoundedRectangle (b.toFloat(), cornerSize);
+}
+
+void ThisLookAndFeel::drawTextEditorOutline (
+    juce::Graphics& graphics,
+    const int width,
+    const int height,
+    juce::TextEditor& textEditor)
+{
+    if (dynamic_cast<juce::AlertWindow*> (textEditor.getParentComponent()) == nullptr)
+    {
+        if (textEditor.hasKeyboardFocus (true) && !textEditor.isReadOnly())
+        {
+            auto colour = textEditor.findColour (juce::TextEditor::focusedOutlineColourId);
+            if (!textEditor.isEnabled())
+                colour = colour.darker();
+            graphics.setColour (colour);
+            graphics.drawRect (0, 0, width, height, 2);
+        }
+        else
+        {
+            auto colour = textEditor.findColour (juce::TextEditor::outlineColourId);
+            if (!textEditor.isEnabled())
+                colour = colour.darker();
+            graphics.setColour (colour);
+            graphics.drawRect (0, 0, width, height);
+        }
+    }
 }

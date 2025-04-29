@@ -229,6 +229,17 @@ void AudioSenders::Sender::ravenna_sender_configuration_updated (
     });
 }
 
+void AudioSenders::Sender::ravenna_sender_status_message_updated (const rav::Id sender_id, const std::string& message)
+{
+    RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
+
+    executor_.callAsync ([this, sender_id, message] {
+        state_.statusMessage = message;
+        for (auto* subscriber : owner_.subscribers_)
+            subscriber->onAudioSenderUpdated (sender_id, &state_);
+    });
+}
+
 void AudioSenders::Sender::prepareInput (const rav::AudioFormat inputFormat, [[maybe_unused]] uint32_t max_num_frames)
 {
     state_.inputFormat = inputFormat;
