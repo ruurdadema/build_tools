@@ -13,6 +13,8 @@
 #include "gui/lookandfeel/Constants.hpp"
 #include "ravennakit/core/containers/detail/stl_helpers.hpp"
 
+#include <bitset>
+
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
     addButton.onClick = [this] {
