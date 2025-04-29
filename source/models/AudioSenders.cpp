@@ -24,8 +24,7 @@ AudioSenders::~AudioSenders()
 
 rav::Id AudioSenders::createSender() const
 {
-    const rav::RavennaSender::ConfigurationUpdate config;
-    return node_.create_sender (config).get();
+    return node_.create_sender ({}).get();
 }
 
 void AudioSenders::removeSender (const rav::Id senderId) const
@@ -225,6 +224,17 @@ void AudioSenders::Sender::ravenna_sender_configuration_updated (
 
     executor_.callAsync ([this, sender_id, configuration] {
         state_.senderConfiguration = configuration;
+        for (auto* subscriber : owner_.subscribers_)
+            subscriber->onAudioSenderUpdated (sender_id, &state_);
+    });
+}
+
+void AudioSenders::Sender::ravenna_sender_status_message_updated (const rav::Id sender_id, const std::string& message)
+{
+    RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
+
+    executor_.callAsync ([this, sender_id, message] {
+        state_.statusMessage = message;
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioSenderUpdated (sender_id, &state_);
     });

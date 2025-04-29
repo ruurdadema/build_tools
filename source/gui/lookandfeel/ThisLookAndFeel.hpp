@@ -22,4 +22,6 @@ public:
         const juce::Colour& backgroundColour,
         bool shouldDrawButtonAsHighlighted,
         bool shouldDrawButtonAsDown) override;
+
+    void drawTextEditorOutline (juce::Graphics&, int width, int height, juce::TextEditor&) override;
 };

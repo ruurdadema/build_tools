@@ -11,11 +11,14 @@
 #include "SendersContainer.hpp"
 
 #include "gui/lookandfeel/Constants.hpp"
+#include "ravennakit/core/containers/detail/stl_helpers.hpp"
+
+#include <bitset>
 
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
     addButton.onClick = [this] {
-        std::ignore = context_.getAudioSenders().createSender ();
+        std::ignore = context_.getAudioSenders().createSender();
     };
     addAndMakeVisible (addButton);
 
@@ -112,29 +115,133 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     };
     addAndMakeVisible (sessionNameEditor_);
 
-    addressLabel_.setText ("Address:", juce::dontSendNotification);
-    addressLabel_.setJustificationType (juce::Justification::topLeft);
-    addAndMakeVisible (addressLabel_);
+    txPortLabel_.setText ("TX Port:", juce::dontSendNotification);
+    txPortLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (txPortLabel_);
 
-    addressEditor_.setIndents (8, 8);
-    addressEditor_.onReturnKey = [this] {
+    txPortComboBox_.addItem ("Primary", 0b01);   // Interface 1
+    txPortComboBox_.addItem ("SPS", 0b11);       // Interface 1 & 2
+    txPortComboBox_.addItem ("Secondary", 0b10); // Interface 2
+    txPortComboBox_.onChange = [this] {
+        const auto selectedId = txPortComboBox_.getSelectedId();
+        if (selectedId <= 0)
+            return;
+
+        auto destinations = senderState_.senderConfiguration.destinations;
+
+        RAV_ASSERT (destinations.size() == 2, "Expected two destinations");
+
+        std::bitset<2> ports (static_cast<size_t> (selectedId));
+
+        for (auto& dst : destinations)
+        {
+            RAV_ASSERT (dst.interface_by_rank.value() < 2, "Invalid interface rank");
+            dst.enabled = ports[dst.interface_by_rank.value()];
+        }
+
+        rav::RavennaSender::ConfigurationUpdate update {};
+        update.destinations = std::move (destinations);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+    };
+    addAndMakeVisible (txPortComboBox_);
+
+    primaryAddressLabel_.setText ("Primary address:", juce::dontSendNotification);
+    primaryAddressLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (primaryAddressLabel_);
+
+    primaryAddressEditor_.setIndents (8, 8);
+    primaryAddressEditor_.onReturnKey = [this] {
+        auto destinations = senderState_.senderConfiguration.destinations;
+
+        const auto it = std::find_if (
+            destinations.begin(),
+            destinations.end(),
+            [] (const rav::RavennaSender::Destination& dst) {
+                return dst.interface_by_rank == rav::Rank::primary();
+            });
+
+        if (it == destinations.end())
+        {
+            RAV_ERROR ("Primary destination not found");
+            return;
+        }
+
+        if (primaryAddressEditor_.isEmpty())
+        {
+            it->endpoint.address (asio::ip::address_v4());
+        }
+        else
+        {
+            const auto addr = asio::ip::make_address_v4 (primaryAddressEditor_.getText().toRawUTF8());
+            it->endpoint.address (addr);
+        }
+
         rav::RavennaSender::ConfigurationUpdate update;
-        update.destination_address = asio::ip::make_address_v4 (addressEditor_.getText().toRawUTF8());
+        update.destinations = std::move (destinations);
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
         juce::TextEditor::unfocusAllComponents();
     };
-    addressEditor_.onEscapeKey = [this] {
-        addressEditor_.setText (
-            senderState_.senderConfiguration.destination_address.to_string(),
+    primaryAddressEditor_.onEscapeKey = [this] {
+        primaryAddressEditor_.setText (
+            getDestinationAddress (rav::Rank::primary()).to_string(),
             juce::dontSendNotification);
         juce::TextEditor::unfocusAllComponents();
     };
-    addressEditor_.onFocusLost = [this] {
-        addressEditor_.setText (
-            senderState_.senderConfiguration.destination_address.to_string(),
+    primaryAddressEditor_.onFocusLost = [this] {
+        primaryAddressEditor_.setText (
+            getDestinationAddress (rav::Rank::primary()).to_string(),
             juce::dontSendNotification);
     };
-    addAndMakeVisible (addressEditor_);
+    addAndMakeVisible (primaryAddressEditor_);
+
+    secondaryAddressLabel_.setText ("Secondary address:", juce::dontSendNotification);
+    secondaryAddressLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (secondaryAddressLabel_);
+
+    secondaryAddressEditor_.setIndents (8, 8);
+    secondaryAddressEditor_.onReturnKey = [this] {
+        auto destinations = senderState_.senderConfiguration.destinations;
+
+        const auto it = std::find_if (
+            destinations.begin(),
+            destinations.end(),
+            [] (const rav::RavennaSender::Destination& dst) {
+                return dst.interface_by_rank == rav::Rank::secondary();
+            });
+
+        if (it == destinations.end())
+        {
+            RAV_ERROR ("Primary destination not found");
+            return;
+        }
+
+        if (secondaryAddressEditor_.isEmpty())
+        {
+            it->endpoint.address (asio::ip::address_v4());
+        }
+        else
+        {
+            const auto addr = asio::ip::make_address_v4 (secondaryAddressEditor_.getText().toRawUTF8());
+            it->endpoint.address (addr);
+        }
+
+        rav::RavennaSender::ConfigurationUpdate update;
+        update.destinations = std::move (destinations);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        juce::TextEditor::unfocusAllComponents();
+    };
+    secondaryAddressEditor_.onEscapeKey = [this] {
+        secondaryAddressEditor_.setText (
+            getDestinationAddress (rav::Rank::secondary()).to_string(),
+            juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
+    };
+    secondaryAddressEditor_.onFocusLost = [this] {
+        secondaryAddressEditor_.setText (
+            getDestinationAddress (rav::Rank::secondary()).to_string(),
+            juce::dontSendNotification);
+    };
+    addAndMakeVisible (secondaryAddressEditor_);
 
     ttlLabel_.setText ("TTL:", juce::dontSendNotification);
     ttlLabel_.setJustificationType (juce::Justification::topLeft);
@@ -244,7 +351,7 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     };
     addAndMakeVisible (encodingComboBox_);
 
-    statusMessage_.setJustificationType (juce::Justification::topLeft);
+    statusMessage_.setJustificationType (juce::Justification::centredLeft);
     addAndMakeVisible (statusMessage_);
 
     onOffButton_.setClickingTogglesState (true);
@@ -273,7 +380,32 @@ void SendersContainer::Row::update (const AudioSenders::SenderState& state)
 {
     senderState_ = state;
     sessionNameEditor_.setText (state.senderConfiguration.session_name, juce::dontSendNotification);
-    addressEditor_.setText (state.senderConfiguration.destination_address.to_string(), juce::dontSendNotification);
+
+    std::bitset<2> ports;
+
+    for (auto& dst : state.senderConfiguration.destinations)
+    {
+        if (dst.interface_by_rank.value() >= ports.size())
+            continue;
+        ports[dst.interface_by_rank.value()] = dst.enabled;
+    }
+
+    txPortComboBox_.setSelectedId (static_cast<int> (ports.to_ulong()), juce::dontSendNotification);
+
+    // Primary address editor
+    primaryAddressEditor_.setText (
+        getDestinationAddress (rav::Rank::primary()).to_string(),
+        juce::dontSendNotification);
+    primaryAddressEditor_.setEnabled (ports[0]);
+    primaryAddressLabel_.setEnabled (ports[0]);
+
+    // Secondary address editor
+    secondaryAddressEditor_.setText (
+        getDestinationAddress (rav::Rank::secondary()).to_string(),
+        juce::dontSendNotification);
+    secondaryAddressEditor_.setEnabled (ports[1]);
+    secondaryAddressLabel_.setEnabled (ports[1]);
+
     ttlEditor_.setText (juce::String (state.senderConfiguration.ttl), juce::dontSendNotification);
     payloadTypeEditor_.setText (juce::String (state.senderConfiguration.payload_type), juce::dontSendNotification);
     numChannelsEditor_.setText (
@@ -298,7 +430,12 @@ void SendersContainer::Row::update (const AudioSenders::SenderState& state)
         juce::TextEditor::ColourIds::outlineColourId,
         findColour (juce::TextEditor::ColourIds::outlineColourId));
 
-    if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
+    if (!state.statusMessage.empty())
+    {
+        statusMessage_.setText (rav::string_to_upper (state.statusMessage, 1), juce::dontSendNotification);
+        statusMessage_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
+    }
+    else if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
     {
         statusMessage_.setText (
             fmt::format ("Sample rate mismatch ({})", state.inputFormat.sample_rate),
@@ -335,48 +472,71 @@ void SendersContainer::Row::resized()
     buttons.removeFromRight (kMargin);
     onOffButton_.setBounds (buttons.removeFromRight (65));
 
-    auto topRow = b.removeFromTop (24);
+    auto row1 = b.removeFromTop (24);
     b.removeFromTop (kMargin / 2);
-    auto bottomRow = b;
+    auto row2 = b.removeFromTop (31);
+    b.removeFromTop (kMargin);
 
-    sessionNameLabel_.setBounds (topRow.removeFromLeft (200));
-    sessionNameEditor_.setBounds (bottomRow.removeFromLeft (200));
+    sessionNameLabel_.setBounds (row1.removeFromLeft (200));
+    sessionNameEditor_.setBounds (row2.removeFromLeft (200));
 
-    topRow.removeFromLeft (kMargin);
-    bottomRow.removeFromLeft (kMargin);
+    row1.removeFromLeft (kMargin);
+    row2.removeFromLeft (kMargin);
 
-    addressLabel_.setBounds (topRow.removeFromLeft (160));
-    addressEditor_.setBounds (bottomRow.removeFromLeft (160));
+    numChannelsLabel_.setBounds (row1.removeFromLeft (80));
+    numChannelsEditor_.setBounds (row2.removeFromLeft (80));
 
-    topRow.removeFromLeft (kMargin);
-    bottomRow.removeFromLeft (kMargin);
+    row1.removeFromLeft (kMargin);
+    row2.removeFromLeft (kMargin);
 
-    ttlLabel_.setBounds (topRow.removeFromLeft (50));
-    ttlEditor_.setBounds (bottomRow.removeFromLeft (50));
+    sampleRateLabel_.setBounds (row1.removeFromLeft (100));
+    sampleRateComboBox_.setBounds (row2.removeFromLeft (100));
 
-    topRow.removeFromLeft (kMargin);
-    bottomRow.removeFromLeft (kMargin);
+    row1.removeFromLeft (kMargin);
+    row2.removeFromLeft (kMargin);
 
-    payloadTypeLabel_.setBounds (topRow.removeFromLeft (100));
-    payloadTypeEditor_.setBounds (bottomRow.removeFromLeft (100));
+    encodingLabel_.setBounds (row1.removeFromLeft (80));
+    encodingComboBox_.setBounds (row2.removeFromLeft (80));
 
-    topRow.removeFromLeft (kMargin);
-    bottomRow.removeFromLeft (kMargin);
+    // Next row
 
-    numChannelsLabel_.setBounds (topRow.removeFromLeft (100));
-    numChannelsEditor_.setBounds (bottomRow.removeFromLeft (100));
+    row1.removeFromLeft (kMargin);
+    row2.removeFromLeft (kMargin);
 
-    topRow.removeFromLeft (kMargin);
-    bottomRow.removeFromLeft (kMargin);
+    txPortLabel_.setBounds (row1.removeFromLeft (110));
+    txPortComboBox_.setBounds (row2.removeFromLeft (110));
 
-    sampleRateLabel_.setBounds (topRow.removeFromLeft (100));
-    sampleRateComboBox_.setBounds (bottomRow.removeFromLeft (100));
+    row1.removeFromLeft (kMargin);
+    row2.removeFromLeft (kMargin);
 
-    topRow.removeFromLeft (kMargin);
-    bottomRow.removeFromLeft (kMargin);
+    primaryAddressLabel_.setBounds (row1.removeFromLeft (130));
+    primaryAddressEditor_.setBounds (row2.removeFromLeft (130));
 
-    encodingLabel_.setBounds (topRow.removeFromLeft (100));
-    encodingComboBox_.setBounds (bottomRow.removeFromLeft (100));
+    row1.removeFromLeft (kMargin);
+    row2.removeFromLeft (kMargin);
 
-    statusMessage_.setBounds (topRow);
+    secondaryAddressLabel_.setBounds (row1.removeFromLeft (130));
+    secondaryAddressEditor_.setBounds (row2.removeFromLeft (130));
+
+    row1.removeFromLeft (kMargin);
+    row2.removeFromLeft (kMargin);
+
+    ttlLabel_.setBounds (row1.removeFromLeft (50));
+    ttlEditor_.setBounds (row2.removeFromLeft (50));
+
+    row1.removeFromLeft (kMargin);
+    row2.removeFromLeft (kMargin);
+
+    payloadTypeLabel_.setBounds (row1.removeFromLeft (100));
+    payloadTypeEditor_.setBounds (row2.removeFromLeft (100));
+
+    statusMessage_.setBounds (b);
+}
+
+asio::ip::address_v4 SendersContainer::Row::getDestinationAddress (const rav::Rank rank) const
+{
+    for (auto& dst : senderState_.senderConfiguration.destinations)
+        if (dst.interface_by_rank == rank)
+            return dst.endpoint.address().to_v4();
+    return {};
 }
