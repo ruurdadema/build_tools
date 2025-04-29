@@ -173,6 +173,8 @@ AudioSenders& MainApplication::getAudioSenders()
 tl::expected<void, std::string> MainApplication::saveToFile (const juce::File& file)
 {
     const auto json = toJson().dump (4);
+    if (const auto result = file.getParentDirectory().createDirectory(); result.failed())
+        return tl::unexpected("Failed to create parent directory");
     if (!file.replaceWithText (json))
         return tl::unexpected ("Failed to save to file: " + file.getFullPathName().toStdString());
     RAV_TRACE ("Saved to file: {}", file.getFullPathName().toRawUTF8());
