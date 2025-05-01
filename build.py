@@ -161,13 +161,12 @@ def pack_windows(args, path_to_build_x64: Path, build_config: Config):
     return zip_path
 
 
-def build_macos(args, build_config: Config):
-    path_to_build = Path(args.path_to_build) / 'macos-universal'
+def build_macos_for_arch(args, path_to_build: Path, build_config: Config, arch: str):
+    path_to_build = path_to_build / arch
+    path_to_build.mkdir(parents=True, exist_ok=True)
 
     if args.skip_build:
         return path_to_build
-
-    path_to_build.mkdir(parents=True, exist_ok=True)
 
     cmake = CMake()
     cmake.path_to_build(path_to_build)
@@ -176,10 +175,12 @@ def build_macos(args, build_config: Config):
     cmake.generator('Xcode')
     cmake.parallel(multiprocessing.cpu_count())
 
+    triplet = f'macos-{arch.replace("_", "-")}'
+
     cmake.option('CMAKE_TOOLCHAIN_FILE', 'ravennakit/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake')
     cmake.option('VCPKG_OVERLAY_TRIPLETS', 'ravennakit/triplets')
-    cmake.option('VCPKG_TARGET_TRIPLET', 'macos-universal')
-    cmake.option('CMAKE_OSX_ARCHITECTURES', 'x86_64;arm64')
+    cmake.option('VCPKG_TARGET_TRIPLET', triplet)
+    cmake.option('CMAKE_OSX_ARCHITECTURES', arch)
     cmake.option('CMAKE_OSX_DEPLOYMENT_TARGET', args.macos_deployment_target)
     cmake.option('CMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY', 'Apple Development')
     cmake.option('CMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM', args.macos_development_team)
@@ -188,6 +189,24 @@ def build_macos(args, build_config: Config):
 
     cmake.configure()
     cmake.build()
+
+    return path_to_build
+
+
+def build_macos(args, build_config: Config):
+    path_to_build = Path(args.path_to_build) / 'macos-universal'
+
+    x86_64 = build_macos_for_arch(args, path_to_build, build_config, 'x86_64')
+    arm64 = build_macos_for_arch(args, path_to_build, build_config, 'arm64')
+
+    x86_64_artefacts = x86_64 / app_artefacts_dir / build_config.value
+    arm64_artefacts = arm64 / app_artefacts_dir / build_config.value
+
+    lipo_app_bundle(x86_64_artefacts, arm64_artefacts, path_to_build / app_artefacts_dir / build_config.value,
+                    app_name,'.app')
+
+    lipo_app_bundle(x86_64_artefacts, arm64_artefacts, path_to_build / app_artefacts_dir / build_config.value,
+                    app_name,'.app.dSYM')
 
     return path_to_build
 
