@@ -168,11 +168,11 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
 
         if (primaryAddressEditor_.isEmpty())
         {
-            it->endpoint.address (asio::ip::address_v4());
+            it->endpoint.address (boost::asio::ip::address_v4());
         }
         else
         {
-            const auto addr = asio::ip::make_address_v4 (primaryAddressEditor_.getText().toRawUTF8());
+            const auto addr = boost::asio::ip::make_address_v4 (primaryAddressEditor_.getText().toRawUTF8());
             it->endpoint.address (addr);
         }
 
@@ -217,11 +217,11 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
 
         if (secondaryAddressEditor_.isEmpty())
         {
-            it->endpoint.address (asio::ip::address_v4());
+            it->endpoint.address (boost::asio::ip::address_v4());
         }
         else
         {
-            const auto addr = asio::ip::make_address_v4 (secondaryAddressEditor_.getText().toRawUTF8());
+            const auto addr = boost::asio::ip::make_address_v4 (secondaryAddressEditor_.getText().toRawUTF8());
             it->endpoint.address (addr);
         }
 
@@ -533,7 +533,7 @@ void SendersContainer::Row::resized()
     statusMessage_.setBounds (b);
 }
 
-asio::ip::address_v4 SendersContainer::Row::getDestinationAddress (const rav::Rank rank) const
+boost::asio::ip::address_v4 SendersContainer::Row::getDestinationAddress (const rav::Rank rank) const
 {
     for (auto& dst : senderState_.senderConfiguration.destinations)
         if (dst.interface_by_rank == rank)
