@@ -12,6 +12,7 @@
     "nlohmann-json",
     "boost-asio",
     "boost-beast",
+    "boost-url",
     "boost-container",
     "boost-lockfree",
     "boost-circular-buffer"
