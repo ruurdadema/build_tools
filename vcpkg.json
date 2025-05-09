@@ -15,6 +15,7 @@
     "boost-url",
     "boost-container",
     "boost-lockfree",
-    "boost-circular-buffer"
+    "boost-circular-buffer",
+    "boost-uuid"
   ]
 }
