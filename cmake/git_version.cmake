@@ -12,7 +12,8 @@ execute_process(
 if (GIT_DESCRIBE_ERROR_CODE)
     # It might happen that no tag is available. Most CI systems only checkout the git history with a certain depth
     # (ie. 50 commits). If the last tag is older than that, no tag is available and git describe will fail.
-    message(FATAL_ERROR "Git describe returned an error: ${GIT_DESCRIBE_VERSION}")
+    message(WARNING "Git describe returned an error: ${GIT_DESCRIBE_ERROR_CODE} (${GIT_DESCRIBE_VERSION})")
+    set (GIT_DESCRIBE_VERSION "v0.0.0-no-version")
 endif()
 
 # Extract version components from git tags starting with 'v'
