@@ -37,6 +37,7 @@ set(CMAKE_XCODE_ATTRIBUTE_DEPLOYMENT_POSTPROCESSING[variant=RelWithDebInfo] "YES
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL" CACHE INTERNAL "")
+    add_link_options("/NODEFAULTLIB:libcmt.lib" "/NODEFAULTLIB:libcmtd.lib")
 endif ()
 
 #########
