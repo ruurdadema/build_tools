@@ -40,10 +40,10 @@ bool DiscoveredSessions::removeSubscriber (Subscriber* subscriber)
     return subscribers_.remove (subscriber);
 }
 
-void DiscoveredSessions::ravenna_session_discovered (const rav::dnssd::Browser::ServiceResolved& event)
+void DiscoveredSessions::ravenna_session_discovered (const rav::dnssd::ServiceDescription& desc)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
-    executor_.callAsync ([this, desc = event.description] {
+    executor_.callAsync ([this, desc] {
         if (auto* session = findSession (desc.name))
         {
             session->host = desc.host_target;
@@ -58,10 +58,10 @@ void DiscoveredSessions::ravenna_session_discovered (const rav::dnssd::Browser::
     });
 }
 
-void DiscoveredSessions::ravenna_session_removed (const rav::dnssd::Browser::ServiceRemoved& event)
+void DiscoveredSessions::ravenna_session_removed (const rav::dnssd::ServiceDescription& desc)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
-    executor_.callAsync ([this, desc = event.description] {
+    executor_.callAsync ([this, desc] {
         for (auto it = sessions_.begin(); it != sessions_.end(); ++it)
         {
             if (it->name == desc.name)
@@ -75,10 +75,10 @@ void DiscoveredSessions::ravenna_session_removed (const rav::dnssd::Browser::Ser
     });
 }
 
-void DiscoveredSessions::ravenna_node_discovered (const rav::dnssd::Browser::ServiceResolved& event)
+void DiscoveredSessions::ravenna_node_discovered (const rav::dnssd::ServiceDescription& desc)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
-    executor_.callAsync ([this, desc = event.description] {
+    executor_.callAsync ([this, desc] {
         if (auto* node = findNode (desc.name))
         {
             node->host = desc.host_target;
@@ -93,10 +93,10 @@ void DiscoveredSessions::ravenna_node_discovered (const rav::dnssd::Browser::Ser
     });
 }
 
-void DiscoveredSessions::ravenna_node_removed (const rav::dnssd::Browser::ServiceRemoved& event)
+void DiscoveredSessions::ravenna_node_removed (const rav::dnssd::ServiceDescription& desc)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
-    executor_.callAsync ([this, desc = event.description] {
+    executor_.callAsync ([this, desc] {
         for (auto it = nodes_.begin(); it != nodes_.end(); ++it)
         {
             if (it->name == desc.name)

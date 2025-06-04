@@ -43,10 +43,10 @@ public:
     bool removeSubscriber (Subscriber* subscriber);
 
     // rav::ravenna_node::subscriber overrides
-    void ravenna_session_discovered (const rav::dnssd::Browser::ServiceResolved& event) override;
-    void ravenna_session_removed (const rav::dnssd::Browser::ServiceRemoved& event) override;
-    void ravenna_node_discovered (const rav::dnssd::Browser::ServiceResolved& event) override;
-    void ravenna_node_removed (const rav::dnssd::Browser::ServiceRemoved& event) override;
+    void ravenna_session_discovered (const rav::dnssd::ServiceDescription& desc) override;
+    void ravenna_session_removed (const rav::dnssd::ServiceDescription& desc) override;
+    void ravenna_node_discovered (const rav::dnssd::ServiceDescription& desc) override;
+    void ravenna_node_removed (const rav::dnssd::ServiceDescription& desc) override;
 
 private:
     rav::RavennaNode& node_;
