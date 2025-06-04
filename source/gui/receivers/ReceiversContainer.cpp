@@ -57,7 +57,7 @@ void ReceiversContainer::resizeToFitContent()
     setSize (getWidth(), std::max (calculatedHeight, 100)); // Min to leave space for the empty label
 }
 
-void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const AudioReceivers::ReceiverState* state)
+void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const AudioReceiversModel::ReceiverState* state)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
 
@@ -149,7 +149,7 @@ ReceiversContainer::SessionInfoComponent::SessionInfoComponent (const juce::Stri
     addAndMakeVisible (statusLabel_);
 }
 
-void ReceiversContainer::SessionInfoComponent::update (const AudioReceivers::StreamState* state)
+void ReceiversContainer::SessionInfoComponent::update (const AudioReceiversModel::StreamState* state)
 {
     if (state == nullptr)
         return;
@@ -214,7 +214,7 @@ void ReceiversContainer::PacketStatsComponent::resized()
     tooLateLabel_.setBounds (b.removeFromTop (20));
 }
 
-ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id receiverId) :
+ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id receiverId) :
     audioReceivers_ (audioReceivers),
     receiverId_ (receiverId)
 {
@@ -306,7 +306,7 @@ rav::Id ReceiversContainer::Row::getId() const
     return receiverId_;
 }
 
-void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state)
+void ReceiversContainer::Row::update (const AudioReceiversModel::ReceiverState& state)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
 

@@ -11,18 +11,18 @@
 #pragma once
 
 #include "application/ApplicationContext.hpp"
-#include "models/AudioSenders.hpp"
+#include "models/AudioSendersModel.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class SendersContainer : public juce::Component, AudioSenders::Subscriber
+class SendersContainer : public juce::Component, AudioSendersModel::Subscriber
 {
 public:
     explicit SendersContainer (ApplicationContext& context);
     ~SendersContainer() override;
 
     void resizeToFitContent();
-    void onAudioSenderUpdated (rav::Id senderId, const AudioSenders::SenderState* state) override;
+    void onAudioSenderUpdated (rav::Id senderId, const AudioSendersModel::SenderState* state) override;
 
     void resized() override;
 
@@ -34,16 +34,16 @@ private:
     class Row : public Component
     {
     public:
-        explicit Row (AudioSenders& audioSenders, rav::Id senderId);
+        explicit Row (AudioSendersModel& audioSenders, rav::Id senderId);
 
         rav::Id getId() const;
 
-        void update (const AudioSenders::SenderState& state);
+        void update (const AudioSendersModel::SenderState& state);
         void paint (juce::Graphics& g) override;
         void resized() override;
 
     private:
-        AudioSenders& audioSenders_;
+        AudioSendersModel& audioSenders_;
         rav::Id senderId_;
 
         juce::Label sessionNameLabel_;
@@ -78,7 +78,7 @@ private:
 
         juce::Label statusMessage_;
 
-        AudioSenders::SenderState senderState_;
+        AudioSendersModel::SenderState senderState_;
 
         MessageThreadExecutor executor_;
 

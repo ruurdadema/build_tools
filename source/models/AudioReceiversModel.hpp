@@ -20,7 +20,7 @@
 /**
  * High(er) level class connecting an audio device to a ravenna_node.
  */
-class AudioReceivers : public rav::RavennaNode::Subscriber, public juce::AudioIODeviceCallback
+class AudioReceiversModel : public rav::RavennaNode::Subscriber, public juce::AudioIODeviceCallback
 {
 public:
     struct StreamState
@@ -54,8 +54,8 @@ public:
      * Constructor.
      * @param node The ravenna_node to connect to.
      */
-    explicit AudioReceivers (rav::RavennaNode& node);
-    ~AudioReceivers() override;
+    explicit AudioReceiversModel (rav::RavennaNode& node);
+    ~AudioReceiversModel() override;
 
     /**
      * Creates a receiver.
@@ -126,7 +126,7 @@ private:
     class Receiver : public rav::RavennaReceiver::Subscriber
     {
     public:
-        explicit Receiver (AudioReceivers& owner, rav::Id receiverId);
+        explicit Receiver (AudioReceiversModel& owner, rav::Id receiverId);
         ~Receiver() override;
 
         [[nodiscard]] rav::Id getReceiverId() const;
@@ -151,7 +151,7 @@ private:
         void on_data_ready (rav::WrappingUint32 timestamp) override;
 
     private:
-        AudioReceivers& owner_;
+        AudioReceiversModel& owner_;
         rav::Id receiverId_;
         ReceiverState state_;
         rav::RealtimeSharedObject<ReceiverState> realtimeSharedState_;

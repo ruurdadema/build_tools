@@ -43,7 +43,7 @@ void SendersContainer::resizeToFitContent()
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size() + kMargin * 2 + kButtonHeight);
 }
 
-void SendersContainer::onAudioSenderUpdated (rav::Id senderId, const AudioSenders::SenderState* state)
+void SendersContainer::onAudioSenderUpdated (rav::Id senderId, const AudioSendersModel::SenderState* state)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
 
@@ -91,7 +91,7 @@ void SendersContainer::resized()
     addButton.setBounds (b.withSizeKeepingCentre (200, kButtonHeight));
 }
 
-SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) :
+SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id senderId) :
     audioSenders_ (audioSenders),
     senderId_ (senderId)
 {
@@ -376,7 +376,7 @@ rav::Id SendersContainer::Row::getId() const
     return senderId_;
 }
 
-void SendersContainer::Row::update (const AudioSenders::SenderState& state)
+void SendersContainer::Row::update (const AudioSendersModel::SenderState& state)
 {
     senderState_ = state;
     sessionNameEditor_.setText (state.senderConfiguration.session_name, juce::dontSendNotification);

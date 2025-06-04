@@ -11,12 +11,12 @@
 #pragma once
 
 #include "application/ApplicationContext.hpp"
-#include "models/AudioReceivers.hpp"
+#include "models/AudioReceiversModel.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class ReceiversContainer : public juce::Component, public AudioReceivers::Subscriber
+class ReceiversContainer : public juce::Component, public AudioReceiversModel::Subscriber
 {
 public:
     explicit ReceiversContainer (ApplicationContext& context);
@@ -26,7 +26,7 @@ public:
 
     void resizeToFitContent();
 
-    void onAudioReceiverUpdated (rav::Id receiverId, const AudioReceivers::ReceiverState* state) override;
+    void onAudioReceiverUpdated (rav::Id receiverId, const AudioReceiversModel::ReceiverState* state) override;
 
 private:
     static constexpr int kRowHeight = 158;
@@ -50,7 +50,7 @@ private:
     {
     public:
         explicit SessionInfoComponent (const juce::String& title);
-        void update (const AudioReceivers::StreamState* state);
+        void update (const AudioReceiversModel::StreamState* state);
         void resized() override;
 
     private:
@@ -79,16 +79,16 @@ private:
     class Row : public Component, public juce::Timer
     {
     public:
-        explicit Row (AudioReceivers& audioReceivers, rav::Id receiverId);
+        explicit Row (AudioReceiversModel& audioReceivers, rav::Id receiverId);
 
         rav::Id getId() const;
 
-        void update (const AudioReceivers::ReceiverState& state);
+        void update (const AudioReceiversModel::ReceiverState& state);
         void paint (juce::Graphics& g) override;
         void resized() override;
 
     private:
-        AudioReceivers& audioReceivers_;
+        AudioReceiversModel& audioReceivers_;
         juce::TextEditor delayEditor_;
         rav::Id receiverId_;
         uint32_t delay_ { 0 };

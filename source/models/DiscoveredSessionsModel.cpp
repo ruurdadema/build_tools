@@ -8,19 +8,19 @@
  * Copyright (c) 2025 Owllab. All rights reserved.
  */
 
-#include "DiscoveredSessions.hpp"
+#include "DiscoveredSessionsModel.hpp"
 
-DiscoveredSessions::DiscoveredSessions (rav::RavennaNode& ravennaNode) : node_ (ravennaNode)
+DiscoveredSessionsModel::DiscoveredSessionsModel (rav::RavennaNode& ravennaNode) : node_ (ravennaNode)
 {
     node_.subscribe (this).wait();
 }
 
-DiscoveredSessions::~DiscoveredSessions()
+DiscoveredSessionsModel::~DiscoveredSessionsModel()
 {
     node_.unsubscribe (this).wait();
 }
 
-bool DiscoveredSessions::addSubscriber (Subscriber* subscriber)
+bool DiscoveredSessionsModel::addSubscriber (Subscriber* subscriber)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     if (subscribers_.add (subscriber))
@@ -34,13 +34,13 @@ bool DiscoveredSessions::addSubscriber (Subscriber* subscriber)
     return false;
 }
 
-bool DiscoveredSessions::removeSubscriber (Subscriber* subscriber)
+bool DiscoveredSessionsModel::removeSubscriber (const Subscriber* subscriber)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     return subscribers_.remove (subscriber);
 }
 
-void DiscoveredSessions::ravenna_session_discovered (const rav::dnssd::ServiceDescription& desc)
+void DiscoveredSessionsModel::ravenna_session_discovered (const rav::dnssd::ServiceDescription& desc)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
     executor_.callAsync ([this, desc] {
@@ -58,7 +58,7 @@ void DiscoveredSessions::ravenna_session_discovered (const rav::dnssd::ServiceDe
     });
 }
 
-void DiscoveredSessions::ravenna_session_removed (const rav::dnssd::ServiceDescription& desc)
+void DiscoveredSessionsModel::ravenna_session_removed (const rav::dnssd::ServiceDescription& desc)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
     executor_.callAsync ([this, desc] {
@@ -75,7 +75,7 @@ void DiscoveredSessions::ravenna_session_removed (const rav::dnssd::ServiceDescr
     });
 }
 
-void DiscoveredSessions::ravenna_node_discovered (const rav::dnssd::ServiceDescription& desc)
+void DiscoveredSessionsModel::ravenna_node_discovered (const rav::dnssd::ServiceDescription& desc)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
     executor_.callAsync ([this, desc] {
@@ -93,7 +93,7 @@ void DiscoveredSessions::ravenna_node_discovered (const rav::dnssd::ServiceDescr
     });
 }
 
-void DiscoveredSessions::ravenna_node_removed (const rav::dnssd::ServiceDescription& desc)
+void DiscoveredSessionsModel::ravenna_node_removed (const rav::dnssd::ServiceDescription& desc)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
     executor_.callAsync ([this, desc] {
@@ -110,7 +110,7 @@ void DiscoveredSessions::ravenna_node_removed (const rav::dnssd::ServiceDescript
     });
 }
 
-DiscoveredSessions::SessionState* DiscoveredSessions::findSession (const std::string& sessionName)
+DiscoveredSessionsModel::SessionState* DiscoveredSessionsModel::findSession (const std::string& sessionName)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     for (auto& session : sessions_)
@@ -119,7 +119,7 @@ DiscoveredSessions::SessionState* DiscoveredSessions::findSession (const std::st
     return nullptr;
 }
 
-DiscoveredSessions::NodeState* DiscoveredSessions::findNode (const std::string& nodeName)
+DiscoveredSessionsModel::NodeState* DiscoveredSessionsModel::findNode (const std::string& nodeName)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     for (auto& node : nodes_)

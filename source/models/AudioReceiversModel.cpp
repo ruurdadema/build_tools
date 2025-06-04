@@ -8,12 +8,13 @@
  * Copyright (c) 2025 Owllab. All rights reserved.
  */
 
-#include "AudioReceivers.hpp"
+#include "AudioReceiversModel.hpp"
 
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/core/audio/audio_data.hpp"
 
-const AudioReceivers::StreamState* AudioReceivers::ReceiverState::find_stream_for_rank (const rav::Rank rank) const
+const AudioReceiversModel::StreamState* AudioReceiversModel::ReceiverState::find_stream_for_rank (
+    const rav::Rank rank) const
 {
     for (auto& stream : streams)
     {
@@ -23,17 +24,17 @@ const AudioReceivers::StreamState* AudioReceivers::ReceiverState::find_stream_fo
     return nullptr;
 }
 
-AudioReceivers::AudioReceivers (rav::RavennaNode& node) : node_ (node)
+AudioReceiversModel::AudioReceiversModel (rav::RavennaNode& node) : node_ (node)
 {
     node_.subscribe (this).wait();
 }
 
-AudioReceivers::~AudioReceivers()
+AudioReceiversModel::~AudioReceiversModel()
 {
     node_.unsubscribe (this).wait();
 }
 
-rav::Id AudioReceivers::createReceiver (const std::string& sessionName) const
+rav::Id AudioReceiversModel::createReceiver (const std::string& sessionName) const
 {
     rav::RavennaReceiver::ConfigurationUpdate config;
     config.session_name = sessionName;
@@ -41,12 +42,12 @@ rav::Id AudioReceivers::createReceiver (const std::string& sessionName) const
     return node_.create_receiver (config).get();
 }
 
-void AudioReceivers::removeReceiver (const rav::Id receiverId) const
+void AudioReceiversModel::removeReceiver (const rav::Id receiverId) const
 {
     node_.remove_receiver (receiverId).wait();
 }
 
-void AudioReceivers::updateReceiverConfiguration (
+void AudioReceiversModel::updateReceiverConfiguration (
     const rav::Id senderId,
     rav::RavennaReceiver::ConfigurationUpdate update) const
 {
@@ -57,19 +58,19 @@ void AudioReceivers::updateReceiverConfiguration (
     }
 }
 
-std::optional<std::string> AudioReceivers::getSdpTextForReceiver (const rav::Id receiverId) const
+std::optional<std::string> AudioReceiversModel::getSdpTextForReceiver (const rav::Id receiverId) const
 {
     return node_.get_sdp_text_for_receiver (receiverId).get();
 }
 
-rav::rtp::AudioReceiver::SessionStats AudioReceivers::getStatisticsForReceiver (
+rav::rtp::AudioReceiver::SessionStats AudioReceiversModel::getStatisticsForReceiver (
     const rav::Id receiverId,
     const rav::Rank rank) const
 {
     return node_.get_stats_for_receiver (receiverId, rank).get();
 }
 
-bool AudioReceivers::subscribe (Subscriber* subscriber)
+bool AudioReceiversModel::subscribe (Subscriber* subscriber)
 {
     if (subscribers_.add (subscriber))
     {
@@ -82,12 +83,12 @@ bool AudioReceivers::subscribe (Subscriber* subscriber)
     return false;
 }
 
-bool AudioReceivers::unsubscribe (const Subscriber* subscriber)
+bool AudioReceiversModel::unsubscribe (const Subscriber* subscriber)
 {
     return subscribers_.remove (subscriber);
 }
 
-void AudioReceivers::ravenna_receiver_added (const rav::RavennaReceiver& receiver)
+void AudioReceiversModel::ravenna_receiver_added (const rav::RavennaReceiver& receiver)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
 
@@ -102,7 +103,7 @@ void AudioReceivers::ravenna_receiver_added (const rav::RavennaReceiver& receive
     });
 }
 
-void AudioReceivers::ravenna_receiver_removed (const rav::Id receiverId)
+void AudioReceiversModel::ravenna_receiver_removed (const rav::Id receiverId)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
 
@@ -123,7 +124,7 @@ void AudioReceivers::ravenna_receiver_removed (const rav::Id receiverId)
     });
 }
 
-void AudioReceivers::audioDeviceIOCallbackWithContext (
+void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     [[maybe_unused]] const float* const* inputChannelData,
     [[maybe_unused]] const int numInputChannels,
     float* const* outputChannelData,
@@ -156,7 +157,7 @@ void AudioReceivers::audioDeviceIOCallbackWithContext (
     }
 }
 
-void AudioReceivers::audioDeviceAboutToStart (juce::AudioIODevice* device)
+void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
 {
     TRACY_ZONE_SCOPED;
 
@@ -182,13 +183,13 @@ void AudioReceivers::audioDeviceAboutToStart (juce::AudioIODevice* device)
     RAV_TRACE ("Audio device about to start");
 }
 
-void AudioReceivers::audioDeviceStopped()
+void AudioReceiversModel::audioDeviceStopped()
 {
     TRACY_ZONE_SCOPED;
     RAV_TRACE ("Audio device stopped");
 }
 
-AudioReceivers::Receiver::Receiver (AudioReceivers& owner, const rav::Id receiverId) :
+AudioReceiversModel::Receiver::Receiver (AudioReceiversModel& owner, const rav::Id receiverId) :
     owner_ (owner),
     receiverId_ (receiverId)
 {
@@ -196,25 +197,25 @@ AudioReceivers::Receiver::Receiver (AudioReceivers& owner, const rav::Id receive
     owner_.node_.subscribe_to_receiver (receiverId_, this).wait();
 }
 
-AudioReceivers::Receiver::~Receiver()
+AudioReceiversModel::Receiver::~Receiver()
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     owner_.node_.unsubscribe_from_receiver (receiverId_, this).wait();
 }
 
-rav::Id AudioReceivers::Receiver::getReceiverId() const
+rav::Id AudioReceiversModel::Receiver::getReceiverId() const
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     return receiverId_;
 }
 
-const AudioReceivers::ReceiverState& AudioReceivers::Receiver::getState() const
+const AudioReceiversModel::ReceiverState& AudioReceiversModel::Receiver::getState() const
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     return state_;
 }
 
-void AudioReceivers::Receiver::prepareInput (const rav::AudioFormat& format)
+void AudioReceiversModel::Receiver::prepareInput (const rav::AudioFormat& format)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     RAV_ASSERT (format.is_valid(), "Invalid format");
@@ -222,7 +223,7 @@ void AudioReceivers::Receiver::prepareInput (const rav::AudioFormat& format)
     updateRealtimeSharedState();
 }
 
-void AudioReceivers::Receiver::prepareOutput (const rav::AudioFormat& format, const uint32_t maxNumFramesPerBlock)
+void AudioReceiversModel::Receiver::prepareOutput (const rav::AudioFormat& format, const uint32_t maxNumFramesPerBlock)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     RAV_ASSERT (format.is_valid(), "Invalid format");
@@ -231,7 +232,7 @@ void AudioReceivers::Receiver::prepareOutput (const rav::AudioFormat& format, co
     updateRealtimeSharedState();
 }
 
-std::optional<uint32_t> AudioReceivers::Receiver::processBlock (
+std::optional<uint32_t> AudioReceiversModel::Receiver::processBlock (
     const rav::AudioBufferView<float>& outputBuffer,
     const std::optional<uint32_t> atTimestamp)
 {
@@ -253,7 +254,7 @@ std::optional<uint32_t> AudioReceivers::Receiver::processBlock (
     return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, atTimestamp);
 }
 
-void AudioReceivers::Receiver::ravenna_receiver_parameters_updated (
+void AudioReceiversModel::Receiver::ravenna_receiver_parameters_updated (
     const rav::rtp::AudioReceiver::Parameters& parameters)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
@@ -272,7 +273,7 @@ void AudioReceivers::Receiver::ravenna_receiver_parameters_updated (
     });
 }
 
-void AudioReceivers::Receiver::ravenna_receiver_configuration_updated (
+void AudioReceiversModel::Receiver::ravenna_receiver_configuration_updated (
     rav::Id receiver_id,
     const rav::RavennaReceiver::Configuration& configuration)
 {
@@ -286,7 +287,7 @@ void AudioReceivers::Receiver::ravenna_receiver_configuration_updated (
     });
 }
 
-void AudioReceivers::Receiver::ravenna_receiver_stream_state_updated (
+void AudioReceiversModel::Receiver::ravenna_receiver_stream_state_updated (
     const rav::rtp::AudioReceiver::Stream& stream,
     const rav::rtp::AudioReceiver::State state)
 {
@@ -311,17 +312,17 @@ void AudioReceivers::Receiver::ravenna_receiver_stream_state_updated (
     });
 }
 
-void AudioReceivers::Receiver::on_data_received ([[maybe_unused]] const rav::WrappingUint32 timestamp)
+void AudioReceiversModel::Receiver::on_data_received ([[maybe_unused]] const rav::WrappingUint32 timestamp)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 }
 
-void AudioReceivers::Receiver::on_data_ready ([[maybe_unused]] const rav::WrappingUint32 timestamp)
+void AudioReceiversModel::Receiver::on_data_ready ([[maybe_unused]] const rav::WrappingUint32 timestamp)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 }
 
-void AudioReceivers::Receiver::updateRealtimeSharedState()
+void AudioReceiversModel::Receiver::updateRealtimeSharedState()
 {
     auto newState = std::make_unique<ReceiverState> (state_);
     if (!realtimeSharedState_.update (std::move (newState)))
@@ -330,7 +331,7 @@ void AudioReceivers::Receiver::updateRealtimeSharedState()
     }
 }
 
-AudioReceivers::Receiver* AudioReceivers::findReceiver (const rav::Id receiverId) const
+AudioReceiversModel::Receiver* AudioReceiversModel::findReceiver (const rav::Id receiverId) const
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     for (const auto& receiver : receivers_)
@@ -339,7 +340,7 @@ AudioReceivers::Receiver* AudioReceivers::findReceiver (const rav::Id receiverId
     return nullptr;
 }
 
-void AudioReceivers::updateRealtimeSharedContext()
+void AudioReceiversModel::updateRealtimeSharedContext()
 {
     auto newContext = std::make_unique<RealtimeSharedContext>();
     for (const auto& stream : receivers_)
