@@ -32,8 +32,16 @@ public:
     {
     public:
         virtual ~Subscriber() = default;
-        virtual void onSessionUpdated ([[maybe_unused]] const std::string& sessionName, [[maybe_unused]] const SessionState* state) {}
-        virtual void onNodeUpdated ([[maybe_unused]] const std::string& nodeName, [[maybe_unused]] const NodeState* state) {}
+        virtual void onSessionUpdated (const std::string& sessionName, const SessionState* state)
+        {
+            std::ignore = sessionName;
+            std::ignore = state;
+        }
+        virtual void onNodeUpdated (const std::string& nodeName, const NodeState* state)
+        {
+            std::ignore = nodeName;
+            std::ignore = state;
+        }
     };
 
     explicit DiscoveredSessionsModel (rav::RavennaNode& ravennaNode);

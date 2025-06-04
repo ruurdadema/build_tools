@@ -11,6 +11,7 @@
 #include "MainComponent.hpp"
 
 #include "discovered/DiscoveredMainComponent.hpp"
+#include "nmos/NmosMainComponent.hpp"
 #include "ravennakit/core/tracy.hpp"
 #include "receivers/ReceiversMainComponent.hpp"
 #include "senders/SendersMainComponent.hpp"
@@ -26,6 +27,9 @@ MainComponent::MainComponent (ApplicationContext& context) : context_ (context),
     });
     menu_.addItem ("Senders", "senders", [this] {
         showContent (std::make_unique<SendersMainComponent> (context_));
+    });
+    menu_.addItem ("NMOS", "nmos", [this] {
+        showContent (std::make_unique<NmosMainComponent> (context_));
     });
     menu_.addItem ("Settings", "settings", [this] {
         showContent (std::make_unique<SettingsMainComponent> (context_));
