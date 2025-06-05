@@ -10,7 +10,7 @@
 
 #include "NmosMainComponent.hpp"
 
-#include "ravennakit/nmos/detail/nmos_discover_mode.hpp"
+#include "gui/lookandfeel/Constants.hpp"
 #include "ravennakit/nmos/detail/nmos_operating_mode.hpp"
 
 NmosMainComponent::NmosMainComponent (ApplicationContext& context) : applicationContext_ (context)
@@ -21,6 +21,11 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     addAndMakeVisible (nmosSettingsLabel_);
 
     nmosEnabledLabel_.setText ("NMOS Enabled", juce::dontSendNotification);
+    nmosEnabledToggle_.onClick = [this] {
+        rav::nmos::Node::ConfigurationUpdate update;
+        update.enabled = nmosEnabledToggle_.getToggleState();
+        applicationContext_.getRavennaNode().update_nmos_configuration (update).wait();
+    };
     addAndMakeVisible (nmosEnabledLabel_);
 
     addAndMakeVisible (nmosEnabledToggle_);
@@ -28,23 +33,33 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     operationModeLabel_.setText ("Operation Mode", juce::dontSendNotification);
     addAndMakeVisible (operationModeLabel_);
 
-    operationModeComboBox_.addItem ("Registered", static_cast<int> (rav::nmos::OperationMode::registered));
-    operationModeComboBox_.addItem ("P2P", static_cast<int> (rav::nmos::OperationMode::p2p));
-    addAndMakeVisible (operationModeComboBox_);
-
-    discoverModeLabel_.setText ("Discover Mode", juce::dontSendNotification);
-    addAndMakeVisible (discoverModeLabel_);
-
-    discoverModeComboBox_.addItem ("mDNS", static_cast<int> (rav::nmos::DiscoverMode::mdns));
-    discoverModeComboBox_.addItem ("Manual", static_cast<int> (rav::nmos::DiscoverMode::manual));
-    discoverModeComboBox_.onChange = [this] {
-
+    operationModeComboBox_.addItem ("mDNS", static_cast<int> (rav::nmos::OperationMode::mdns_p2p) + 1);
+    operationModeComboBox_.addItem ("Manual", static_cast<int> (rav::nmos::OperationMode::manual) + 1);
+    operationModeComboBox_.addItem ("Peer to peer", static_cast<int> (rav::nmos::OperationMode::p2p) + 1);
+    operationModeComboBox_.onChange = [this] {
+        rav::nmos::Node::ConfigurationUpdate update;
+        update.operation_mode = static_cast<rav::nmos::OperationMode> (operationModeComboBox_.getSelectedId() - 1);
+        applicationContext_.getRavennaNode().update_nmos_configuration (update).wait();
     };
-    addAndMakeVisible (discoverModeComboBox_);
+    addAndMakeVisible (operationModeComboBox_);
 
     registryAddressLabel_.setText ("Registry address", juce::dontSendNotification);
     addAndMakeVisible (registryAddressLabel_);
 
+    registryAddressEditor_.onReturnKey = [this] {
+        rav::nmos::Node::ConfigurationUpdate update;
+        update.registry_address = registryAddressEditor_.getText().toStdString();
+        applicationContext_.getRavennaNode().update_nmos_configuration (std::move (update)).wait();
+        juce::TextEditor::unfocusAllComponents();
+    };
+    registryAddressEditor_.onEscapeKey = [this] {
+        registryAddressEditor_.setText (nmosConfiguration_.registry_address, juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
+    };
+    registryAddressEditor_.onFocusLost = [this] {
+        registryAddressEditor_.setText (nmosConfiguration_.registry_address, juce::dontSendNotification);
+    };
+    registryAddressEditor_.setIndents (6, 6);
     addAndMakeVisible (registryAddressEditor_);
 
     nmosStatusLabel_.setText ("NMOS Status", juce::dontSendNotification);
@@ -103,17 +118,14 @@ void NmosMainComponent::resized()
     operationModeLabel_.setBounds (row.removeFromLeft (left));
     operationModeComboBox_.setBounds (row.withWidth (width));
 
-    b.removeFromTop (10);
+    if (registryAddressEditor_.isVisible())
+    {
+        b.removeFromTop (10);
 
-    row = b.removeFromTop (28);
-    discoverModeLabel_.setBounds (row.removeFromLeft (left));
-    discoverModeComboBox_.setBounds (row.withWidth (width));
-
-    b.removeFromTop (10);
-
-    row = b.removeFromTop (28);
-    registryAddressLabel_.setBounds (row.removeFromLeft (left));
-    registryAddressEditor_.setBounds (row.withWidth (width));
+        row = b.removeFromTop (28);
+        registryAddressLabel_.setBounds (row.removeFromLeft (left));
+        registryAddressEditor_.setBounds (row.withWidth (width));
+    }
 
     b.removeFromTop (20);
 
@@ -143,11 +155,15 @@ void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configu
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (applicationContext_.getRavennaNode());
     executor_.callAsync ([this, config] {
-        // TODO: Update the UI components based on the NMOS configuration
-        nmosEnabledToggle_.setToggleState (config.enabled, juce::dontSendNotification);
-        operationModeComboBox_.setSelectedId (static_cast<int> (config.operation_mode), juce::dontSendNotification);
-        discoverModeComboBox_.setSelectedId (static_cast<int> (config.discover_mode), juce::dontSendNotification);
-        registryAddressEditor_.setText (config.registry_address, juce::dontSendNotification);
+        nmosConfiguration_ = std::move (config);
+        nmosEnabledToggle_.setToggleState (nmosConfiguration_.enabled, juce::dontSendNotification);
+        operationModeComboBox_.setSelectedId (
+            static_cast<int> (nmosConfiguration_.operation_mode) + 1,
+            juce::dontSendNotification);
+        registryAddressLabel_.setVisible (nmosConfiguration_.operation_mode == rav::nmos::OperationMode::manual);
+        registryAddressEditor_.setVisible (nmosConfiguration_.operation_mode == rav::nmos::OperationMode::manual);
+        registryAddressEditor_.setText (nmosConfiguration_.registry_address, juce::dontSendNotification);
+        resized();
     });
 }
 

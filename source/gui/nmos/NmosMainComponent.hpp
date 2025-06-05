@@ -11,8 +11,6 @@
 #pragma once
 
 #include "application/ApplicationContext.hpp"
-#include "ravennakit/nmos/detail/nmos_discover_mode.hpp"
-#include "ravennakit/nmos/detail/nmos_operating_mode.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
@@ -38,9 +36,6 @@ private:
     juce::Label operationModeLabel_;
     juce::ComboBox operationModeComboBox_;
 
-    juce::Label discoverModeLabel_;
-    juce::ComboBox discoverModeComboBox_;
-
     juce::Label registryAddressLabel_;
     juce::TextEditor registryAddressEditor_;
 
@@ -57,6 +52,8 @@ private:
 
     juce::Label nmosErrorLabel_;
     juce::Label nmosErrorValueLabel_;
+
+    rav::nmos::Node::Configuration nmosConfiguration_;
 
     MessageThreadExecutor executor_;
 };
