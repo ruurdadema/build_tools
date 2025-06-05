@@ -59,6 +59,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     registryAddressEditor_.onFocusLost = [this] {
         registryAddressEditor_.setText (nmosConfiguration_.registry_address, juce::dontSendNotification);
     };
+    registryAddressEditor_.setTextToShowWhenEmpty ("http://<ip-address>:<port>", Constants::Colours::textDisabled);
     registryAddressEditor_.setIndents (6, 6);
     addAndMakeVisible (registryAddressEditor_);
 
@@ -67,7 +68,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     nmosStatusLabel_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (nmosStatusLabel_);
 
-    nmosRegisteredLabel_.setText ("Registered", juce::dontSendNotification);
+    nmosRegisteredLabel_.setText ("Status", juce::dontSendNotification);
     addAndMakeVisible (nmosRegisteredLabel_);
 
     nmosRegisteredValueLabel_.setText ("No", juce::dontSendNotification);
@@ -84,13 +85,6 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
 
     nmosRegistryAddressValueLabel_.setText ("(not registered)", juce::dontSendNotification);
     addAndMakeVisible (nmosRegistryAddressValueLabel_);
-
-    nmosErrorLabel_.setText ("Error", juce::dontSendNotification);
-    addAndMakeVisible (nmosErrorLabel_);
-
-    nmosErrorValueLabel_.setText ("Some really bad error", juce::dontSendNotification);
-    addAndMakeVisible (nmosErrorValueLabel_);
-    nmosErrorValueLabel_.setColour (juce::Label::textColourId, juce::Colours::red);
 
     applicationContext_.getRavennaNode().subscribe (this).wait();
 }
@@ -142,13 +136,6 @@ void NmosMainComponent::resized()
     row = b.removeFromTop (28);
     nmosRegistryAddressLabel_.setBounds (row.removeFromLeft (left));
     nmosRegistryAddressValueLabel_.setBounds (row.withWidth (width));
-
-    if (nmosErrorValueLabel_.isVisible())
-    {
-        row = b.removeFromTop (28);
-        nmosErrorLabel_.setBounds (row.removeFromLeft (left));
-        nmosErrorValueLabel_.setBounds (row.withWidth (width));
-    }
 }
 
 void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configuration& config)
@@ -163,30 +150,13 @@ void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configu
         registryAddressLabel_.setVisible (nmosConfiguration_.operation_mode == rav::nmos::OperationMode::manual);
         registryAddressEditor_.setVisible (nmosConfiguration_.operation_mode == rav::nmos::OperationMode::manual);
         registryAddressEditor_.setText (nmosConfiguration_.registry_address, juce::dontSendNotification);
-        resized();
     });
 }
 
-void NmosMainComponent::nmos_node_status_changed (const rav::nmos::Node::Status& status)
+void NmosMainComponent::nmos_node_status_changed (rav::nmos::Node::Status status)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (applicationContext_.getRavennaNode());
     executor_.callAsync ([this, status] {
-        nmosRegisteredValueLabel_.setText (status.registered ? "Yes" : "No", juce::dontSendNotification);
-        nmosRegistryNameValueLabel_.setText (status.registry_server_name, juce::dontSendNotification);
-        nmosRegistryAddressValueLabel_.setText (status.registry_server_address, juce::dontSendNotification);
-
-        if (!status.error_message.empty())
-        {
-            nmosErrorValueLabel_.setText (status.error_message, juce::dontSendNotification);
-            nmosErrorValueLabel_.setVisible (true);
-            nmosErrorLabel_.setVisible (true);
-        }
-        else
-        {
-            nmosErrorValueLabel_.setText ({}, juce::dontSendNotification);
-            nmosErrorValueLabel_.setVisible (false);
-            nmosErrorLabel_.setVisible (false);
-        }
-        resized();
+        nmosRegisteredValueLabel_.setText (rav::nmos::to_string (status), juce::dontSendNotification);
     });
 }

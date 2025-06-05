@@ -23,7 +23,7 @@ public:
     void resized() override;
 
     void nmos_node_config_updated (const rav::nmos::Node::Configuration& config) override;
-    void nmos_node_status_changed (const rav::nmos::Node::Status& status) override;
+    void nmos_node_status_changed (rav::nmos::Node::Status status) override;
 
 private:
     ApplicationContext& applicationContext_;
@@ -49,9 +49,6 @@ private:
 
     juce::Label nmosRegistryAddressLabel_;
     juce::Label nmosRegistryAddressValueLabel_;
-
-    juce::Label nmosErrorLabel_;
-    juce::Label nmosErrorValueLabel_;
 
     rav::nmos::Node::Configuration nmosConfiguration_;
 
