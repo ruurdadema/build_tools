@@ -64,7 +64,7 @@ void SettingsMainComponent::resized()
     secondaryNetworkInterfaceComboBox_.setBounds (row.withWidth (width));
 }
 
-void SettingsMainComponent::network_interface_config_updated (const rav::RavennaConfig::NetworkInterfaceConfig& config)
+void SettingsMainComponent::network_interface_config_updated (const rav::NetworkInterfaceConfig& config)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (context_.getRavennaNode());
 
@@ -143,7 +143,7 @@ void SettingsMainComponent::updateNetworkInterfaces()
 
 void SettingsMainComponent::selectNetworkInterfaces() const
 {
-    rav::RavennaConfig::NetworkInterfaceConfig config;
+    rav::NetworkInterfaceConfig config;
 
     auto id = primaryNetworkInterfaceComboBox_.getSelectedId();
     RAV_ASSERT (id <= networkInterfaces_.size(), "Invalid id");

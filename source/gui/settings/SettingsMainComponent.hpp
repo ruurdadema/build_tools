@@ -23,7 +23,7 @@ public:
 
     void resized() override;
 
-    void network_interface_config_updated (const rav::RavennaConfig::NetworkInterfaceConfig& config) override;
+    void network_interface_config_updated (const rav::NetworkInterfaceConfig& config) override;
 
 private:
     [[maybe_unused]] ApplicationContext& context_;
