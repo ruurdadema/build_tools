@@ -23,7 +23,7 @@ public:
     void resized() override;
 
     void nmos_node_config_updated (const rav::nmos::Node::Configuration& config) override;
-    void nmos_node_status_changed (rav::nmos::Node::Status status) override;
+    void nmos_node_status_changed (rav::nmos::Node::Status status, const rav::nmos::Node::RegistryInfo& registry_info) override;
 
 private:
     ApplicationContext& applicationContext_;

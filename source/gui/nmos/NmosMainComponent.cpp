@@ -150,16 +150,21 @@ void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configu
         registryAddressLabel_.setVisible (nmosConfiguration_.operation_mode == rav::nmos::OperationMode::manual);
         registryAddressEditor_.setVisible (nmosConfiguration_.operation_mode == rav::nmos::OperationMode::manual);
         registryAddressEditor_.setText (nmosConfiguration_.registry_address, juce::dontSendNotification);
+        resized();
     });
 }
 
-void NmosMainComponent::nmos_node_status_changed (rav::nmos::Node::Status status)
+void NmosMainComponent::nmos_node_status_changed (
+    rav::nmos::Node::Status status,
+    const rav::nmos::Node::RegistryInfo& registry_info)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (applicationContext_.getRavennaNode());
-    executor_.callAsync ([this, status] {
+    executor_.callAsync ([this, status, registry_info] {
         nmosStatusValueLabel_.setText (rav::nmos::to_string (status), juce::dontSendNotification);
         nmosStatusValueLabel_.setColour (
             juce::Label::textColourId,
             status == rav::nmos::Node::Status::error ? Constants::Colours::error : Constants::Colours::text);
+        nmosRegistryNameValueLabel_.setText (registry_info.name, juce::dontSendNotification);
+        nmosRegistryAddressValueLabel_.setText (registry_info.address, juce::dontSendNotification);
     });
 }
