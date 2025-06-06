@@ -39,10 +39,10 @@ private:
     juce::Label registryAddressLabel_;
     juce::TextEditor registryAddressEditor_;
 
-    juce::Label nmosStatusLabel_;
+    juce::Label nmosStatusTitleLabel_;
 
-    juce::Label nmosRegisteredLabel_;
-    juce::Label nmosRegisteredValueLabel_;
+    juce::Label nmosStatusLabel_;
+    juce::Label nmosStatusValueLabel_;
 
     juce::Label nmosRegistryNameLabel_;
     juce::Label nmosRegistryNameValueLabel_;

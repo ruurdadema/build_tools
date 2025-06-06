@@ -63,16 +63,16 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     registryAddressEditor_.setIndents (6, 6);
     addAndMakeVisible (registryAddressEditor_);
 
-    nmosStatusLabel_.setText ("NMOS Status", juce::dontSendNotification);
-    nmosStatusLabel_.setFont (juce::FontOptions (16.f, juce::Font::bold));
-    nmosStatusLabel_.setJustificationType (juce::Justification::topLeft);
+    nmosStatusTitleLabel_.setText ("NMOS Status", juce::dontSendNotification);
+    nmosStatusTitleLabel_.setFont (juce::FontOptions (16.f, juce::Font::bold));
+    nmosStatusTitleLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (nmosStatusTitleLabel_);
+
+    nmosStatusLabel_.setText ("Status", juce::dontSendNotification);
     addAndMakeVisible (nmosStatusLabel_);
 
-    nmosRegisteredLabel_.setText ("Status", juce::dontSendNotification);
-    addAndMakeVisible (nmosRegisteredLabel_);
-
-    nmosRegisteredValueLabel_.setText ("No", juce::dontSendNotification);
-    addAndMakeVisible (nmosRegisteredValueLabel_);
+    nmosStatusValueLabel_.setText ("No", juce::dontSendNotification);
+    addAndMakeVisible (nmosStatusValueLabel_);
 
     nmosRegistryNameLabel_.setText ("Registry Name", juce::dontSendNotification);
     addAndMakeVisible (nmosRegistryNameLabel_);
@@ -123,11 +123,11 @@ void NmosMainComponent::resized()
 
     b.removeFromTop (20);
 
-    nmosStatusLabel_.setBounds (b.removeFromTop (28));
+    nmosStatusTitleLabel_.setBounds (b.removeFromTop (28));
 
     row = b.removeFromTop (28);
-    nmosRegisteredLabel_.setBounds (row.removeFromLeft (left));
-    nmosRegisteredValueLabel_.setBounds (row.withWidth (width));
+    nmosStatusLabel_.setBounds (row.removeFromLeft (left));
+    nmosStatusValueLabel_.setBounds (row.withWidth (width));
 
     row = b.removeFromTop (28);
     nmosRegistryNameLabel_.setBounds (row.removeFromLeft (left));
@@ -142,7 +142,7 @@ void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configu
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (applicationContext_.getRavennaNode());
     executor_.callAsync ([this, config] {
-        nmosConfiguration_ = std::move (config);
+        nmosConfiguration_ = config;
         nmosEnabledToggle_.setToggleState (nmosConfiguration_.enabled, juce::dontSendNotification);
         operationModeComboBox_.setSelectedId (
             static_cast<int> (nmosConfiguration_.operation_mode) + 1,
@@ -157,6 +157,9 @@ void NmosMainComponent::nmos_node_status_changed (rav::nmos::Node::Status status
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (applicationContext_.getRavennaNode());
     executor_.callAsync ([this, status] {
-        nmosRegisteredValueLabel_.setText (rav::nmos::to_string (status), juce::dontSendNotification);
+        nmosStatusValueLabel_.setText (rav::nmos::to_string (status), juce::dontSendNotification);
+        nmosStatusValueLabel_.setColour (
+            juce::Label::textColourId,
+            status == rav::nmos::Node::Status::error ? Constants::Colours::error : Constants::Colours::text);
     });
 }

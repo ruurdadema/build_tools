@@ -81,7 +81,7 @@ void MainApplication::initialise (const juce::String& commandLine)
     audioDeviceManager_.initialise (2, 2, nullptr, false, {}, &setup);
 
     // Load previous state
-    if (const auto applicationStateFile = getApplicationStateFile(); applicationStateFile.existsAsFile())
+    if (const auto& applicationStateFile = getApplicationStateFile(); applicationStateFile.existsAsFile())
     {
         if (const auto result = loadFromFile (applicationStateFile); !result)
             RAV_ERROR ("Failed to load previous state: {}", result.error());
@@ -250,8 +250,8 @@ bool MainApplication::restoreFromJson (const nlohmann::json& json)
 {
     try
     {
-        const auto application = json.at ("ravennakit_juce_demo");
-        const auto state = application.at ("state");
+        const auto& application = json.at ("ravennakit_juce_demo");
+        const auto& state = application.at ("state");
 
         if (state.contains ("windows"))
         {
@@ -281,7 +281,7 @@ bool MainApplication::restoreFromJson (const nlohmann::json& json)
                 audioDeviceManager_.initialise (2, 0, xml.get(), true);
         }
 
-        const auto ravennaNode = state.at ("ravenna_node");
+        const auto& ravennaNode = state.at ("ravenna_node");
         auto result = ravennaNode_->restore_from_json (ravennaNode).get();
         if (!result)
         {
