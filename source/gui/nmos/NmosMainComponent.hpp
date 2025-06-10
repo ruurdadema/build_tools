@@ -39,6 +39,9 @@ private:
     juce::Label registryAddressLabel_;
     juce::TextEditor registryAddressEditor_;
 
+    juce::Label nmosVersionLabel_;
+    juce::ComboBox nmosVersionComboBox_;
+
     juce::Label nmosStatusTitleLabel_;
 
     juce::Label nmosStatusLabel_;

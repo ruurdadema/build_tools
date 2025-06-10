@@ -63,6 +63,30 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     registryAddressEditor_.setIndents (6, 6);
     addAndMakeVisible (registryAddressEditor_);
 
+    nmosVersionLabel_.setText ("Version", juce::dontSendNotification);
+    addAndMakeVisible (nmosVersionLabel_);
+
+    for (size_t i = 0; i < rav::nmos::Node::k_supported_api_versions.size(); ++i)
+    {
+        nmosVersionComboBox_.addItem (
+            rav::nmos::Node::k_supported_api_versions[i].to_string(),
+            static_cast<int> (i) + 1);
+    }
+
+    nmosVersionComboBox_.onChange = [this] {
+        RAV_ASSERT (
+            nmosVersionComboBox_.getSelectedId() > 0,
+            "NMOS version combo box selected ID should be greater than 0");
+        RAV_ASSERT (
+            nmosVersionComboBox_.getSelectedId() <= static_cast<int> (rav::nmos::Node::k_supported_api_versions.size()),
+            "NMOS version combo box selected ID should be less than or equal to the number of supported API versions");
+        rav::nmos::Node::ConfigurationUpdate update;
+        const auto i = static_cast<size_t> (nmosVersionComboBox_.getSelectedId() - 1);
+        update.api_version = rav::nmos::Node::k_supported_api_versions[i];
+        applicationContext_.getRavennaNode().update_nmos_configuration (update).wait();
+    };
+    addAndMakeVisible (nmosVersionComboBox_);
+
     nmosStatusTitleLabel_.setText ("NMOS Status", juce::dontSendNotification);
     nmosStatusTitleLabel_.setFont (juce::FontOptions (16.f, juce::Font::bold));
     nmosStatusTitleLabel_.setJustificationType (juce::Justification::topLeft);
@@ -121,6 +145,12 @@ void NmosMainComponent::resized()
         registryAddressEditor_.setBounds (row.withWidth (width));
     }
 
+    b.removeFromTop (10);
+
+    row = b.removeFromTop (28);
+    nmosVersionLabel_.setBounds (row.removeFromLeft (left));
+    nmosVersionComboBox_.setBounds (row.withWidth (width));
+
     b.removeFromTop (20);
 
     nmosStatusTitleLabel_.setBounds (b.removeFromTop (28));
@@ -150,6 +180,12 @@ void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configu
         registryAddressLabel_.setVisible (nmosConfiguration_.operation_mode == rav::nmos::OperationMode::manual);
         registryAddressEditor_.setVisible (nmosConfiguration_.operation_mode == rav::nmos::OperationMode::manual);
         registryAddressEditor_.setText (nmosConfiguration_.registry_address, juce::dontSendNotification);
+
+        if (const auto api_index = rav::nmos::Node::index_of_supported_api_version (nmosConfiguration_.api_version))
+            nmosVersionComboBox_.setSelectedId (static_cast<int> (*api_index) + 1, juce::dontSendNotification);
+        else
+            nmosVersionComboBox_.setTextWhenNothingSelected ("API version not supported");
+
         resized();
     });
 }
