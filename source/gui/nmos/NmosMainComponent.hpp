@@ -42,6 +42,12 @@ private:
     juce::Label nmosVersionLabel_;
     juce::ComboBox nmosVersionComboBox_;
 
+    juce::Label nmosLabelLabel_;
+    juce::TextEditor nmosLabelEditor_;
+
+    juce::Label nmosDescriptionLabel_;
+    juce::TextEditor nmosDescriptionEditor_;
+
     juce::Label nmosStatusTitleLabel_;
 
     juce::Label nmosStatusLabel_;

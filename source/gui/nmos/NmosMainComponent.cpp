@@ -20,6 +20,8 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     nmosSettingsLabel_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (nmosSettingsLabel_);
 
+    // Enabled
+
     nmosEnabledLabel_.setText ("NMOS Enabled", juce::dontSendNotification);
     nmosEnabledToggle_.onClick = [this] {
         rav::nmos::Node::ConfigurationUpdate update;
@@ -29,6 +31,8 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     addAndMakeVisible (nmosEnabledLabel_);
 
     addAndMakeVisible (nmosEnabledToggle_);
+
+    // NMOS Operation Mode
 
     operationModeLabel_.setText ("Operation Mode", juce::dontSendNotification);
     addAndMakeVisible (operationModeLabel_);
@@ -42,6 +46,8 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
         applicationContext_.getRavennaNode().update_nmos_configuration (update).wait();
     };
     addAndMakeVisible (operationModeComboBox_);
+
+    // Registry address
 
     registryAddressLabel_.setText ("Registry address", juce::dontSendNotification);
     addAndMakeVisible (registryAddressLabel_);
@@ -62,6 +68,8 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     registryAddressEditor_.setTextToShowWhenEmpty ("http://<ip-address>:<port>", Constants::Colours::textDisabled);
     registryAddressEditor_.setIndents (6, 6);
     addAndMakeVisible (registryAddressEditor_);
+
+    // NMOS version
 
     nmosVersionLabel_.setText ("Version", juce::dontSendNotification);
     addAndMakeVisible (nmosVersionLabel_);
@@ -86,6 +94,52 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
         applicationContext_.getRavennaNode().update_nmos_configuration (update).wait();
     };
     addAndMakeVisible (nmosVersionComboBox_);
+
+    // Label
+
+    nmosLabelLabel_.setText ("Label", juce::dontSendNotification);
+    addAndMakeVisible (nmosLabelLabel_);
+
+    nmosLabelEditor_.onReturnKey = [this] {
+        rav::nmos::Node::ConfigurationUpdate update;
+        update.label = nmosLabelEditor_.getText().toStdString();
+        applicationContext_.getRavennaNode().update_nmos_configuration (std::move (update)).wait();
+        juce::TextEditor::unfocusAllComponents();
+    };
+    nmosLabelEditor_.onEscapeKey = [this] {
+        nmosLabelEditor_.setText (nmosConfiguration_.label, juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
+    };
+    nmosLabelEditor_.onFocusLost = [this] {
+        nmosLabelEditor_.setText (nmosConfiguration_.label, juce::dontSendNotification);
+    };
+    nmosLabelEditor_.setTextToShowWhenEmpty ("Optional freeform label", Constants::Colours::textDisabled);
+    nmosLabelEditor_.setIndents (6, 6);
+    addAndMakeVisible (nmosLabelEditor_);
+
+    // Description
+
+    nmosDescriptionLabel_.setText ("Description", juce::dontSendNotification);
+    addAndMakeVisible (nmosDescriptionLabel_);
+
+    nmosDescriptionEditor_.onReturnKey = [this] {
+        rav::nmos::Node::ConfigurationUpdate update;
+        update.description = nmosDescriptionEditor_.getText().toStdString();
+        applicationContext_.getRavennaNode().update_nmos_configuration (std::move (update)).wait();
+        juce::TextEditor::unfocusAllComponents();
+    };
+    nmosDescriptionEditor_.onEscapeKey = [this] {
+        nmosDescriptionEditor_.setText (nmosConfiguration_.description, juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
+    };
+    nmosDescriptionEditor_.onFocusLost = [this] {
+        nmosDescriptionEditor_.setText (nmosConfiguration_.description, juce::dontSendNotification);
+    };
+    nmosDescriptionEditor_.setTextToShowWhenEmpty ("Optional description", Constants::Colours::textDisabled);
+    nmosDescriptionEditor_.setIndents (6, 6);
+    addAndMakeVisible (nmosDescriptionEditor_);
+
+    // Status
 
     nmosStatusTitleLabel_.setText ("NMOS Status", juce::dontSendNotification);
     nmosStatusTitleLabel_.setFont (juce::FontOptions (16.f, juce::Font::bold));
@@ -151,6 +205,18 @@ void NmosMainComponent::resized()
     nmosVersionLabel_.setBounds (row.removeFromLeft (left));
     nmosVersionComboBox_.setBounds (row.withWidth (width));
 
+    b.removeFromTop (10);
+
+    row = b.removeFromTop (28);
+    nmosLabelLabel_.setBounds (row.removeFromLeft (left));
+    nmosLabelEditor_.setBounds (row.withWidth (width));
+
+    b.removeFromTop (10);
+
+    row = b.removeFromTop (28);
+    nmosDescriptionLabel_.setBounds (row.removeFromLeft (left));
+    nmosDescriptionEditor_.setBounds (row.withWidth (width));
+
     b.removeFromTop (20);
 
     nmosStatusTitleLabel_.setBounds (b.removeFromTop (28));
@@ -185,6 +251,9 @@ void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configu
             nmosVersionComboBox_.setSelectedId (static_cast<int> (*api_index) + 1, juce::dontSendNotification);
         else
             nmosVersionComboBox_.setTextWhenNothingSelected ("API version not supported");
+
+        nmosLabelEditor_.setText (nmosConfiguration_.label, juce::dontSendNotification);
+        nmosDescriptionEditor_.setText (nmosConfiguration_.description, juce::dontSendNotification);
 
         resized();
     });
