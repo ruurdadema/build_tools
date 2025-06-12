@@ -274,16 +274,17 @@ void AudioReceiversModel::Receiver::ravenna_receiver_parameters_updated (
 }
 
 void AudioReceiversModel::Receiver::ravenna_receiver_configuration_updated (
-    rav::Id receiver_id,
+    const rav::RavennaReceiver& receiver,
     const rav::RavennaReceiver::Configuration& configuration)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
+    auto receiverId = receiver.get_id();
 
-    executor_.callAsync ([this, receiver_id, configuration] {
-        RAV_ASSERT (receiver_id == receiverId_, "Receiver ID mismatch");
+    executor_.callAsync ([this, receiverId, configuration] {
+        RAV_ASSERT (receiverId == receiverId_, "Receiver ID mismatch");
         state_.configuration = configuration;
         for (auto* subscriber : owner_.subscribers_)
-            subscriber->onAudioReceiverUpdated (receiver_id, &state_);
+            subscriber->onAudioReceiverUpdated (receiverId, &state_);
     });
 }
 

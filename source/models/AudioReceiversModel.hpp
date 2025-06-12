@@ -142,7 +142,7 @@ private:
         // rav::rtp_stream_receiver::subscriber overrides
         void ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::Parameters& parameters) override;
         void ravenna_receiver_configuration_updated (
-            rav::Id receiver_id,
+            const rav::RavennaReceiver& receiver,
             const rav::RavennaReceiver::Configuration& configuration) override;
         void ravenna_receiver_stream_state_updated (
             const rav::rtp::AudioReceiver::Stream& stream,
