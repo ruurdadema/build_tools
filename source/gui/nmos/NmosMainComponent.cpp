@@ -24,9 +24,9 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
 
     nmosEnabledLabel_.setText ("NMOS Enabled", juce::dontSendNotification);
     nmosEnabledToggle_.onClick = [this] {
-        rav::nmos::Node::ConfigurationUpdate update;
-        update.enabled = nmosEnabledToggle_.getToggleState();
-        applicationContext_.getRavennaNode().update_nmos_configuration (update).wait();
+        auto config = nmosConfiguration_;
+        config.enabled = nmosEnabledToggle_.getToggleState();
+        applicationContext_.getRavennaNode().set_nmos_configuration (std::move(config)).wait();
     };
     addAndMakeVisible (nmosEnabledLabel_);
 
@@ -41,9 +41,9 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     operationModeComboBox_.addItem ("Manual", static_cast<int> (rav::nmos::OperationMode::manual) + 1);
     operationModeComboBox_.addItem ("Peer to peer", static_cast<int> (rav::nmos::OperationMode::p2p) + 1);
     operationModeComboBox_.onChange = [this] {
-        rav::nmos::Node::ConfigurationUpdate update;
-        update.operation_mode = static_cast<rav::nmos::OperationMode> (operationModeComboBox_.getSelectedId() - 1);
-        applicationContext_.getRavennaNode().update_nmos_configuration (update).wait();
+        auto config = nmosConfiguration_;
+        config.operation_mode = static_cast<rav::nmos::OperationMode> (operationModeComboBox_.getSelectedId() - 1);
+        applicationContext_.getRavennaNode().set_nmos_configuration (std::move(config)).wait();
     };
     addAndMakeVisible (operationModeComboBox_);
 
@@ -53,9 +53,9 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     addAndMakeVisible (registryAddressLabel_);
 
     registryAddressEditor_.onReturnKey = [this] {
-        rav::nmos::Node::ConfigurationUpdate update;
-        update.registry_address = registryAddressEditor_.getText().toStdString();
-        applicationContext_.getRavennaNode().update_nmos_configuration (std::move (update)).wait();
+        auto config = nmosConfiguration_;
+        config.registry_address = registryAddressEditor_.getText().toStdString();
+        applicationContext_.getRavennaNode().set_nmos_configuration (std::move (config)).wait();
         juce::TextEditor::unfocusAllComponents();
     };
     registryAddressEditor_.onEscapeKey = [this] {
@@ -88,10 +88,10 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
         RAV_ASSERT (
             nmosVersionComboBox_.getSelectedId() <= static_cast<int> (rav::nmos::Node::k_supported_api_versions.size()),
             "NMOS version combo box selected ID should be less than or equal to the number of supported API versions");
-        rav::nmos::Node::ConfigurationUpdate update;
+        auto config = nmosConfiguration_;
         const auto i = static_cast<size_t> (nmosVersionComboBox_.getSelectedId() - 1);
-        update.api_version = rav::nmos::Node::k_supported_api_versions[i];
-        applicationContext_.getRavennaNode().update_nmos_configuration (update).wait();
+        config.api_version = rav::nmos::Node::k_supported_api_versions[i];
+        applicationContext_.getRavennaNode().set_nmos_configuration (std::move(config)).wait();
     };
     addAndMakeVisible (nmosVersionComboBox_);
 
@@ -101,9 +101,9 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     addAndMakeVisible (nmosLabelLabel_);
 
     nmosLabelEditor_.onReturnKey = [this] {
-        rav::nmos::Node::ConfigurationUpdate update;
-        update.label = nmosLabelEditor_.getText().toStdString();
-        applicationContext_.getRavennaNode().update_nmos_configuration (std::move (update)).wait();
+        auto config = nmosConfiguration_;
+        config.label = nmosLabelEditor_.getText().toStdString();
+        applicationContext_.getRavennaNode().set_nmos_configuration (std::move (config)).wait();
         juce::TextEditor::unfocusAllComponents();
     };
     nmosLabelEditor_.onEscapeKey = [this] {
@@ -123,9 +123,9 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     addAndMakeVisible (nmosDescriptionLabel_);
 
     nmosDescriptionEditor_.onReturnKey = [this] {
-        rav::nmos::Node::ConfigurationUpdate update;
-        update.description = nmosDescriptionEditor_.getText().toStdString();
-        applicationContext_.getRavennaNode().update_nmos_configuration (std::move (update)).wait();
+        auto config = nmosConfiguration_;
+        config.description = nmosDescriptionEditor_.getText().toStdString();
+        applicationContext_.getRavennaNode().set_nmos_configuration (std::move (config)).wait();
         juce::TextEditor::unfocusAllComponents();
     };
     nmosDescriptionEditor_.onEscapeKey = [this] {

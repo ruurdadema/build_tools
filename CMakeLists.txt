@@ -59,7 +59,7 @@ add_subdirectory(ravennakit)
 FetchContent_Declare(
         JUCE
         GIT_REPOSITORY https://github.com/juce-framework/JUCE.git
-        GIT_TAG 8.0.6
+        GIT_TAG 8.0.8
 )
 
 set(JUCE_ENABLE_MODULE_SOURCE_GROUPS ON)
