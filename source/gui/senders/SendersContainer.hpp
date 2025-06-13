@@ -82,7 +82,7 @@ private:
 
         MessageThreadExecutor executor_;
 
-        boost::asio::ip::address_v4 getDestinationAddress (const rav::Rank rank) const;
+        boost::asio::ip::address_v4 getDestinationAddress (rav::Rank rank) const;
     };
 
     ApplicationContext& context_;

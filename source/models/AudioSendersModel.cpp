@@ -24,7 +24,24 @@ AudioSendersModel::~AudioSendersModel()
 
 rav::Id AudioSendersModel::createSender() const
 {
-    return node_.create_sender ({}).get();
+    rav::RavennaSender::Configuration config;
+    config.session_name = {}; // Can be left empty in which case RavennaNode will generate a name.
+    config.ttl = 15;
+    config.packet_time = rav::aes67::PacketTime::ms_1();
+    config.payload_type = 98;
+
+    config.audio_format.byte_order = rav::AudioFormat::ByteOrder::be;
+    config.audio_format.ordering = rav::AudioFormat::ChannelOrdering::interleaved;
+    config.audio_format.sample_rate = 48'000;
+    config.audio_format.num_channels = 2;
+    config.audio_format.encoding = rav::AudioEncoding::pcm_s16;
+
+    config.destinations.emplace_back (
+        rav::RavennaSender::Destination { rav::Rank::primary(), { boost::asio::ip::address_v4::any(), 5004 }, true });
+    config.destinations.emplace_back (
+        rav::RavennaSender::Destination { rav::Rank::secondary(), { boost::asio::ip::address_v4::any(), 5004 }, true });
+
+    return node_.create_sender (config).get();
 }
 
 void AudioSendersModel::removeSender (const rav::Id senderId) const
@@ -32,19 +49,15 @@ void AudioSendersModel::removeSender (const rav::Id senderId) const
     return node_.remove_sender (senderId).wait();
 }
 
-void AudioSendersModel::updateSenderConfiguration (
-    const rav::Id senderId,
-    rav::RavennaSender::ConfigurationUpdate update) const
+void AudioSendersModel::updateSenderConfiguration (const rav::Id senderId, rav::RavennaSender::Configuration config)
+    const
 {
     // Override audio format
-    if (update.audio_format.has_value())
-    {
-        update.audio_format->byte_order = rav::AudioFormat::ByteOrder::be;
-        update.audio_format->ordering = rav::AudioFormat::ChannelOrdering::interleaved;
-        // Don't override num_channels, sample_rate and encoding
-    }
+    config.audio_format.byte_order = rav::AudioFormat::ByteOrder::be;
+    config.audio_format.ordering = rav::AudioFormat::ChannelOrdering::interleaved;
+    // Don't override num_channels, sample_rate and encoding
 
-    auto result = node_.update_sender_configuration (senderId, std::move (update)).get();
+    auto result = node_.update_sender_configuration (senderId, std::move (config)).get();
     if (!result)
     {
         RAV_ERROR ("Failed to update sender configuration: {}", result.error());

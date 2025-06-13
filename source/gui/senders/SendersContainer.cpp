@@ -101,7 +101,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
 
     sessionNameEditor_.setIndents (8, 8);
     sessionNameEditor_.onReturnKey = [this] {
-        rav::RavennaSender::ConfigurationUpdate update;
+        rav::RavennaSender::Configuration update;
         update.session_name = sessionNameEditor_.getText().toStdString();
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
         juce::TextEditor::unfocusAllComponents();
@@ -139,9 +139,9 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
             dst.enabled = ports[dst.interface_by_rank.value()];
         }
 
-        rav::RavennaSender::ConfigurationUpdate update {};
-        update.destinations = std::move (destinations);
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.destinations = std::move (destinations);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
     };
     addAndMakeVisible (txPortComboBox_);
 
@@ -176,9 +176,9 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
             it->endpoint.address (addr);
         }
 
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.destinations = std::move (destinations);
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.destinations = std::move (destinations);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
     primaryAddressEditor_.onEscapeKey = [this] {
@@ -225,9 +225,9 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
             it->endpoint.address (addr);
         }
 
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.destinations = std::move (destinations);
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.destinations = std::move (destinations);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
     secondaryAddressEditor_.onEscapeKey = [this] {
@@ -250,9 +250,9 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
     ttlEditor_.setIndents (8, 8);
     ttlEditor_.setInputRestrictions (3, "0123456789");
     ttlEditor_.onReturnKey = [this] {
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.ttl = ttlEditor_.getText().getIntValue();
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.ttl = ttlEditor_.getText().getIntValue();
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
     ttlEditor_.onEscapeKey = [this] {
@@ -271,9 +271,9 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
     payloadTypeEditor_.setIndents (8, 8);
     payloadTypeEditor_.setInputRestrictions (3, "0123456789");
     payloadTypeEditor_.onReturnKey = [this] {
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.payload_type = static_cast<uint8_t> (payloadTypeEditor_.getText().getIntValue());
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.payload_type = static_cast<uint8_t> (payloadTypeEditor_.getText().getIntValue());
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
     payloadTypeEditor_.onEscapeKey = [this] {
@@ -296,10 +296,10 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
     numChannelsEditor_.setIndents (8, 8);
     numChannelsEditor_.setInputRestrictions (3, "0123456789");
     numChannelsEditor_.onReturnKey = [this] {
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.audio_format = senderState_.senderConfiguration.audio_format;
-        update.audio_format->num_channels = static_cast<uint32_t> (numChannelsEditor_.getText().getIntValue());
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.audio_format = senderState_.senderConfiguration.audio_format;
+        config.audio_format.num_channels = static_cast<uint32_t> (numChannelsEditor_.getText().getIntValue());
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
     numChannelsEditor_.onEscapeKey = [this] {
@@ -326,10 +326,10 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         const auto selectedId = sampleRateComboBox_.getSelectedId();
         if (selectedId <= 0)
             return;
-        rav::RavennaSender::ConfigurationUpdate update {};
-        update.audio_format = senderState_.senderConfiguration.audio_format;
-        update.audio_format->sample_rate = static_cast<uint32_t> (selectedId);
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.audio_format = senderState_.senderConfiguration.audio_format;
+        config.audio_format.sample_rate = static_cast<uint32_t> (selectedId);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
     };
     addAndMakeVisible (sampleRateComboBox_);
 
@@ -344,10 +344,10 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         const auto selectedId = encodingComboBox_.getSelectedId();
         if (selectedId <= 0)
             return;
-        rav::RavennaSender::ConfigurationUpdate update {};
-        update.audio_format = senderState_.senderConfiguration.audio_format;
-        update.audio_format->encoding = static_cast<rav::AudioEncoding> (selectedId);
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.audio_format = senderState_.senderConfiguration.audio_format;
+        config.audio_format.encoding = static_cast<rav::AudioEncoding> (selectedId);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
     };
     addAndMakeVisible (encodingComboBox_);
 
@@ -358,9 +358,9 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
     onOffButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     onOffButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::green);
     onOffButton_.onClick = [this] {
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.enabled = onOffButton_.getToggleState();
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.enabled = onOffButton_.getToggleState();
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
     };
     addAndMakeVisible (onOffButton_);
 

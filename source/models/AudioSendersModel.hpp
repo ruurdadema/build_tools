@@ -64,9 +64,9 @@ public:
     /**
      * Updates the configuration of a sender.
      * @param senderId The id of the sender to update.
-     * @param update The configuration changes to apply.
+     * @param config The configuration changes to apply.
      */
-    void updateSenderConfiguration (rav::Id senderId, rav::RavennaSender::ConfigurationUpdate update) const;
+    void updateSenderConfiguration (rav::Id senderId, rav::RavennaSender::Configuration config) const;
 
     /**
      * Adds a subscriber to the audio mixer.
