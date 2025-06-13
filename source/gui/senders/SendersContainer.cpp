@@ -430,12 +430,7 @@ void SendersContainer::Row::update (const AudioSendersModel::SenderState& state)
         juce::TextEditor::ColourIds::outlineColourId,
         findColour (juce::TextEditor::ColourIds::outlineColourId));
 
-    if (!state.statusMessage.empty())
-    {
-        statusMessage_.setText (rav::string_to_upper (state.statusMessage, 1), juce::dontSendNotification);
-        statusMessage_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
-    }
-    else if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
+    if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
     {
         statusMessage_.setText (
             fmt::format ("Sample rate mismatch ({})", state.inputFormat.sample_rate),

@@ -22,7 +22,7 @@ AudioSendersModel::~AudioSendersModel()
     node_.unsubscribe (this).wait();
 }
 
-rav::Id AudioSendersModel::createSender() const
+tl::expected<rav::Id, std::string> AudioSendersModel::createSender() const
 {
     rav::RavennaSender::Configuration config;
     config.session_name = {}; // Can be left empty in which case RavennaNode will generate a name.
@@ -240,19 +240,6 @@ void AudioSendersModel::Sender::ravenna_sender_configuration_updated (
 
     executor_.callAsync ([this, sender_id, configuration] {
         state_.senderConfiguration = configuration;
-        for (auto* subscriber : owner_.subscribers_)
-            subscriber->onAudioSenderUpdated (sender_id, &state_);
-    });
-}
-
-void AudioSendersModel::Sender::ravenna_sender_status_message_updated (
-    const rav::Id sender_id,
-    const std::string& message)
-{
-    RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
-
-    executor_.callAsync ([this, sender_id, message] {
-        state_.statusMessage = message;
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioSenderUpdated (sender_id, &state_);
     });
