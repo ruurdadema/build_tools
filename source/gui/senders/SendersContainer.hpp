@@ -87,5 +87,5 @@ private:
 
     ApplicationContext& context_;
     juce::OwnedArray<Row> rows_;
-    juce::TextButton addButton { "Add sender" };
+    juce::TextButton createButton { "Create sender" };
 };

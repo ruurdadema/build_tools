@@ -142,7 +142,9 @@ DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windo
 
     createReceiverButton_.setButtonText ("Create Receiver");
     createReceiverButton_.onClick = [this, &context, &windowContext] {
-        const auto result = context.getAudioReceivers().createReceiver (getSessionName().toStdString());
+        auto config = rav::RavennaReceiver::Configuration::default_config();
+        config.session_name = getSessionName().toStdString();
+        const auto result = context.getAudioReceivers().createReceiver (std::move (config));
         if (!result)
         {
             RAV_ERROR ("Failed to create receiver: {}", result.error());

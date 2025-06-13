@@ -17,10 +17,10 @@
 
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
-    addButton.onClick = [this] {
+    createButton.onClick = [this] {
         std::ignore = context_.getAudioSenders().createSender();
     };
-    addAndMakeVisible (addButton);
+    addAndMakeVisible (createButton);
 
     if (!context_.getAudioSenders().subscribe (this))
     {
@@ -88,7 +88,7 @@ void SendersContainer::resized()
     }
 
     b.removeFromTop (kMargin * 2);
-    addButton.setBounds (b.withSizeKeepingCentre (200, kButtonHeight));
+    createButton.setBounds (b.withSizeKeepingCentre (200, kButtonHeight));
 }
 
 SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id senderId) :

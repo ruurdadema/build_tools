@@ -34,13 +34,10 @@ AudioReceiversModel::~AudioReceiversModel()
     node_.unsubscribe (this).wait();
 }
 
-tl::expected<rav::Id, std::string> AudioReceiversModel::createReceiver (const std::string& sessionName) const
+tl::expected<rav::Id, std::string> AudioReceiversModel::createReceiver (
+    rav::RavennaReceiver::Configuration config) const
 {
-    rav::RavennaReceiver::Configuration config;
-    config.session_name = sessionName;
-    config.enabled = true;
-    config.delay_frames = 480; // 10ms at 48KHz
-    return node_.create_receiver (config).get();
+    return node_.create_receiver (std::move (config)).get();
 }
 
 void AudioReceiversModel::removeReceiver (const rav::Id receiverId) const

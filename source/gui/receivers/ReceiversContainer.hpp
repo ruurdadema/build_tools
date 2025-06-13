@@ -31,19 +31,23 @@ public:
 private:
     static constexpr int kRowHeight = 158;
     static constexpr int kMargin = 10;
+    static constexpr int kButtonHeight = 30;
 
     class SdpViewer : public Component
     {
     public:
+        rav::SafeFunction<void(rav::sdp::SessionDescription sdp)> onApply;
+
         explicit SdpViewer (const std::string& sdpText);
         ~SdpViewer() override;
         void resized() override;
-        void paint (juce::Graphics& g) override;
 
     private:
-        juce::String sdpText_;
+        juce::TextEditor sdpTextEditor_;
         juce::TextButton closeButton_ { "Close" };
+        juce::TextButton applyButton_ { "Apply" };
         juce::TextButton copyButton_ { "Copy" };
+        juce::Label errorLabel_ { "error" };
     };
 
     class SessionInfoComponent : public Component
@@ -121,8 +125,7 @@ private:
 
     ApplicationContext& context_;
     juce::OwnedArray<Row> rows_;
-    juce::Label emptyLabel_;
-    MessageThreadExecutor executor_;
+    juce::TextButton createButton { "Create receiver" };
 
-    void updateGuiState();
+    MessageThreadExecutor executor_;
 };

@@ -59,10 +59,10 @@ public:
 
     /**
      * Creates a receiver.
-     * @param sessionName The session name to create the receiver for.
+     * @param config The session name to create the receiver for.
      * @return A valid id of the newly created receiver, or an invalid id on failure.
      */
-    [[nodiscard]] tl::expected<rav::Id, std::string> createReceiver (const std::string& sessionName) const;
+    [[nodiscard]] tl::expected<rav::Id, std::string> createReceiver (rav::RavennaReceiver::Configuration config) const;
 
     /**
      * Removes a receiver.
