@@ -235,16 +235,16 @@ ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id
     delayEditor_.setInputRestrictions (10, "0123456789");
     delayEditor_.onReturnKey = [this] {
         const auto value = static_cast<uint32_t> (delayEditor_.getText().getIntValue());
-        rav::RavennaReceiver::ConfigurationUpdate update;
-        update.delay_frames = value;
-        audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (update));
+        auto config = configuration_;
+        config.delay_frames = value;
+        audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (config));
     };
     delayEditor_.onEscapeKey = [this] {
-        delayEditor_.setText (juce::String (delay_));
+        delayEditor_.setText (juce::String (configuration_.delay_frames));
         unfocusAllComponents();
     };
     delayEditor_.onFocusLost = [this] {
-        delayEditor_.setText (juce::String (delay_));
+        delayEditor_.setText (juce::String (configuration_.delay_frames));
     };
     addAndMakeVisible (delayEditor_);
 
@@ -275,9 +275,9 @@ ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id
     onOffButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     onOffButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::green);
     onOffButton_.onClick = [this] {
-        rav::RavennaReceiver::ConfigurationUpdate update;
-        update.enabled = onOffButton_.getToggleState();
-        audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (update));
+        auto config = configuration_;
+        config.enabled = onOffButton_.getToggleState();
+        audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (config));
     };
     addAndMakeVisible (onOffButton_);
 
@@ -310,10 +310,18 @@ void ReceiversContainer::Row::update (const AudioReceiversModel::ReceiverState& 
 {
     JUCE_ASSERT_MESSAGE_THREAD;
 
+    configuration_ = state.configuration;
+
     sessionNameLabel_.setText (state.configuration.session_name, juce::dontSendNotification);
 
-    if (state.inputFormat.is_valid() && state.inputFormat.sample_rate != state.outputFormat.sample_rate)
+    if (!state.outputFormat.is_valid())
+        warningLabel_.setText ("Warning: invalid audio device settings", juce::dontSendNotification);
+    else if (!state.inputFormat.is_valid())
+        warningLabel_.setText ("Warning: invalid input format", juce::dontSendNotification);
+    else if (state.inputFormat.sample_rate != state.outputFormat.sample_rate)
         warningLabel_.setText ("Warning: sample rate mismatch", juce::dontSendNotification);
+    else if (state.inputFormat.num_channels != state.outputFormat.num_channels)
+        warningLabel_.setText ("Warning: channel count mismatch", juce::dontSendNotification);
     else
         warningLabel_.setText ({}, juce::dontSendNotification);
 
@@ -327,8 +335,6 @@ void ReceiversContainer::Row::update (const AudioReceiversModel::ReceiverState& 
 
     secondarySessionInfo_.setVisible (sec != nullptr);
     secondaryPacketStats_.setVisible (sec != nullptr);
-
-    delay_ = state.configuration.delay_frames;
 
     if (!delayEditor_.hasKeyboardFocus (true))
         delayEditor_.setText (juce::String (state.configuration.delay_frames));

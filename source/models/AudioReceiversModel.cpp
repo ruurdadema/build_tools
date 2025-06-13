@@ -34,11 +34,12 @@ AudioReceiversModel::~AudioReceiversModel()
     node_.unsubscribe (this).wait();
 }
 
-rav::Id AudioReceiversModel::createReceiver (const std::string& sessionName) const
+tl::expected<rav::Id, std::string> AudioReceiversModel::createReceiver (const std::string& sessionName) const
 {
-    rav::RavennaReceiver::ConfigurationUpdate config;
+    rav::RavennaReceiver::Configuration config;
     config.session_name = sessionName;
     config.enabled = true;
+    config.delay_frames = 480; // 10ms at 48KHz
     return node_.create_receiver (config).get();
 }
 
@@ -49,9 +50,9 @@ void AudioReceiversModel::removeReceiver (const rav::Id receiverId) const
 
 void AudioReceiversModel::updateReceiverConfiguration (
     const rav::Id senderId,
-    rav::RavennaReceiver::ConfigurationUpdate update) const
+    rav::RavennaReceiver::Configuration config) const
 {
-    auto result = node_.update_receiver_configuration (senderId, std::move (update)).get();
+    auto result = node_.update_receiver_configuration (senderId, std::move (config)).get();
     if (!result)
     {
         RAV_ERROR ("Failed to update receiver configuration: {}", result.error());

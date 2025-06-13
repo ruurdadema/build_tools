@@ -62,7 +62,7 @@ public:
      * @param sessionName The session name to create the receiver for.
      * @return A valid id of the newly created receiver, or an invalid id on failure.
      */
-    [[nodiscard]] rav::Id createReceiver (const std::string& sessionName) const;
+    [[nodiscard]] tl::expected<rav::Id, std::string> createReceiver (const std::string& sessionName) const;
 
     /**
      * Removes a receiver.
@@ -73,9 +73,9 @@ public:
     /**
      * Updates the configuration of a sender.
      * @param senderId The id of the sender to update.
-     * @param update The configuration changes to apply.
+     * @param config The configuration changes to apply.
      */
-    void updateReceiverConfiguration (rav::Id senderId, rav::RavennaReceiver::ConfigurationUpdate update) const;
+    void updateReceiverConfiguration (rav::Id senderId, rav::RavennaReceiver::Configuration config) const;
 
     /**
      * Gets the packet statistics for a receiver.

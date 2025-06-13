@@ -91,7 +91,7 @@ private:
         AudioReceiversModel& audioReceivers_;
         juce::TextEditor delayEditor_;
         rav::Id receiverId_;
-        uint32_t delay_ { 0 };
+        rav::RavennaReceiver::Configuration configuration_;
 
         // Session
         juce::Label sessionNameLabel_ { "session_name" };

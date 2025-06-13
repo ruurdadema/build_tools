@@ -50,7 +50,9 @@ void DiscoveredContainer::resizeToFitContent()
     setSize (getWidth(), std::max (calculateHeight, 100)); // Min to leave space for the empty label
 }
 
-void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const DiscoveredSessionsModel::SessionState* state)
+void DiscoveredContainer::onSessionUpdated (
+    const std::string& sessionName,
+    const DiscoveredSessionsModel::SessionState* state)
 {
     if (state != nullptr)
     {
@@ -140,8 +142,13 @@ DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windo
 
     createReceiverButton_.setButtonText ("Create Receiver");
     createReceiverButton_.onClick = [this, &context, &windowContext] {
-        const auto id = context.getAudioReceivers().createReceiver (getSessionName().toStdString());
-        RAV_TRACE ("Created receiver with id: {}", id.value());
+        const auto result = context.getAudioReceivers().createReceiver (getSessionName().toStdString());
+        if (!result)
+        {
+            RAV_ERROR ("Failed to create receiver: {}", result.error());
+            return;
+        }
+        RAV_TRACE ("Created receiver with id: {}", result->value());
         windowContext.navigateTo ("receivers");
     };
     addAndMakeVisible (createReceiverButton_);
