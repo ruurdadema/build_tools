@@ -23,7 +23,7 @@ public:
     void resized() override;
 
     void nmos_node_config_updated (const rav::nmos::Node::Configuration& config) override;
-    void nmos_node_status_changed (rav::nmos::Node::Status status, const rav::nmos::Node::RegistryInfo& registry_info) override;
+    void nmos_node_status_changed (rav::nmos::Node::Status status, const rav::nmos::Node::StatusInfo& registry_info) override;
 
 private:
     ApplicationContext& applicationContext_;
@@ -48,6 +48,9 @@ private:
     juce::Label nmosDescriptionLabel_;
     juce::TextEditor nmosDescriptionEditor_;
 
+    juce::Label nmosApiPortLabel_;
+    juce::TextEditor nmosApiPortEditor_;
+
     juce::Label nmosStatusTitleLabel_;
 
     juce::Label nmosStatusLabel_;
@@ -57,9 +60,11 @@ private:
     juce::Label nmosRegistryNameValueLabel_;
 
     juce::Label nmosRegistryAddressLabel_;
-    juce::Label nmosRegistryAddressValueLabel_;
+    juce::HyperlinkButton nmosRegistryAddressValue_;
 
     rav::nmos::Node::Configuration nmosConfiguration_;
 
     MessageThreadExecutor executor_;
+
+    void update_api_port_editor (uint16_t port);
 };

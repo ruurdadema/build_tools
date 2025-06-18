@@ -26,7 +26,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     nmosEnabledToggle_.onClick = [this] {
         auto config = nmosConfiguration_;
         config.enabled = nmosEnabledToggle_.getToggleState();
-        applicationContext_.getRavennaNode().set_nmos_configuration (std::move(config)).wait();
+        applicationContext_.getRavennaNode().set_nmos_configuration (std::move (config)).wait();
     };
     addAndMakeVisible (nmosEnabledLabel_);
 
@@ -43,7 +43,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     operationModeComboBox_.onChange = [this] {
         auto config = nmosConfiguration_;
         config.operation_mode = static_cast<rav::nmos::OperationMode> (operationModeComboBox_.getSelectedId() - 1);
-        applicationContext_.getRavennaNode().set_nmos_configuration (std::move(config)).wait();
+        applicationContext_.getRavennaNode().set_nmos_configuration (std::move (config)).wait();
     };
     addAndMakeVisible (operationModeComboBox_);
 
@@ -76,9 +76,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
 
     for (size_t i = 0; i < rav::nmos::Node::k_node_api_versions.size(); ++i)
     {
-        nmosVersionComboBox_.addItem (
-            rav::nmos::Node::k_node_api_versions[i].to_string(),
-            static_cast<int> (i) + 1);
+        nmosVersionComboBox_.addItem (rav::nmos::Node::k_node_api_versions[i].to_string(), static_cast<int> (i) + 1);
     }
 
     nmosVersionComboBox_.onChange = [this] {
@@ -91,7 +89,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
         auto config = nmosConfiguration_;
         const auto i = static_cast<size_t> (nmosVersionComboBox_.getSelectedId() - 1);
         config.api_version = rav::nmos::Node::k_node_api_versions[i];
-        applicationContext_.getRavennaNode().set_nmos_configuration (std::move(config)).wait();
+        applicationContext_.getRavennaNode().set_nmos_configuration (std::move (config)).wait();
     };
     addAndMakeVisible (nmosVersionComboBox_);
 
@@ -139,6 +137,25 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     nmosDescriptionEditor_.setIndents (6, 6);
     addAndMakeVisible (nmosDescriptionEditor_);
 
+    // API port
+
+    nmosApiPortLabel_.setText ("API Port (empty=auto)", juce::dontSendNotification);
+    addAndMakeVisible (nmosApiPortLabel_);
+
+    nmosApiPortEditor_.onReturnKey = [this] {
+        auto config = nmosConfiguration_;
+        config.api_port = static_cast<uint16_t> (nmosApiPortEditor_.getText().getIntValue());
+        applicationContext_.getRavennaNode().set_nmos_configuration (std::move (config)).wait();
+        juce::TextEditor::unfocusAllComponents();
+    };
+    nmosApiPortEditor_.onEscapeKey = [this] {
+        update_api_port_editor(nmosConfiguration_.api_port);
+        juce::TextEditor::unfocusAllComponents();
+    };
+    // nmosApiPortEditor_.setInputRestrictions (5, "0123456789");
+    nmosApiPortEditor_.setIndents (6, 6);
+    addAndMakeVisible (nmosApiPortEditor_);
+
     // Status
 
     nmosStatusTitleLabel_.setText ("NMOS Status", juce::dontSendNotification);
@@ -161,8 +178,16 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     nmosRegistryAddressLabel_.setText ("Registry Address", juce::dontSendNotification);
     addAndMakeVisible (nmosRegistryAddressLabel_);
 
-    nmosRegistryAddressValueLabel_.setText ("(not registered)", juce::dontSendNotification);
-    addAndMakeVisible (nmosRegistryAddressValueLabel_);
+    nmosRegistryAddressValue_.setButtonText ("(not registered)");
+    nmosRegistryAddressValue_.setFont (juce::FontOptions (13.f, juce::Font::plain), false, juce::Justification::left);
+    nmosRegistryAddressValue_.onClick = [this] {
+        const auto address = nmosRegistryAddressValue_.getButtonText();
+        if (address.isEmpty())
+            return;
+        if (!juce::URL (address).launchInDefaultBrowser())
+            RAV_ERROR ("Failed to open NMOS registry address in browser: {}", address.toRawUTF8());
+    };
+    addAndMakeVisible (nmosRegistryAddressValue_);
 
     applicationContext_.getRavennaNode().subscribe (this).wait();
 }
@@ -217,6 +242,12 @@ void NmosMainComponent::resized()
     nmosDescriptionLabel_.setBounds (row.removeFromLeft (left));
     nmosDescriptionEditor_.setBounds (row.withWidth (width));
 
+    b.removeFromTop (10);
+
+    row = b.removeFromTop (28);
+    nmosApiPortLabel_.setBounds (row.removeFromLeft (left));
+    nmosApiPortEditor_.setBounds (row.withWidth (width));
+
     b.removeFromTop (20);
 
     nmosStatusTitleLabel_.setBounds (b.removeFromTop (28));
@@ -231,7 +262,7 @@ void NmosMainComponent::resized()
 
     row = b.removeFromTop (28);
     nmosRegistryAddressLabel_.setBounds (row.removeFromLeft (left));
-    nmosRegistryAddressValueLabel_.setBounds (row.withWidth (width));
+    nmosRegistryAddressValue_.setBounds (row.withWidth (width).withTrimmedLeft (4));
 }
 
 void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configuration& config)
@@ -254,14 +285,14 @@ void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configu
 
         nmosLabelEditor_.setText (nmosConfiguration_.label, juce::dontSendNotification);
         nmosDescriptionEditor_.setText (nmosConfiguration_.description, juce::dontSendNotification);
-
+        update_api_port_editor(nmosConfiguration_.api_port);
         resized();
     });
 }
 
 void NmosMainComponent::nmos_node_status_changed (
     rav::nmos::Node::Status status,
-    const rav::nmos::Node::RegistryInfo& registry_info)
+    const rav::nmos::Node::StatusInfo& registry_info)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (applicationContext_.getRavennaNode());
     executor_.callAsync ([this, status, registry_info] {
@@ -270,6 +301,19 @@ void NmosMainComponent::nmos_node_status_changed (
             juce::Label::textColourId,
             status == rav::nmos::Node::Status::error ? Constants::Colours::error : Constants::Colours::text);
         nmosRegistryNameValueLabel_.setText (registry_info.name, juce::dontSendNotification);
-        nmosRegistryAddressValueLabel_.setText (registry_info.address, juce::dontSendNotification);
+        nmosRegistryAddressValue_.setButtonText (registry_info.address);
+        nmosApiPortEditor_.setTextToShowWhenEmpty (
+            juce::String (registry_info.api_port),
+            Constants::Colours::textDisabled);
     });
+}
+
+void NmosMainComponent::update_api_port_editor (const uint16_t port)
+{
+    if (port == 0)
+    {
+        nmosApiPortEditor_.setText ("", juce::dontSendNotification);
+        return;
+    }
+    nmosApiPortEditor_.setText (juce::String (port), juce::dontSendNotification);
 }
