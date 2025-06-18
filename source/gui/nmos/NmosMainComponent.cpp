@@ -74,10 +74,10 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     nmosVersionLabel_.setText ("Version", juce::dontSendNotification);
     addAndMakeVisible (nmosVersionLabel_);
 
-    for (size_t i = 0; i < rav::nmos::Node::k_supported_api_versions.size(); ++i)
+    for (size_t i = 0; i < rav::nmos::Node::k_node_api_versions.size(); ++i)
     {
         nmosVersionComboBox_.addItem (
-            rav::nmos::Node::k_supported_api_versions[i].to_string(),
+            rav::nmos::Node::k_node_api_versions[i].to_string(),
             static_cast<int> (i) + 1);
     }
 
@@ -86,11 +86,11 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
             nmosVersionComboBox_.getSelectedId() > 0,
             "NMOS version combo box selected ID should be greater than 0");
         RAV_ASSERT (
-            nmosVersionComboBox_.getSelectedId() <= static_cast<int> (rav::nmos::Node::k_supported_api_versions.size()),
+            nmosVersionComboBox_.getSelectedId() <= static_cast<int> (rav::nmos::Node::k_node_api_versions.size()),
             "NMOS version combo box selected ID should be less than or equal to the number of supported API versions");
         auto config = nmosConfiguration_;
         const auto i = static_cast<size_t> (nmosVersionComboBox_.getSelectedId() - 1);
-        config.api_version = rav::nmos::Node::k_supported_api_versions[i];
+        config.api_version = rav::nmos::Node::k_node_api_versions[i];
         applicationContext_.getRavennaNode().set_nmos_configuration (std::move(config)).wait();
     };
     addAndMakeVisible (nmosVersionComboBox_);
