@@ -15,6 +15,34 @@
 
 #include <bitset>
 
+namespace
+{
+const char* audio_encoding_to_rtp_string (const rav::AudioEncoding encoding)
+{
+    switch (encoding)
+    {
+    case rav::AudioEncoding::pcm_s8:
+        return "L8";
+    case rav::AudioEncoding::pcm_u8:
+        return "U8";
+    case rav::AudioEncoding::pcm_s16:
+        return "L16";
+    case rav::AudioEncoding::pcm_s24:
+        return "L24";
+    case rav::AudioEncoding::pcm_s32:
+        return "L32";
+    case rav::AudioEncoding::pcm_f32:
+        return "F32";
+    case rav::AudioEncoding::pcm_f64:
+        return "L64";
+    case rav::AudioEncoding::undefined:
+        return "undefined";
+    default:
+        return "N/A";
+    }
+}
+} // namespace
+
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
     createButton.onClick = [this] {
@@ -337,8 +365,8 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
     encodingLabel_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (encodingLabel_);
 
-    encodingComboBox_.addItem ("L16", static_cast<int> (rav::AudioEncoding::pcm_s16));
-    encodingComboBox_.addItem ("L24", static_cast<int> (rav::AudioEncoding::pcm_s24));
+    for (auto& encoding : rav::RavennaSender::k_supported_encodings)
+        encodingComboBox_.addItem (audio_encoding_to_rtp_string (encoding), static_cast<int> (encoding));
 
     encodingComboBox_.onChange = [this] {
         const auto selectedId = encodingComboBox_.getSelectedId();
