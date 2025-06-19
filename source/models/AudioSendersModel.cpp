@@ -8,49 +8,63 @@
  * Copyright (c) 2025 Owllab. All rights reserved.
  */
 
-#include "AudioSenders.hpp"
+#include "AudioSendersModel.hpp"
 
-AudioSenders::AudioSenders (rav::RavennaNode& node) : node_ (node)
+AudioSendersModel::AudioSendersModel (rav::RavennaNode& node) : node_ (node)
 {
     node_.subscribe (this).wait();
     node_.subscribe_to_ptp_instance (this).wait();
 }
 
-AudioSenders::~AudioSenders()
+AudioSendersModel::~AudioSendersModel()
 {
     node_.unsubscribe_from_ptp_instance (this).wait();
     node_.unsubscribe (this).wait();
 }
 
-rav::Id AudioSenders::createSender() const
+tl::expected<rav::Id, std::string> AudioSendersModel::createSender() const
 {
-    return node_.create_sender ({}).get();
+    rav::RavennaSender::Configuration config;
+    config.session_name = {}; // Can be left empty in which case RavennaNode will generate a name.
+    config.ttl = 15;
+    config.packet_time = rav::aes67::PacketTime::ms_1();
+    config.payload_type = 98;
+
+    config.audio_format.byte_order = rav::AudioFormat::ByteOrder::be;
+    config.audio_format.ordering = rav::AudioFormat::ChannelOrdering::interleaved;
+    config.audio_format.sample_rate = 48'000;
+    config.audio_format.num_channels = 2;
+    config.audio_format.encoding = rav::AudioEncoding::pcm_s16;
+
+    config.destinations.emplace_back (
+        rav::RavennaSender::Destination { rav::Rank::primary(), { boost::asio::ip::address_v4::any(), 5004 }, true });
+    config.destinations.emplace_back (
+        rav::RavennaSender::Destination { rav::Rank::secondary(), { boost::asio::ip::address_v4::any(), 5004 }, true });
+
+    return node_.create_sender (config).get();
 }
 
-void AudioSenders::removeSender (const rav::Id senderId) const
+void AudioSendersModel::removeSender (const rav::Id senderId) const
 {
     return node_.remove_sender (senderId).wait();
 }
 
-void AudioSenders::updateSenderConfiguration (const rav::Id senderId, rav::RavennaSender::ConfigurationUpdate update)
+void AudioSendersModel::updateSenderConfiguration (const rav::Id senderId, rav::RavennaSender::Configuration config)
     const
 {
     // Override audio format
-    if (update.audio_format.has_value())
-    {
-        update.audio_format->byte_order = rav::AudioFormat::ByteOrder::be;
-        update.audio_format->ordering = rav::AudioFormat::ChannelOrdering::interleaved;
-        // Don't override num_channels, sample_rate and encoding
-    }
+    config.audio_format.byte_order = rav::AudioFormat::ByteOrder::be;
+    config.audio_format.ordering = rav::AudioFormat::ChannelOrdering::interleaved;
+    // Don't override num_channels, sample_rate and encoding
 
-    auto result = node_.update_sender_configuration (senderId, std::move (update)).get();
+    auto result = node_.update_sender_configuration (senderId, std::move (config)).get();
     if (!result)
     {
         RAV_ERROR ("Failed to update sender configuration: {}", result.error());
     }
 }
 
-bool AudioSenders::subscribe (Subscriber* subscriber)
+bool AudioSendersModel::subscribe (Subscriber* subscriber)
 {
     if (subscribers_.add (subscriber))
     {
@@ -61,12 +75,12 @@ bool AudioSenders::subscribe (Subscriber* subscriber)
     return false;
 }
 
-bool AudioSenders::unsubscribe (Subscriber* subscriber)
+bool AudioSendersModel::unsubscribe (Subscriber* subscriber)
 {
     return subscribers_.remove (subscriber);
 }
 
-void AudioSenders::ravenna_sender_added (const rav::RavennaSender& sender)
+void AudioSendersModel::ravenna_sender_added (const rav::RavennaSender& sender)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
 
@@ -78,7 +92,7 @@ void AudioSenders::ravenna_sender_added (const rav::RavennaSender& sender)
     });
 }
 
-void AudioSenders::ravenna_sender_removed (rav::Id sender_id)
+void AudioSendersModel::ravenna_sender_removed (rav::Id sender_id)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);
 
@@ -99,7 +113,7 @@ void AudioSenders::ravenna_sender_removed (rav::Id sender_id)
     });
 }
 
-void AudioSenders::audioDeviceIOCallbackWithContext (
+void AudioSendersModel::audioDeviceIOCallbackWithContext (
     const float* const* inputChannelData,
     const int numInputChannels,
     float* const* outputChannelData,
@@ -139,18 +153,18 @@ void AudioSenders::audioDeviceIOCallbackWithContext (
         lock->rtp_ts = ptp_ts;
     }
 
-    const auto drift = rav::WrappingUint32(ptp_ts).diff (rav::WrappingUint32(*lock->rtp_ts));
+    const auto drift = rav::WrappingUint32 (ptp_ts).diff (rav::WrappingUint32 (*lock->rtp_ts));
     // Positive means audio device is ahead of the PTP clock, negative means behind
 
-    TRACY_PLOT("drift", static_cast<int64_t>(drift));
+    TRACY_PLOT ("drift", static_cast<int64_t> (drift));
 
     for (const auto* sender : lock->senders)
         sender->processBlock (buffer, *lock->rtp_ts);
 
-    *lock->rtp_ts += static_cast<uint32_t>(numSamples);
+    *lock->rtp_ts += static_cast<uint32_t> (numSamples);
 }
 
-void AudioSenders::audioDeviceAboutToStart (juce::AudioIODevice* device)
+void AudioSendersModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
 {
     deviceFormat_ = rav::AudioFormat {
         rav::AudioFormat::ByteOrder::le,
@@ -166,14 +180,14 @@ void AudioSenders::audioDeviceAboutToStart (juce::AudioIODevice* device)
     updateRealtimeSharedContext();
 }
 
-void AudioSenders::audioDeviceStopped() {}
+void AudioSendersModel::audioDeviceStopped() {}
 
-void AudioSenders::audioDeviceError (const juce::String& errorMessage)
+void AudioSendersModel::audioDeviceError (const juce::String& errorMessage)
 {
     RAV_ERROR ("Audio device error: {}", errorMessage.toStdString());
 }
 
-AudioSenders::Sender* AudioSenders::findSender (const rav::Id senderId) const
+AudioSendersModel::Sender* AudioSendersModel::findSender (const rav::Id senderId) const
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     for (const auto& sender : senders_)
@@ -182,7 +196,7 @@ AudioSenders::Sender* AudioSenders::findSender (const rav::Id senderId) const
     return nullptr;
 }
 
-void AudioSenders::updateRealtimeSharedContext()
+void AudioSendersModel::updateRealtimeSharedContext()
 {
     auto newContext = std::make_unique<RealtimeSharedContext>();
     for (const auto& sender : senders_)
@@ -194,29 +208,31 @@ void AudioSenders::updateRealtimeSharedContext()
     }
 }
 
-AudioSenders::Sender::Sender (AudioSenders& owner, const rav::Id senderId) : owner_ (owner), senderId_ (senderId)
+AudioSendersModel::Sender::Sender (AudioSendersModel& owner, const rav::Id senderId) :
+    owner_ (owner),
+    senderId_ (senderId)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     owner_.node_.subscribe_to_sender (senderId_, this).wait();
 }
 
-AudioSenders::Sender::~Sender()
+AudioSendersModel::Sender::~Sender()
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     owner_.node_.unsubscribe_from_sender (senderId_, this).wait();
 }
 
-rav::Id AudioSenders::Sender::getSenderId() const
+rav::Id AudioSendersModel::Sender::getSenderId() const
 {
     return senderId_;
 }
 
-const AudioSenders::SenderState& AudioSenders::Sender::getState() const
+const AudioSendersModel::SenderState& AudioSendersModel::Sender::getState() const
 {
     return state_;
 }
 
-void AudioSenders::Sender::ravenna_sender_configuration_updated (
+void AudioSendersModel::Sender::ravenna_sender_configuration_updated (
     const rav::Id sender_id,
     const rav::RavennaSender::Configuration& configuration)
 {
@@ -229,18 +245,9 @@ void AudioSenders::Sender::ravenna_sender_configuration_updated (
     });
 }
 
-void AudioSenders::Sender::ravenna_sender_status_message_updated (const rav::Id sender_id, const std::string& message)
-{
-    RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
-
-    executor_.callAsync ([this, sender_id, message] {
-        state_.statusMessage = message;
-        for (auto* subscriber : owner_.subscribers_)
-            subscriber->onAudioSenderUpdated (sender_id, &state_);
-    });
-}
-
-void AudioSenders::Sender::prepareInput (const rav::AudioFormat inputFormat, [[maybe_unused]] uint32_t max_num_frames)
+void AudioSendersModel::Sender::prepareInput (
+    const rav::AudioFormat inputFormat,
+    [[maybe_unused]] uint32_t max_num_frames)
 {
     state_.inputFormat = inputFormat;
 
@@ -248,8 +255,9 @@ void AudioSenders::Sender::prepareInput (const rav::AudioFormat inputFormat, [[m
         subscriber->onAudioSenderUpdated (senderId_, &state_);
 }
 
-void AudioSenders::Sender::processBlock (const rav::AudioBufferView<const float>& inputBuffer, const uint32_t timestamp)
-    const
+void AudioSendersModel::Sender::processBlock (
+    const rav::AudioBufferView<const float>& inputBuffer,
+    const uint32_t timestamp) const
 {
     std::ignore = owner_.node_.send_audio_data_realtime (senderId_, inputBuffer, timestamp);
 }

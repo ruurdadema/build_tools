@@ -20,7 +20,7 @@
 /**
  * High(er) level class connecting an audio device to a ravenna_node.
  */
-class AudioReceivers : public rav::RavennaNode::Subscriber, public juce::AudioIODeviceCallback
+class AudioReceiversModel : public rav::RavennaNode::Subscriber, public juce::AudioIODeviceCallback
 {
 public:
     struct StreamState
@@ -54,15 +54,15 @@ public:
      * Constructor.
      * @param node The ravenna_node to connect to.
      */
-    explicit AudioReceivers (rav::RavennaNode& node);
-    ~AudioReceivers() override;
+    explicit AudioReceiversModel (rav::RavennaNode& node);
+    ~AudioReceiversModel() override;
 
     /**
      * Creates a receiver.
-     * @param sessionName The session name to create the receiver for.
+     * @param config The session name to create the receiver for.
      * @return A valid id of the newly created receiver, or an invalid id on failure.
      */
-    [[nodiscard]] rav::Id createReceiver (const std::string& sessionName) const;
+    [[nodiscard]] tl::expected<rav::Id, std::string> createReceiver (rav::RavennaReceiver::Configuration config) const;
 
     /**
      * Removes a receiver.
@@ -73,9 +73,9 @@ public:
     /**
      * Updates the configuration of a sender.
      * @param senderId The id of the sender to update.
-     * @param update The configuration changes to apply.
+     * @param config The configuration changes to apply.
      */
-    void updateReceiverConfiguration (rav::Id senderId, rav::RavennaReceiver::ConfigurationUpdate update) const;
+    void updateReceiverConfiguration (rav::Id senderId, rav::RavennaReceiver::Configuration config) const;
 
     /**
      * Gets the packet statistics for a receiver.
@@ -126,7 +126,7 @@ private:
     class Receiver : public rav::RavennaReceiver::Subscriber
     {
     public:
-        explicit Receiver (AudioReceivers& owner, rav::Id receiverId);
+        explicit Receiver (AudioReceiversModel& owner, rav::Id receiverId);
         ~Receiver() override;
 
         [[nodiscard]] rav::Id getReceiverId() const;
@@ -142,7 +142,7 @@ private:
         // rav::rtp_stream_receiver::subscriber overrides
         void ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::Parameters& parameters) override;
         void ravenna_receiver_configuration_updated (
-            rav::Id receiver_id,
+            const rav::RavennaReceiver& receiver,
             const rav::RavennaReceiver::Configuration& configuration) override;
         void ravenna_receiver_stream_state_updated (
             const rav::rtp::AudioReceiver::Stream& stream,
@@ -151,7 +151,7 @@ private:
         void on_data_ready (rav::WrappingUint32 timestamp) override;
 
     private:
-        AudioReceivers& owner_;
+        AudioReceiversModel& owner_;
         rav::Id receiverId_;
         ReceiverState state_;
         rav::RealtimeSharedObject<ReceiverState> realtimeSharedState_;

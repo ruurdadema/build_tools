@@ -15,7 +15,7 @@
 
 #include <juce_audio_devices/juce_audio_devices.h>
 
-class AudioSenders :
+class AudioSendersModel :
     public rav::RavennaNode::Subscriber,
     public juce::AudioIODeviceCallback,
     public rav::ptp::Instance::Subscriber
@@ -25,7 +25,6 @@ public:
     {
         rav::RavennaSender::Configuration senderConfiguration;
         rav::AudioFormat inputFormat;
-        std::string statusMessage;
     };
 
     class Subscriber
@@ -46,14 +45,14 @@ public:
         }
     };
 
-    explicit AudioSenders (rav::RavennaNode& node);
-    ~AudioSenders() override;
+    explicit AudioSendersModel (rav::RavennaNode& node);
+    ~AudioSendersModel() override;
 
     /**
      * Creates a sender.
      * @return A valid id of the newly created sender, or an invalid id on failure.
      */
-    [[nodiscard]] rav::Id createSender() const;
+    [[nodiscard]] tl::expected<rav::Id, std::string> createSender() const;
 
     /**
      * Removes a sender.
@@ -64,9 +63,9 @@ public:
     /**
      * Updates the configuration of a sender.
      * @param senderId The id of the sender to update.
-     * @param update The configuration changes to apply.
+     * @param config The configuration changes to apply.
      */
-    void updateSenderConfiguration (rav::Id senderId, rav::RavennaSender::ConfigurationUpdate update) const;
+    void updateSenderConfiguration (rav::Id senderId, rav::RavennaSender::Configuration config) const;
 
     /**
      * Adds a subscriber to the audio mixer.
@@ -102,7 +101,7 @@ private:
     class Sender : public rav::RavennaSender::Subscriber
     {
     public:
-        Sender (AudioSenders& owner, rav::Id senderId);
+        Sender (AudioSendersModel& owner, rav::Id senderId);
         ~Sender() override;
 
         [[nodiscard]] rav::Id getSenderId() const;
@@ -112,13 +111,11 @@ private:
             rav::Id sender_id,
             const rav::RavennaSender::Configuration& configuration) override;
 
-        void ravenna_sender_status_message_updated (const rav::Id sender_id, const std::string& message) override;
-
         void prepareInput (rav::AudioFormat inputFormat, uint32_t max_num_frames);
         void processBlock (const rav::AudioBufferView<const float>& inputBuffer, uint32_t timestamp) const;
 
     private:
-        [[maybe_unused]] AudioSenders& owner_;
+        [[maybe_unused]] AudioSendersModel& owner_;
         rav::Id senderId_;
         SenderState state_;
         MessageThreadExecutor executor_; // Keep last so that it's destroyed first
@@ -127,7 +124,7 @@ private:
     struct RealtimeSharedContext
     {
         std::vector<Sender*> senders;
-        std::optional<uint32_t> rtp_ts{};
+        std::optional<uint32_t> rtp_ts {};
         rav::AudioFormat deviceFormat;
     };
 

@@ -15,12 +15,40 @@
 
 #include <bitset>
 
+namespace
+{
+const char* audio_encoding_to_rtp_string (const rav::AudioEncoding encoding)
+{
+    switch (encoding)
+    {
+    case rav::AudioEncoding::pcm_s8:
+        return "L8";
+    case rav::AudioEncoding::pcm_u8:
+        return "U8";
+    case rav::AudioEncoding::pcm_s16:
+        return "L16";
+    case rav::AudioEncoding::pcm_s24:
+        return "L24";
+    case rav::AudioEncoding::pcm_s32:
+        return "L32";
+    case rav::AudioEncoding::pcm_f32:
+        return "F32";
+    case rav::AudioEncoding::pcm_f64:
+        return "L64";
+    case rav::AudioEncoding::undefined:
+        return "undefined";
+    default:
+        return "N/A";
+    }
+}
+} // namespace
+
 SendersContainer::SendersContainer (ApplicationContext& context) : context_ (context)
 {
-    addButton.onClick = [this] {
+    createButton.onClick = [this] {
         std::ignore = context_.getAudioSenders().createSender();
     };
-    addAndMakeVisible (addButton);
+    addAndMakeVisible (createButton);
 
     if (!context_.getAudioSenders().subscribe (this))
     {
@@ -43,7 +71,7 @@ void SendersContainer::resizeToFitContent()
     setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size() + kMargin * 2 + kButtonHeight);
 }
 
-void SendersContainer::onAudioSenderUpdated (rav::Id senderId, const AudioSenders::SenderState* state)
+void SendersContainer::onAudioSenderUpdated (rav::Id senderId, const AudioSendersModel::SenderState* state)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
 
@@ -88,10 +116,10 @@ void SendersContainer::resized()
     }
 
     b.removeFromTop (kMargin * 2);
-    addButton.setBounds (b.withSizeKeepingCentre (200, kButtonHeight));
+    createButton.setBounds (b.withSizeKeepingCentre (200, kButtonHeight));
 }
 
-SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) :
+SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id senderId) :
     audioSenders_ (audioSenders),
     senderId_ (senderId)
 {
@@ -101,7 +129,7 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
 
     sessionNameEditor_.setIndents (8, 8);
     sessionNameEditor_.onReturnKey = [this] {
-        rav::RavennaSender::ConfigurationUpdate update;
+        rav::RavennaSender::Configuration update;
         update.session_name = sessionNameEditor_.getText().toStdString();
         audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
         juce::TextEditor::unfocusAllComponents();
@@ -139,9 +167,9 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
             dst.enabled = ports[dst.interface_by_rank.value()];
         }
 
-        rav::RavennaSender::ConfigurationUpdate update {};
-        update.destinations = std::move (destinations);
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.destinations = std::move (destinations);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
     };
     addAndMakeVisible (txPortComboBox_);
 
@@ -168,17 +196,17 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
 
         if (primaryAddressEditor_.isEmpty())
         {
-            it->endpoint.address (asio::ip::address_v4());
+            it->endpoint.address (boost::asio::ip::address_v4());
         }
         else
         {
-            const auto addr = asio::ip::make_address_v4 (primaryAddressEditor_.getText().toRawUTF8());
+            const auto addr = boost::asio::ip::make_address_v4 (primaryAddressEditor_.getText().toRawUTF8());
             it->endpoint.address (addr);
         }
 
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.destinations = std::move (destinations);
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.destinations = std::move (destinations);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
     primaryAddressEditor_.onEscapeKey = [this] {
@@ -217,17 +245,17 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
 
         if (secondaryAddressEditor_.isEmpty())
         {
-            it->endpoint.address (asio::ip::address_v4());
+            it->endpoint.address (boost::asio::ip::address_v4());
         }
         else
         {
-            const auto addr = asio::ip::make_address_v4 (secondaryAddressEditor_.getText().toRawUTF8());
+            const auto addr = boost::asio::ip::make_address_v4 (secondaryAddressEditor_.getText().toRawUTF8());
             it->endpoint.address (addr);
         }
 
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.destinations = std::move (destinations);
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.destinations = std::move (destinations);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
     secondaryAddressEditor_.onEscapeKey = [this] {
@@ -250,9 +278,9 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     ttlEditor_.setIndents (8, 8);
     ttlEditor_.setInputRestrictions (3, "0123456789");
     ttlEditor_.onReturnKey = [this] {
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.ttl = ttlEditor_.getText().getIntValue();
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.ttl = ttlEditor_.getText().getIntValue();
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
     ttlEditor_.onEscapeKey = [this] {
@@ -271,9 +299,9 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     payloadTypeEditor_.setIndents (8, 8);
     payloadTypeEditor_.setInputRestrictions (3, "0123456789");
     payloadTypeEditor_.onReturnKey = [this] {
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.payload_type = static_cast<uint8_t> (payloadTypeEditor_.getText().getIntValue());
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.payload_type = static_cast<uint8_t> (payloadTypeEditor_.getText().getIntValue());
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
     payloadTypeEditor_.onEscapeKey = [this] {
@@ -296,10 +324,10 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     numChannelsEditor_.setIndents (8, 8);
     numChannelsEditor_.setInputRestrictions (3, "0123456789");
     numChannelsEditor_.onReturnKey = [this] {
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.audio_format = senderState_.senderConfiguration.audio_format;
-        update.audio_format->num_channels = static_cast<uint32_t> (numChannelsEditor_.getText().getIntValue());
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.audio_format = senderState_.senderConfiguration.audio_format;
+        config.audio_format.num_channels = static_cast<uint32_t> (numChannelsEditor_.getText().getIntValue());
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
     numChannelsEditor_.onEscapeKey = [this] {
@@ -326,10 +354,10 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
         const auto selectedId = sampleRateComboBox_.getSelectedId();
         if (selectedId <= 0)
             return;
-        rav::RavennaSender::ConfigurationUpdate update {};
-        update.audio_format = senderState_.senderConfiguration.audio_format;
-        update.audio_format->sample_rate = static_cast<uint32_t> (selectedId);
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.audio_format = senderState_.senderConfiguration.audio_format;
+        config.audio_format.sample_rate = static_cast<uint32_t> (selectedId);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
     };
     addAndMakeVisible (sampleRateComboBox_);
 
@@ -337,17 +365,17 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     encodingLabel_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (encodingLabel_);
 
-    encodingComboBox_.addItem ("L16", static_cast<int> (rav::AudioEncoding::pcm_s16));
-    encodingComboBox_.addItem ("L24", static_cast<int> (rav::AudioEncoding::pcm_s24));
+    for (auto& encoding : rav::RavennaSender::k_supported_encodings)
+        encodingComboBox_.addItem (audio_encoding_to_rtp_string (encoding), static_cast<int> (encoding));
 
     encodingComboBox_.onChange = [this] {
         const auto selectedId = encodingComboBox_.getSelectedId();
         if (selectedId <= 0)
             return;
-        rav::RavennaSender::ConfigurationUpdate update {};
-        update.audio_format = senderState_.senderConfiguration.audio_format;
-        update.audio_format->encoding = static_cast<rav::AudioEncoding> (selectedId);
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.audio_format = senderState_.senderConfiguration.audio_format;
+        config.audio_format.encoding = static_cast<rav::AudioEncoding> (selectedId);
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
     };
     addAndMakeVisible (encodingComboBox_);
 
@@ -358,9 +386,9 @@ SendersContainer::Row::Row (AudioSenders& audioSenders, const rav::Id senderId) 
     onOffButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     onOffButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::green);
     onOffButton_.onClick = [this] {
-        rav::RavennaSender::ConfigurationUpdate update;
-        update.enabled = onOffButton_.getToggleState();
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto config = senderState_.senderConfiguration;
+        config.enabled = onOffButton_.getToggleState();
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
     };
     addAndMakeVisible (onOffButton_);
 
@@ -376,7 +404,7 @@ rav::Id SendersContainer::Row::getId() const
     return senderId_;
 }
 
-void SendersContainer::Row::update (const AudioSenders::SenderState& state)
+void SendersContainer::Row::update (const AudioSendersModel::SenderState& state)
 {
     senderState_ = state;
     sessionNameEditor_.setText (state.senderConfiguration.session_name, juce::dontSendNotification);
@@ -430,12 +458,7 @@ void SendersContainer::Row::update (const AudioSenders::SenderState& state)
         juce::TextEditor::ColourIds::outlineColourId,
         findColour (juce::TextEditor::ColourIds::outlineColourId));
 
-    if (!state.statusMessage.empty())
-    {
-        statusMessage_.setText (rav::string_to_upper (state.statusMessage, 1), juce::dontSendNotification);
-        statusMessage_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
-    }
-    else if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
+    if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
     {
         statusMessage_.setText (
             fmt::format ("Sample rate mismatch ({})", state.inputFormat.sample_rate),
@@ -533,7 +556,7 @@ void SendersContainer::Row::resized()
     statusMessage_.setBounds (b);
 }
 
-asio::ip::address_v4 SendersContainer::Row::getDestinationAddress (const rav::Rank rank) const
+boost::asio::ip::address_v4 SendersContainer::Row::getDestinationAddress (const rav::Rank rank) const
 {
     for (auto& dst : senderState_.senderConfiguration.destinations)
         if (dst.interface_by_rank == rank)

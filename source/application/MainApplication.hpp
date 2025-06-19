@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "models/AudioReceivers.hpp"
+#include "models/AudioReceiversModel.hpp"
 
 #include <memory>
 
@@ -40,19 +40,19 @@ public:
     void cloneWindow() override;
     void closeWindow (juce::Component* window) override;
     rav::RavennaNode& getRavennaNode() override;
-    DiscoveredSessions& getSessions() override;
+    DiscoveredSessionsModel& getSessions() override;
     juce::AudioDeviceManager& getAudioDeviceManager() override;
-    AudioReceivers& getAudioReceivers() override;
-    AudioSenders& getAudioSenders() override;
+    AudioReceiversModel& getAudioReceivers() override;
+    AudioSendersModel& getAudioSenders() override;
     tl::expected<void, std::string> saveToFile (const juce::File& file) override;
     tl::expected<void, std::string> loadFromFile (const juce::File& file) override;
 
 private:
     juce::AudioDeviceManager audioDeviceManager_;
     std::unique_ptr<rav::RavennaNode> ravennaNode_;
-    std::unique_ptr<DiscoveredSessions> sessions_;
-    std::unique_ptr<AudioReceivers> audioReceivers_;
-    std::unique_ptr<AudioSenders> audioSenders_;
+    std::unique_ptr<DiscoveredSessionsModel> sessions_;
+    std::unique_ptr<AudioReceiversModel> audioReceivers_;
+    std::unique_ptr<AudioSendersModel> audioSenders_;
     std::vector<std::unique_ptr<juce::ResizableWindow>> mainWindows_;
 
     void addWindow();

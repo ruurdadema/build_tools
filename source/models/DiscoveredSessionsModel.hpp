@@ -13,7 +13,7 @@
 #include "ravennakit/ravenna/ravenna_node.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
-class DiscoveredSessions : public rav::RavennaNode::Subscriber
+class DiscoveredSessionsModel : public rav::RavennaNode::Subscriber
 {
 public:
     struct NodeState
@@ -32,21 +32,29 @@ public:
     {
     public:
         virtual ~Subscriber() = default;
-        virtual void onSessionUpdated ([[maybe_unused]] const std::string& sessionName, [[maybe_unused]] const SessionState* state) {}
-        virtual void onNodeUpdated ([[maybe_unused]] const std::string& nodeName, [[maybe_unused]] const NodeState* state) {}
+        virtual void onSessionUpdated (const std::string& sessionName, const SessionState* state)
+        {
+            std::ignore = sessionName;
+            std::ignore = state;
+        }
+        virtual void onNodeUpdated (const std::string& nodeName, const NodeState* state)
+        {
+            std::ignore = nodeName;
+            std::ignore = state;
+        }
     };
 
-    explicit DiscoveredSessions (rav::RavennaNode& ravennaNode);
-    ~DiscoveredSessions() override;
+    explicit DiscoveredSessionsModel (rav::RavennaNode& ravennaNode);
+    ~DiscoveredSessionsModel() override;
 
     bool addSubscriber (Subscriber* subscriber);
-    bool removeSubscriber (Subscriber* subscriber);
+    bool removeSubscriber (const Subscriber* subscriber);
 
     // rav::ravenna_node::subscriber overrides
-    void ravenna_session_discovered (const rav::dnssd::Browser::ServiceResolved& event) override;
-    void ravenna_session_removed (const rav::dnssd::Browser::ServiceRemoved& event) override;
-    void ravenna_node_discovered (const rav::dnssd::Browser::ServiceResolved& event) override;
-    void ravenna_node_removed (const rav::dnssd::Browser::ServiceRemoved& event) override;
+    void ravenna_session_discovered (const rav::dnssd::ServiceDescription& desc) override;
+    void ravenna_session_removed (const rav::dnssd::ServiceDescription& desc) override;
+    void ravenna_node_discovered (const rav::dnssd::ServiceDescription& desc) override;
+    void ravenna_node_removed (const rav::dnssd::ServiceDescription& desc) override;
 
 private:
     rav::RavennaNode& node_;

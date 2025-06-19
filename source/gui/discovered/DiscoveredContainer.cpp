@@ -50,7 +50,9 @@ void DiscoveredContainer::resizeToFitContent()
     setSize (getWidth(), std::max (calculateHeight, 100)); // Min to leave space for the empty label
 }
 
-void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const DiscoveredSessions::SessionState* state)
+void DiscoveredContainer::onSessionUpdated (
+    const std::string& sessionName,
+    const DiscoveredSessionsModel::SessionState* state)
 {
     if (state != nullptr)
     {
@@ -85,7 +87,7 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
     updateGuiState();
 }
 
-void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const DiscoveredSessions::NodeState* state)
+void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const DiscoveredSessionsModel::NodeState* state)
 {
     if (state != nullptr)
     {
@@ -140,8 +142,15 @@ DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windo
 
     createReceiverButton_.setButtonText ("Create Receiver");
     createReceiverButton_.onClick = [this, &context, &windowContext] {
-        const auto id = context.getAudioReceivers().createReceiver (getSessionName().toStdString());
-        RAV_TRACE ("Created receiver with id: {}", id.value());
+        auto config = rav::RavennaReceiver::Configuration::default_config();
+        config.session_name = getSessionName().toStdString();
+        const auto result = context.getAudioReceivers().createReceiver (std::move (config));
+        if (!result)
+        {
+            RAV_ERROR ("Failed to create receiver: {}", result.error());
+            return;
+        }
+        RAV_TRACE ("Created receiver with id: {}", result->value());
         windowContext.navigateTo ("receivers");
     };
     addAndMakeVisible (createReceiverButton_);
@@ -173,7 +182,7 @@ void DiscoveredContainer::updateGuiState()
     emptyLabel_.setVisible (rows_.isEmpty());
 }
 
-void DiscoveredContainer::Row::update (const DiscoveredSessions::SessionState& sessionState)
+void DiscoveredContainer::Row::update (const DiscoveredSessionsModel::SessionState& sessionState)
 {
     nameLabel_.setText ("Session: ", juce::dontSendNotification);
     sessionName_.setText (sessionState.name, juce::dontSendNotification);
@@ -181,7 +190,7 @@ void DiscoveredContainer::Row::update (const DiscoveredSessions::SessionState& s
     createReceiverButton_.setVisible (true);
 }
 
-void DiscoveredContainer::Row::update (const DiscoveredSessions::NodeState& nodeState)
+void DiscoveredContainer::Row::update (const DiscoveredSessionsModel::NodeState& nodeState)
 {
     nameLabel_.setText ("Node: ", juce::dontSendNotification);
     sessionName_.setText (nodeState.name, juce::dontSendNotification);

@@ -53,7 +53,7 @@ MiniAudioDeviceSelectorComponent::MiniAudioDeviceSelectorComponent (
             juce::AudioDeviceSelectorComponent> (audioDeviceManager_, 0, 128, 0, 128, false, false, false, false);
 
         juce::DialogWindow::LaunchOptions o;
-        o.dialogTitle = "SDP Text";
+        o.dialogTitle = "Audio device settings";
         o.content.setOwned (content.release());
         o.componentToCentreAround = getTopLevelComponent();
         o.dialogBackgroundColour = Constants::Colours::windowBackground;

@@ -7,9 +7,17 @@
     "catch2",
     "portaudio",
     "cli11",
-    "asio",
     "tl-expected",
     "nanobench",
-    "nlohmann-json"
+    "nlohmann-json",
+    "boost-asio",
+    "boost-beast",
+    "boost-url",
+    "boost-container",
+    "boost-lockfree",
+    "boost-circular-buffer",
+    "boost-uuid",
+    "boost-json",
+    "boost-signals2"
   ]
 }

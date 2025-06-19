@@ -12,17 +12,17 @@
 
 #include "gui/lookandfeel/Constants.hpp"
 #include "gui/lookandfeel/ThisLookAndFeel.hpp"
-#include "juce_gui_extra/juce_gui_extra.h"
 #include "ravennakit/core/chrono/high_resolution_clock.hpp"
 #include "ravennakit/core/support.hpp"
-#include "ravennakit/core/util/todo.hpp"
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
 {
-    emptyLabel_.setText ("Create a receiver on the \"Discovered\" page.", juce::dontSendNotification);
-    emptyLabel_.setColour (juce::Label::textColourId, juce::Colours::grey);
-    emptyLabel_.setJustificationType (juce::Justification::topLeft);
-    addAndMakeVisible (emptyLabel_);
+    createButton.onClick = [this] {
+        auto config = rav::RavennaReceiver::Configuration::default_config();
+        config.auto_update_sdp = false;
+        std::ignore = context_.getAudioReceivers().createReceiver (std::move (config));
+    };
+    addAndMakeVisible (createButton);
 
     if (!context_.getAudioReceivers().subscribe (this))
     {
@@ -42,22 +42,22 @@ void ReceiversContainer::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
 
-    emptyLabel_.setBounds (b.reduced (kMargin));
-
     for (auto i = 0; i < rows_.size(); ++i)
     {
         rows_.getUnchecked (i)->setBounds (b.removeFromTop (kRowHeight));
         b.removeFromTop (kMargin);
     }
+
+    b.removeFromTop (kMargin * 2);
+    createButton.setBounds (b.withSizeKeepingCentre (200, kButtonHeight));
 }
 
 void ReceiversContainer::resizeToFitContent()
 {
-    const auto calculatedHeight = rows_.size() * kRowHeight + kMargin + kMargin * rows_.size();
-    setSize (getWidth(), std::max (calculatedHeight, 100)); // Min to leave space for the empty label
+    setSize (getWidth(), rows_.size() * kRowHeight + kMargin + kMargin * rows_.size() + kMargin * 2 + kButtonHeight);
 }
 
-void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const AudioReceivers::ReceiverState* state)
+void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const AudioReceiversModel::ReceiverState* state)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
 
@@ -92,8 +92,24 @@ void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const Audio
     }
 }
 
-ReceiversContainer::SdpViewer::SdpViewer (const std::string& sdpText) : sdpText_ (sdpText)
+ReceiversContainer::SdpViewer::SdpViewer (const std::string& sdpText)
 {
+    applyButton_.onClick = [this] {
+        auto result = rav::sdp::SessionDescription::parse_new (sdpTextEditor_.getText().toStdString());
+        if (result.is_err())
+        {
+            errorLabel_.setText (result.get_err(), juce::dontSendNotification);
+            return;
+        }
+        errorLabel_.setText ("", juce::dontSendNotification);
+        onApply (result.move_ok());
+        if (auto* parent = findParentComponentOfClass<juce::DialogWindow>())
+            parent->exitModalState (1);
+    };
+    applyButton_.setButtonText ("Apply");
+    applyButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::green);
+    addAndMakeVisible (applyButton_);
+
     closeButton_.onClick = [this] {
         if (auto* parent = findParentComponentOfClass<juce::DialogWindow>())
             parent->exitModalState (0);
@@ -103,11 +119,20 @@ ReceiversContainer::SdpViewer::SdpViewer (const std::string& sdpText) : sdpText_
     addAndMakeVisible (closeButton_);
 
     copyButton_.onClick = [this] {
-        juce::SystemClipboard::copyTextToClipboard (sdpText_);
+        juce::SystemClipboard::copyTextToClipboard (sdpTextEditor_.getText());
     };
     copyButton_.setButtonText ("Copy");
     copyButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     addAndMakeVisible (copyButton_);
+
+    errorLabel_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::red);
+    addAndMakeVisible (errorLabel_);
+
+    sdpTextEditor_.setMultiLine (true);
+    sdpTextEditor_.setReturnKeyStartsNewLine (true);
+    sdpTextEditor_.setText (sdpText, juce::dontSendNotification);
+    sdpTextEditor_.setTextToShowWhenEmpty ("Enter SDP text here...", juce::Colours::grey);
+    addAndMakeVisible (sdpTextEditor_);
 
     setLookAndFeel (&rav::get_global_instance_of_type<ThisLookAndFeel>());
 }
@@ -123,14 +148,13 @@ void ReceiversContainer::SdpViewer::resized()
     auto bottom = b.removeFromBottom (27);
     closeButton_.setBounds (bottom.removeFromRight (71));
     bottom.removeFromRight (6);
+    applyButton_.setBounds (bottom.removeFromRight (71));
+    bottom.removeFromRight (6);
     copyButton_.setBounds (bottom.removeFromRight (71));
-}
-
-void ReceiversContainer::SdpViewer::paint (juce::Graphics& g)
-{
-    const auto b = getLocalBounds().reduced (10);
-    g.setColour (Constants::Colours::text);
-    g.drawMultiLineText (sdpText_, b.getX(), b.getY() + 10, b.getWidth(), juce::Justification::topLeft);
+    b.removeFromBottom (kMargin);
+    errorLabel_.setBounds (b.removeFromBottom (16));
+    b.removeFromBottom (kMargin);
+    sdpTextEditor_.setBounds (b);
 }
 
 ReceiversContainer::SessionInfoComponent::SessionInfoComponent (const juce::String& title)
@@ -149,7 +173,7 @@ ReceiversContainer::SessionInfoComponent::SessionInfoComponent (const juce::Stri
     addAndMakeVisible (statusLabel_);
 }
 
-void ReceiversContainer::SessionInfoComponent::update (const AudioReceivers::StreamState* state)
+void ReceiversContainer::SessionInfoComponent::update (const AudioReceiversModel::StreamState* state)
 {
     if (state == nullptr)
         return;
@@ -214,7 +238,7 @@ void ReceiversContainer::PacketStatsComponent::resized()
     tooLateLabel_.setBounds (b.removeFromTop (20));
 }
 
-ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id receiverId) :
+ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id receiverId) :
     audioReceivers_ (audioReceivers),
     receiverId_ (receiverId)
 {
@@ -235,26 +259,30 @@ ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id rece
     delayEditor_.setInputRestrictions (10, "0123456789");
     delayEditor_.onReturnKey = [this] {
         const auto value = static_cast<uint32_t> (delayEditor_.getText().getIntValue());
-        rav::RavennaReceiver::ConfigurationUpdate update;
-        update.delay_frames = value;
-        audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (update));
+        auto config = configuration_;
+        config.delay_frames = value;
+        audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (config));
     };
     delayEditor_.onEscapeKey = [this] {
-        delayEditor_.setText (juce::String (delay_));
+        delayEditor_.setText (juce::String (configuration_.delay_frames));
         unfocusAllComponents();
     };
     delayEditor_.onFocusLost = [this] {
-        delayEditor_.setText (juce::String (delay_));
+        delayEditor_.setText (juce::String (configuration_.delay_frames));
     };
     addAndMakeVisible (delayEditor_);
 
-    showSdpButton_.setButtonText ("Show SDP");
+    showSdpButton_.setButtonText ("SDP");
     showSdpButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     showSdpButton_.onClick = [this] {
-        auto result = audioReceivers_.getSdpTextForReceiver (receiverId_);
-
-        auto content = std::make_unique<SdpViewer> (result ? std::move (*result) : "SDP text not available");
+        auto content = std::make_unique<SdpViewer> (configuration_.sdp.to_string().value_or (""));
         content->setSize (400, 400);
+        content->onApply = [this] (rav::sdp::SessionDescription sdp) {
+            auto config = configuration_;
+            config.sdp = std::move (sdp);
+            config.auto_update_sdp = false;
+            audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (config));
+        };
 
         juce::DialogWindow::LaunchOptions o;
         o.dialogTitle = "SDP Text";
@@ -275,9 +303,9 @@ ReceiversContainer::Row::Row (AudioReceivers& audioReceivers, const rav::Id rece
     onOffButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     onOffButton_.setColour (juce::TextButton::ColourIds::buttonOnColourId, Constants::Colours::green);
     onOffButton_.onClick = [this] {
-        rav::RavennaReceiver::ConfigurationUpdate update;
-        update.enabled = onOffButton_.getToggleState();
-        audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (update));
+        auto config = configuration_;
+        config.enabled = onOffButton_.getToggleState();
+        audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (config));
     };
     addAndMakeVisible (onOffButton_);
 
@@ -306,14 +334,24 @@ rav::Id ReceiversContainer::Row::getId() const
     return receiverId_;
 }
 
-void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state)
+void ReceiversContainer::Row::update (const AudioReceiversModel::ReceiverState& state)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
 
+    configuration_ = state.configuration;
+
     sessionNameLabel_.setText (state.configuration.session_name, juce::dontSendNotification);
 
-    if (state.inputFormat.is_valid() && state.inputFormat.sample_rate != state.outputFormat.sample_rate)
+    if (state.configuration.sdp.session_name().empty())
+        warningLabel_.setText ("Warning: no SDP available", juce::dontSendNotification);
+    else if (!state.outputFormat.is_valid())
+        warningLabel_.setText ("Warning: invalid audio device settings", juce::dontSendNotification);
+    else if (!state.inputFormat.is_valid())
+        warningLabel_.setText ("Warning: invalid input format", juce::dontSendNotification);
+    else if (state.inputFormat.sample_rate != state.outputFormat.sample_rate)
         warningLabel_.setText ("Warning: sample rate mismatch", juce::dontSendNotification);
+    else if (state.inputFormat.num_channels != state.outputFormat.num_channels)
+        warningLabel_.setText ("Warning: channel count mismatch", juce::dontSendNotification);
     else
         warningLabel_.setText ({}, juce::dontSendNotification);
 
@@ -327,8 +365,6 @@ void ReceiversContainer::Row::update (const AudioReceivers::ReceiverState& state
 
     secondarySessionInfo_.setVisible (sec != nullptr);
     secondaryPacketStats_.setVisible (sec != nullptr);
-
-    delay_ = state.configuration.delay_frames;
 
     if (!delayEditor_.hasKeyboardFocus (true))
         delayEditor_.setText (juce::String (state.configuration.delay_frames));
@@ -405,9 +441,4 @@ void ReceiversContainer::Row::update()
     secondaryPacketStats_.update (&stats_sec);
 
     repaint();
-}
-
-void ReceiversContainer::updateGuiState()
-{
-    emptyLabel_.setVisible (rows_.isEmpty());
 }
