@@ -96,13 +96,13 @@ ReceiversContainer::SdpViewer::SdpViewer (const std::string& sdpText)
 {
     applyButton_.onClick = [this] {
         auto result = rav::sdp::SessionDescription::parse_new (sdpTextEditor_.getText().toStdString());
-        if (result.is_err())
+        if (!result)
         {
-            errorLabel_.setText (result.get_err(), juce::dontSendNotification);
+            errorLabel_.setText (result.error(), juce::dontSendNotification);
             return;
         }
         errorLabel_.setText ("", juce::dontSendNotification);
-        onApply (result.move_ok());
+        onApply (std::move(*result));
         if (auto* parent = findParentComponentOfClass<juce::DialogWindow>())
             parent->exitModalState (1);
     };
