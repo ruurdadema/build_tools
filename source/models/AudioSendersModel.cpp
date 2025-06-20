@@ -87,7 +87,7 @@ void AudioSendersModel::ravenna_sender_added (const rav::RavennaSender& sender)
     executor_.callAsync ([this, senderId = sender.get_id()] {
         RAV_ASSERT (findSender (senderId) == nullptr, "Receiver already exists");
         const auto& it = senders_.emplace_back (std::make_unique<Sender> (*this, senderId));
-        it->prepareInput (deviceFormat_, 0); // TODO: Number of frames
+        it->prepareInput (deviceFormat_);
         updateRealtimeSharedContext();
     });
 }
@@ -153,10 +153,10 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
         lock->rtp_ts = ptp_ts;
     }
 
-    const auto drift = rav::WrappingUint32 (ptp_ts).diff (rav::WrappingUint32 (*lock->rtp_ts));
     // Positive means audio device is ahead of the PTP clock, negative means behind
-
-    TRACY_PLOT ("drift", static_cast<int64_t> (drift));
+    TRACY_PLOT (
+        "drift",
+        static_cast<int64_t> (rav::WrappingUint32 (ptp_ts).diff (rav::WrappingUint32 (*lock->rtp_ts))));
 
     for (const auto* sender : lock->senders)
         sender->processBlock (buffer, *lock->rtp_ts);
@@ -175,7 +175,7 @@ void AudioSendersModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
     };
 
     for (const auto& sender : senders_)
-        sender->prepareInput (deviceFormat_, 0);
+        sender->prepareInput (deviceFormat_);
 
     updateRealtimeSharedContext();
 }
@@ -245,9 +245,7 @@ void AudioSendersModel::Sender::ravenna_sender_configuration_updated (
     });
 }
 
-void AudioSendersModel::Sender::prepareInput (
-    const rav::AudioFormat inputFormat,
-    [[maybe_unused]] uint32_t max_num_frames)
+void AudioSendersModel::Sender::prepareInput (const rav::AudioFormat inputFormat)
 {
     state_.inputFormat = inputFormat;
 
