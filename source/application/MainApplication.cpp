@@ -218,7 +218,7 @@ boost::json::object MainApplication::toBoostJson() const
     auto windows = boost::json::array();
     for (auto& window : mainWindows_)
     {
-        windows.push_back ({ { "state", window->getWindowStateAsString().toStdString() } });
+        windows.push_back (boost::json::object { { "state", window->getWindowStateAsString().toStdString() } });
     }
 
     boost::json::object state {
