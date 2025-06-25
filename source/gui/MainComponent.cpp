@@ -12,7 +12,7 @@
 
 #include "discovered/DiscoveredMainComponent.hpp"
 #include "nmos/NmosMainComponent.hpp"
-#include "ravennakit/core/tracy.hpp"
+#include "ravennakit/core/util/tracy.hpp"
 #include "receivers/ReceiversMainComponent.hpp"
 #include "senders/SendersMainComponent.hpp"
 #include "settings/SettingsMainComponent.hpp"
