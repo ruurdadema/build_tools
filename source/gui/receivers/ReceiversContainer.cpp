@@ -95,14 +95,14 @@ void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const Audio
 ReceiversContainer::SdpViewer::SdpViewer (const std::string& sdpText)
 {
     applyButton_.onClick = [this] {
-        auto result = rav::sdp::SessionDescription::parse_new (sdpTextEditor_.getText().toStdString());
+        auto result = rav::sdp::parse_session_description (sdpTextEditor_.getText().toStdString());
         if (!result)
         {
             errorLabel_.setText (result.error(), juce::dontSendNotification);
             return;
         }
         errorLabel_.setText ("", juce::dontSendNotification);
-        onApply (std::move(*result));
+        onApply (std::move (*result));
         if (auto* parent = findParentComponentOfClass<juce::DialogWindow>())
             parent->exitModalState (1);
     };
@@ -275,7 +275,7 @@ ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id
     showSdpButton_.setButtonText ("SDP");
     showSdpButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     showSdpButton_.onClick = [this] {
-        auto content = std::make_unique<SdpViewer> (configuration_.sdp.to_string().value_or (""));
+        auto content = std::make_unique<SdpViewer> (rav::sdp::to_string (configuration_.sdp));
         content->setSize (400, 400);
         content->onApply = [this] (rav::sdp::SessionDescription sdp) {
             auto config = configuration_;
@@ -342,7 +342,7 @@ void ReceiversContainer::Row::update (const AudioReceiversModel::ReceiverState& 
 
     sessionNameLabel_.setText (state.configuration.session_name, juce::dontSendNotification);
 
-    if (state.configuration.sdp.session_name().empty())
+    if (state.configuration.sdp.session_name.empty())
         warningLabel_.setText ("Warning: no SDP available", juce::dontSendNotification);
     else if (!state.outputFormat.is_valid())
         warningLabel_.setText ("Warning: invalid audio device settings", juce::dontSendNotification);
