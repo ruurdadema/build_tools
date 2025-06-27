@@ -16,7 +16,6 @@
     "boost-lockfree",
     "boost-circular-buffer",
     "boost-uuid",
-    "boost-json",
-    "boost-signals2"
+    "boost-json"
   ]
 }
