@@ -12,7 +12,6 @@
 
 #include "gui/lookandfeel/Constants.hpp"
 #include "gui/lookandfeel/ThisLookAndFeel.hpp"
-#include "ravennakit/core/chrono/high_resolution_clock.hpp"
 #include "ravennakit/core/support.hpp"
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
