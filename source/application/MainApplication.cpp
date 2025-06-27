@@ -275,7 +275,7 @@ bool MainApplication::restoreFromBoostJson (const boost::json::value& json)
             }
         }
 
-        result = state.at ("audio_device_manager_state");
+        result = state.try_at ("audio_device_manager_state");
         if (result.has_value())
         {
             const auto xml = juce::parseXML (state.at ("audio_device_manager_state").as_string().c_str());
