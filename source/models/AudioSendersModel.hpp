@@ -111,7 +111,7 @@ private:
             rav::Id sender_id,
             const rav::RavennaSender::Configuration& configuration) override;
 
-        void prepareInput (rav::AudioFormat inputFormat, uint32_t max_num_frames);
+        void prepareInput (rav::AudioFormat inputFormat);
         void processBlock (const rav::AudioBufferView<const float>& inputBuffer, uint32_t timestamp) const;
 
     private:

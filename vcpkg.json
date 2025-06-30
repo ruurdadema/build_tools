@@ -9,7 +9,6 @@
     "cli11",
     "tl-expected",
     "nanobench",
-    "nlohmann-json",
     "boost-asio",
     "boost-beast",
     "boost-url",
@@ -17,7 +16,6 @@
     "boost-lockfree",
     "boost-circular-buffer",
     "boost-uuid",
-    "boost-json",
-    "boost-signals2"
+    "boost-json"
   ]
 }

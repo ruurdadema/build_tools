@@ -11,15 +11,14 @@
 #pragma once
 
 #include "models/AudioReceiversModel.hpp"
-
-#include <memory>
-
 #include "gui/MainComponent.hpp"
 #include "gui/lookandfeel/ThisLookAndFeel.hpp"
 #include "ravennakit/core/support.hpp"
 #include "ravennakit/core/system.hpp"
 
 #include <CLI/CLI.hpp>
+
+#include <memory>
 
 class MainApplication final : public juce::JUCEApplication, public ApplicationContext
 {
@@ -56,8 +55,8 @@ private:
     std::vector<std::unique_ptr<juce::ResizableWindow>> mainWindows_;
 
     void addWindow();
-    nlohmann::json toJson() const;
-    bool restoreFromJson (const nlohmann::json& json);
+    boost::json::object toBoostJson() const;
+    bool restoreFromBoostJson (const boost::json::value& json);
 
     static const juce::File& getApplicationStateFile();
 };

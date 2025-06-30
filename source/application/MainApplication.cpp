@@ -172,10 +172,10 @@ AudioSendersModel& MainApplication::getAudioSenders()
 
 tl::expected<void, std::string> MainApplication::saveToFile (const juce::File& file)
 {
-    const auto json = toJson().dump (4);
+    const auto json_str = boost::json::serialize (toBoostJson());
     if (const auto result = file.getParentDirectory().createDirectory(); result.failed())
-        return tl::unexpected("Failed to create parent directory");
-    if (!file.replaceWithText (json))
+        return tl::unexpected ("Failed to create parent directory");
+    if (!file.replaceWithText (json_str))
         return tl::unexpected ("Failed to save to file: " + file.getFullPathName().toStdString());
     RAV_TRACE ("Saved to file: {}", file.getFullPathName().toRawUTF8());
     return {};
@@ -190,11 +190,11 @@ tl::expected<void, std::string> MainApplication::loadFromFile (const juce::File&
     if (jsonData.isEmpty())
         return tl::unexpected ("Failed to load file: " + file.getFullPathName().toStdString());
 
-    const auto json = nlohmann::json::parse (jsonData.toRawUTF8());
+    const auto json = boost::json::parse (jsonData.toRawUTF8());
     if (json.is_null())
         return tl::unexpected ("Failed to parse JSON from file: " + file.getFullPathName().toStdString());
 
-    if (!restoreFromJson (json))
+    if (!restoreFromBoostJson (json))
         return tl::unexpected ("Failed to restore from JSON: " + file.getFullPathName().toStdString());
 
     RAV_TRACE ("Loaded from file: {}", file.getFullPathName().toRawUTF8());
@@ -213,19 +213,18 @@ void MainApplication::addWindow()
     bounds ? it->setBounds (bounds->translated (20, 20)) : it->centreWithSize (1200, 800);
 }
 
-nlohmann::json MainApplication::toJson() const
+boost::json::object MainApplication::toBoostJson() const
 {
-    auto windows = nlohmann::json::array();
+    auto windows = boost::json::array();
     for (auto& window : mainWindows_)
     {
-        nlohmann::json windowJson;
-        windowJson["state"] = window->getWindowStateAsString().toStdString();
-        windows.push_back (windowJson);
+        windows.push_back (boost::json::object { { "state", window->getWindowStateAsString().toStdString() } });
     }
 
-    nlohmann::json state;
-    state["ravenna_node"] = ravennaNode_->to_json().get();
-    state["windows"] = windows;
+    boost::json::object state {
+        { "ravenna_node", ravennaNode_->to_boost_json().get() },
+        { "windows", windows },
+    };
 
     const auto audioDeviceManagerState = audioDeviceManager_.createStateXml();
     if (audioDeviceManagerState != nullptr)
@@ -234,28 +233,30 @@ nlohmann::json MainApplication::toJson() const
         state["audio_device_manager_state"] = audioDeviceManagerState->toString (format).toStdString();
     }
 
-    nlohmann::json application;
-    application["version"] = PROJECT_VERSION_STRING;
-    application["name"] = PROJECT_PRODUCT_NAME;
-    application["company"] = PROJECT_COMPANY_NAME;
-    application["state"] = state;
-
-    nlohmann::json root;
-    root["ravennakit_juce_demo"] = application;
-
-    return root;
+    return {
+        {
+            "ravennakit_juce_demo",
+            {
+                { "version", PROJECT_VERSION_STRING },
+                { "name", PROJECT_PRODUCT_NAME },
+                { "company", PROJECT_COMPANY_NAME },
+                { "state", state },
+            },
+        },
+    };
 }
 
-bool MainApplication::restoreFromJson (const nlohmann::json& json)
+bool MainApplication::restoreFromBoostJson (const boost::json::value& json)
 {
     try
     {
         const auto& application = json.at ("ravennakit_juce_demo");
         const auto& state = application.at ("state");
 
-        if (state.contains ("windows"))
+        auto result = state.try_at ("windows");
+        if (result.has_value())
         {
-            auto windows = state.at ("windows").get<std::vector<nlohmann::json>>();
+            const auto& windows = result->as_array();
 
             // Add windows if needed
             while (mainWindows_.size() < windows.size())
@@ -269,23 +270,24 @@ bool MainApplication::restoreFromJson (const nlohmann::json& json)
             {
                 if (const auto& window = mainWindows_[i])
                 {
-                    window->restoreWindowStateFromString (windows[i].at ("state").get<std::string>());
+                    window->restoreWindowStateFromString (windows[i].at ("state").as_string().data());
                 }
             }
         }
 
-        if (state.contains ("audio_device_manager_state"))
+        result = state.try_at ("audio_device_manager_state");
+        if (result.has_value())
         {
-            const auto xml = juce::parseXML (state.at ("audio_device_manager_state").get<std::string>());
+            const auto xml = juce::parseXML (state.at ("audio_device_manager_state").as_string().c_str());
             if (xml != nullptr)
                 audioDeviceManager_.initialise (2, 0, xml.get(), true);
         }
 
         const auto& ravennaNode = state.at ("ravenna_node");
-        auto result = ravennaNode_->restore_from_json (ravennaNode).get();
-        if (!result)
+        auto restored = ravennaNode_->restore_from_boost_json (ravennaNode).get();
+        if (!restored)
         {
-            RAV_ERROR ("Failed to restore from JSON: {}", result.error());
+            RAV_ERROR ("Failed to restore from JSON: {}", restored.error());
             return false;
         }
     }

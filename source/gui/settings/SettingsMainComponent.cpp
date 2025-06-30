@@ -75,7 +75,7 @@ void SettingsMainComponent::network_interface_config_updated (const rav::Network
 
         const auto networkInterfaces = rav::NetworkInterfaceList::get_system_interfaces();
 
-        if (const auto* primary = config.get_interface (rav::Rank::primary()))
+        if (const auto* primary = config.get_interface_for_rank (rav::Rank::primary()))
         {
             if (auto* iface = networkInterfaces.get_interface (*primary))
             {
@@ -95,7 +95,7 @@ void SettingsMainComponent::network_interface_config_updated (const rav::Network
             safeThis->primaryNetworkInterfaceComboBox_.setSelectedId (0, juce::dontSendNotification);
         }
 
-        if (const auto* secondary = config.get_interface (rav::Rank::secondary()))
+        if (const auto* secondary = config.get_interface_for_rank (rav::Rank::secondary()))
         {
             if (auto* iface = networkInterfaces.get_interface (*secondary))
             {
