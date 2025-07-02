@@ -30,24 +30,25 @@ import glob
 import shutil
 
 
-def verify_architecture(path: Path, expected_architectures: [string]):
+def verify_architecture(path: Path, expected_architectures: list[str]):
     """
-    Verifies given file to contain all expected architectures. Throws an exception is expectation is not met.
+    Verifies given file to contain all expected architectures.
+    Throws an exception if expectation is not met.
     :param path: The path of the file to check.
     :param expected_architectures: The expected architectures.
     """
-    output = subprocess.run(['file', path], stdout=subprocess.PIPE, check=True)
-    stdout = output.stdout.decode('utf-8').strip()
+    subprocess.run(['file', path], stdout=subprocess.PIPE, check=True)
 
     for arch in expected_architectures:
-        if not re.search('Mach-O 64-bit.+ ' + arch, stdout):
-            print(stdout)
-            raise Exception('File "' + str(path) + '" does not contain code for architecture ' + arch)
+        try:
+            subprocess.run(['lipo', path, '-verify_arch', arch], check=True)
+        except subprocess.CalledProcessError:
+            raise Exception(f'File "{path}" does not contain code for architecture {arch}')
 
-    print('Verified "' + str(path) + '" to contain code for arch(s): [' + ', '.join(expected_architectures) + ']')
+    print(f'Verified "{path}" to contain code for arch(s): [{", ".join(expected_architectures)}]')
 
 
-def verify_architecture_recursive(base_path: Path, pattern, expected_architectures: [string]):
+def verify_architecture_recursive(base_path: Path, pattern, expected_architectures: list[str]):
     """
     Verifies all matching files if they contain code for given architectures.
     :param base_path: The base path to recursively search in.
@@ -122,3 +123,19 @@ def lipo_glob(input_base_path_x86_64: Path, input_base_path_arm64: Path, output_
 
     for path_to_binary in matches_x86_64:
         lipo(input_base_path_x86_64, input_base_path_arm64, output_base_path, path_to_binary)
+
+
+def lipo_merge_directory(input_path_x86_64: Path, input_path_arm64: Path, output_path: Path):
+    """
+    Takes 2 directories and creates a new directory with the contents of both input directories and the binaries lipood.
+    :param input_path_x86_64 The folder containing x86_64 assets.
+    :param input_path_arm64 The folder containing arm64 assets.
+    :param output_path The output_path.
+    """
+    shutil.copytree(input_path_x86_64, output_path, symlinks=True, dirs_exist_ok=True)
+    shutil.copytree(input_path_arm64, output_path, symlinks=True, dirs_exist_ok=True)
+
+    for file in glob.glob('**', root_dir=output_path, recursive=True):
+        output = subprocess.run(['lipo', '-info', str(output_path / file)], capture_output=True, text=True)
+        if output.returncode == 0:
+            lipo(input_path_x86_64, input_path_arm64, output_path, Path(file))
