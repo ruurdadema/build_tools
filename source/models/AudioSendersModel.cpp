@@ -143,7 +143,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     if (!lock->deviceFormat.is_valid())
         return;
 
-    const auto clock = get_local_clock();
+    const auto& clock = get_local_clock();
     auto ptp_ts = static_cast<uint32_t> (clock.now().to_samples (lock->deviceFormat.sample_rate));
 
     if (!lock->rtp_ts.has_value())
