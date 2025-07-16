@@ -13,17 +13,6 @@
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/core/audio/audio_data.hpp"
 
-const AudioReceiversModel::StreamState* AudioReceiversModel::ReceiverState::find_stream_for_rank (
-    const rav::Rank rank) const
-{
-    for (auto& stream : streams)
-    {
-        if (stream.stream.rank == rank)
-            return &stream;
-    }
-    return nullptr;
-}
-
 AudioReceiversModel::AudioReceiversModel (rav::RavennaNode& node) : node_ (node)
 {
     node_.subscribe (this).wait();
@@ -253,7 +242,7 @@ std::optional<uint32_t> AudioReceiversModel::Receiver::processBlock (
 }
 
 void AudioReceiversModel::Receiver::ravenna_receiver_parameters_updated (
-    const rav::rtp::AudioReceiver::Parameters& parameters)
+    const rav::rtp::Receiver3::ReaderParameters& parameters)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 

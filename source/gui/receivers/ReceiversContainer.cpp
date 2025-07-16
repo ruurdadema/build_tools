@@ -354,8 +354,8 @@ void ReceiversContainer::Row::update (const AudioReceiversModel::ReceiverState& 
     else
         warningLabel_.setText ({}, juce::dontSendNotification);
 
-    const auto* pri = state.find_stream_for_rank (rav::Rank::primary());
-    const auto* sec = state.find_stream_for_rank (rav::Rank::secondary());
+    const auto* pri = !state.streams.empty() ? &state.streams[0] : nullptr;
+    const auto* sec = state.streams.size() >= 2 ? &state.streams[1] : nullptr;
 
     audioFormatLabel_.setText (state.inputFormat.to_string(), juce::dontSendNotification);
 

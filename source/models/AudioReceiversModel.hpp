@@ -25,7 +25,7 @@ class AudioReceiversModel : public rav::RavennaNode::Subscriber, public juce::Au
 public:
     struct StreamState
     {
-        rav::rtp::AudioReceiver::Stream stream;
+        rav::rtp::Receiver3::StreamInfo stream;
         rav::rtp::AudioReceiver::State state {};
     };
 
@@ -35,8 +35,6 @@ public:
         std::vector<StreamState> streams;
         rav::AudioFormat inputFormat;
         rav::AudioFormat outputFormat;
-
-        [[nodiscard]] const StreamState* find_stream_for_rank (rav::Rank rank) const;
     };
 
     class Subscriber
@@ -140,7 +138,7 @@ private:
             std::optional<uint32_t> atTimestamp);
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::Parameters& parameters) override;
+        void ravenna_receiver_parameters_updated (const rav::rtp::Receiver3::ReaderParameters& parameters) override;
         void ravenna_receiver_configuration_updated (
             const rav::RavennaReceiver& receiver,
             const rav::RavennaReceiver::Configuration& configuration) override;
