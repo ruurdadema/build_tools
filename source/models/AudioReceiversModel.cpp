@@ -150,13 +150,21 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
 
     RAV_ASSERT (device != nullptr, "Device expected to be not null");
 
-    targetFormat_ = rav::AudioFormat {
+    auto new_format = rav::AudioFormat {
         rav::AudioFormat::ByteOrder::le,
         rav::AudioEncoding::pcm_f32,
         rav::AudioFormat::ChannelOrdering::noninterleaved,
         static_cast<uint32_t> (device->getCurrentSampleRate()),
         static_cast<uint32_t> (device->getActiveOutputChannels().countNumberOfSetBits()),
     };
+
+    if (!new_format.is_valid())
+    {
+        RAV_WARNING ("Audio device format is not valid");
+        return;
+    }
+
+    targetFormat_ = new_format;
 
     maxNumFramesPerBlock_ = static_cast<uint32_t> (device->getCurrentBufferSizeSamples());
 
