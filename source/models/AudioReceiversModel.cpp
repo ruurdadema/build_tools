@@ -50,11 +50,11 @@ std::optional<std::string> AudioReceiversModel::getSdpTextForReceiver (const rav
     return node_.get_sdp_text_for_receiver (receiverId).get();
 }
 
-rav::rtp::AudioReceiver::SessionStats AudioReceiversModel::getStatisticsForReceiver (
+std::optional<rav::rtp::PacketStats::Counters> AudioReceiversModel::getStatisticsForReceiver (
     const rav::Id receiverId,
-    const rav::Rank rank) const
+    const rav::Rank stream) const
 {
-    return node_.get_stats_for_receiver (receiverId, rank).get();
+    return node_.get_stats_for_receiver (receiverId, stream).get();
 }
 
 bool AudioReceiversModel::subscribe (Subscriber* subscriber)
@@ -284,16 +284,16 @@ void AudioReceiversModel::Receiver::ravenna_receiver_configuration_updated (
 }
 
 void AudioReceiversModel::Receiver::ravenna_receiver_stream_state_updated (
-    const rav::rtp::AudioReceiver::Stream& stream,
-    const rav::rtp::AudioReceiver::State state)
+    const rav::rtp::Receiver3::StreamInfo& stream_info,
+    const rav::rtp::Receiver3::StreamState state)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
-    executor_.callAsync ([this, stream, state] {
+    executor_.callAsync ([this, stream_info, state] {
         bool changed = false;
         for (auto& streamState : state_.streams)
         {
-            if (streamState.stream.session == stream.session)
+            if (streamState.stream.session == stream_info.session)
             {
                 streamState.state = state;
                 changed = true;
@@ -305,6 +305,18 @@ void AudioReceiversModel::Receiver::ravenna_receiver_stream_state_updated (
 
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioReceiverUpdated (receiverId_, &state_);
+    });
+}
+
+void AudioReceiversModel::Receiver::ravenna_receiver_stream_stats_updated (
+    rav::Id receiver_id,
+    size_t stream_index,
+    const rav::rtp::PacketStats::Counters& stats)
+{
+    RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
+    executor_.callAsync ([this, receiver_id, stream_index, stats] {
+        for (auto* subscriber : owner_.subscribers_)
+            subscriber->onAudioReceiverStatsUpdated (receiver_id, stream_index, stats);
     });
 }
 

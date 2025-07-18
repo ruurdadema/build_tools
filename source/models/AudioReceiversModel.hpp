@@ -26,7 +26,7 @@ public:
     struct StreamState
     {
         rav::rtp::Receiver3::StreamInfo stream;
-        rav::rtp::AudioReceiver::State state {};
+        rav::rtp::Receiver3::StreamState state {};
     };
 
     struct ReceiverState
@@ -45,6 +45,16 @@ public:
         {
             std::ignore = receiverId;
             std::ignore = state;
+        }
+
+        virtual void onAudioReceiverStatsUpdated (
+            const rav::Id receiverId,
+            size_t streamIndex,
+            const rav::rtp::PacketStats::Counters& stats)
+        {
+            std::ignore = receiverId;
+            std::ignore = streamIndex;
+            std::ignore = stats;
         }
     };
 
@@ -85,11 +95,12 @@ public:
     /**
      * Gets the packet statistics for a receiver.
      * @param receiverId The receiver to get the packet statistics for.
-     * @param rank The rank of the stream to get the statistics for.
-     * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
+     * @param stream The rank of the stream to get the statistics for.
+     * @return The packet statistics for the receiver, or std::nullopt if the receiver doesn't exist.
      */
-    [[nodiscard]] rav::rtp::AudioReceiver::SessionStats getStatisticsForReceiver (rav::Id receiverId, rav::Rank rank)
-        const;
+    [[nodiscard]] std::optional<rav::rtp::PacketStats::Counters> getStatisticsForReceiver (
+        rav::Id receiverId,
+        rav::Rank stream) const;
 
     /**
      * Adds a subscriber.
@@ -143,8 +154,12 @@ private:
             const rav::RavennaReceiver& receiver,
             const rav::RavennaReceiver::Configuration& configuration) override;
         void ravenna_receiver_stream_state_updated (
-            const rav::rtp::AudioReceiver::Stream& stream,
-            rav::rtp::AudioReceiver::State state) override;
+            const rav::rtp::Receiver3::StreamInfo& stream_info,
+            rav::rtp::Receiver3::StreamState state) override;
+        void ravenna_receiver_stream_stats_updated (
+            rav::Id receiver_id,
+            size_t stream_index,
+            const rav::rtp::PacketStats::Counters& stats) override;
         void on_data_received (rav::WrappingUint32 timestamp) override;
         void on_data_ready (rav::WrappingUint32 timestamp) override;
 
