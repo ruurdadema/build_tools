@@ -93,16 +93,6 @@ public:
     [[nodiscard]] std::optional<std::string> getSdpTextForReceiver (rav::Id receiverId) const;
 
     /**
-     * Gets the packet statistics for a receiver.
-     * @param receiverId The receiver to get the packet statistics for.
-     * @param stream The rank of the stream to get the statistics for.
-     * @return The packet statistics for the receiver, or std::nullopt if the receiver doesn't exist.
-     */
-    [[nodiscard]] std::optional<rav::rtp::PacketStats::Counters> getStatisticsForReceiver (
-        rav::Id receiverId,
-        rav::Rank stream) const;
-
-    /**
      * Adds a subscriber.
      * @param subscriber The subscriber to add.
      * @return true if the subscriber was added, or false if it was already in the list.

@@ -50,13 +50,6 @@ std::optional<std::string> AudioReceiversModel::getSdpTextForReceiver (const rav
     return node_.get_sdp_text_for_receiver (receiverId).get();
 }
 
-std::optional<rav::rtp::PacketStats::Counters> AudioReceiversModel::getStatisticsForReceiver (
-    const rav::Id receiverId,
-    const rav::Rank stream) const
-{
-    return node_.get_stats_for_receiver (receiverId, stream).get();
-}
-
 bool AudioReceiversModel::subscribe (Subscriber* subscriber)
 {
     if (subscribers_.add (subscriber))
@@ -246,7 +239,7 @@ std::optional<uint32_t> AudioReceiversModel::Receiver::processBlock (
         return std::nullopt;
     }
 
-    return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, atTimestamp);
+    return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, atTimestamp, {});
 }
 
 void AudioReceiversModel::Receiver::ravenna_receiver_parameters_updated (
