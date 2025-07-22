@@ -138,13 +138,14 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     if (!current_ts_.has_value())
         current_ts_ = ptp_ts;
 
+    // Positive means audio device is ahead of the PTP clock, negative means behind
     auto drift = rav::WrappingUint32 (ptp_ts).diff (*current_ts_);
 
     if (static_cast<uint32_t>(std::abs (drift)) > outputBuffer.num_frames() * 2)
     {
         current_ts_ = ptp_ts;
-        RAV_WARNING ("Updated current timestamp to: {}", ptp_ts);
-        drift = rav::WrappingUint32 (ptp_ts).diff (*current_ts_);
+        RAV_WARNING ("Re-aligned receivers to: {}", ptp_ts);
+        drift = 0;
     }
 
     TRACY_PLOT ("receiver drift", static_cast<double> (drift));

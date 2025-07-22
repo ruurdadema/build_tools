@@ -15,10 +15,7 @@
 
 #include <juce_audio_devices/juce_audio_devices.h>
 
-class AudioSendersModel :
-    public rav::RavennaNode::Subscriber,
-    public juce::AudioIODeviceCallback,
-    public rav::ptp::Instance::Subscriber
+class AudioSendersModel : public rav::RavennaNode::Subscriber, public juce::AudioIODeviceCallback
 {
 public:
     struct SenderState
@@ -124,11 +121,12 @@ private:
     struct RealtimeSharedContext
     {
         std::vector<Sender*> senders;
-        std::optional<uint32_t> rtp_ts {};
+        std::optional<uint32_t> current_ts {};
         rav::AudioFormat deviceFormat;
     };
 
     rav::RavennaNode& node_;
+    rav::ptp::Instance::Subscriber ptpSubscriber_;
     rav::AudioFormat deviceFormat_;
     std::vector<std::unique_ptr<Sender>> senders_;
     rav::SubscriberList<Subscriber> subscribers_;
