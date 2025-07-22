@@ -260,6 +260,7 @@ ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id
         auto config = configuration_;
         config.delay_frames = value;
         audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (config));
+        unfocusAllComponents();
     };
     delayEditor_.onEscapeKey = [this] {
         delayEditor_.setText (juce::String (configuration_.delay_frames));

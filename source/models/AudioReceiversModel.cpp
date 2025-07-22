@@ -141,7 +141,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     // Positive means audio device is ahead of the PTP clock, negative means behind
     auto drift = rav::WrappingUint32 (ptp_ts).diff (*current_ts_);
 
-    if (static_cast<uint32_t>(std::abs (drift)) > outputBuffer.num_frames() * 2)
+    if (static_cast<uint32_t> (std::abs (drift)) > outputBuffer.num_frames() * 2)
     {
         current_ts_ = ptp_ts;
         RAV_WARNING ("Re-aligned receivers to: {}", ptp_ts);
@@ -296,6 +296,7 @@ void AudioReceiversModel::Receiver::ravenna_receiver_configuration_updated (
     executor_.callAsync ([this, receiverId, configuration] {
         RAV_ASSERT (receiverId == receiverId_, "Receiver ID mismatch");
         state_.configuration = configuration;
+        updateRealtimeSharedState();
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioReceiverUpdated (receiverId, &state_);
     });
@@ -354,6 +355,10 @@ void AudioReceiversModel::Receiver::updateRealtimeSharedState()
     if (!realtimeSharedState_.update (std::move (newState)))
     {
         RAV_ERROR ("Failed to update realtime shared state");
+    }
+    else
+    {
+        RAV_TRACE ("State updated");
     }
 }
 
