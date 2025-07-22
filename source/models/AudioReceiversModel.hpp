@@ -134,9 +134,7 @@ private:
         void prepareInput (const rav::AudioFormat& format);
         void prepareOutput (const rav::AudioFormat& format, uint32_t maxNumFramesPerBlock);
 
-        std::optional<uint32_t> processBlock (
-            const rav::AudioBufferView<float>& outputBuffer,
-            std::optional<uint32_t> atTimestamp);
+        std::optional<uint32_t> processBlock (const rav::AudioBufferView<float>& outputBuffer, uint32_t currentTs);
 
         // rav::rtp_stream_receiver::subscriber overrides
         void ravenna_receiver_parameters_updated (const rav::rtp::Receiver3::ReaderParameters& parameters) override;
@@ -169,6 +167,7 @@ private:
     };
 
     rav::RavennaNode& node_;
+    rav::ptp::Instance::Subscriber ptpSubscriber_;
     std::vector<std::unique_ptr<Receiver>> receivers_;
     rav::AudioFormat targetFormat_;
     uint32_t maxNumFramesPerBlock_ {};
@@ -176,6 +175,9 @@ private:
     rav::SubscriberList<Subscriber> subscribers_;
     rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
     MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
+
+    // Audio thread:
+    std::optional<uint32_t> current_ts_{};
 
     [[nodiscard]] Receiver* findReceiver (rav::Id receiverId) const;
     void updateRealtimeSharedContext();

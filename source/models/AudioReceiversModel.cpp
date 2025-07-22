@@ -16,10 +16,12 @@
 AudioReceiversModel::AudioReceiversModel (rav::RavennaNode& node) : node_ (node)
 {
     node_.subscribe (this).wait();
+    node_.subscribe_to_ptp_instance (&ptpSubscriber_).wait();
 }
 
 AudioReceiversModel::~AudioReceiversModel()
 {
+    node_.unsubscribe_from_ptp_instance (&ptpSubscriber_).wait();
     node_.unsubscribe (this).wait();
 }
 
@@ -124,17 +126,38 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
 
     outputBuffer.clear();
 
+    const auto& local_clock = ptpSubscriber_.get_local_clock();
+    if (!local_clock.is_calibrated())
+        return;
+
     const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
                                         .with_num_frames (static_cast<size_t> (numSamples));
 
+    const auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_samples (targetFormat_.sample_rate));
+
+    if (!current_ts_.has_value())
+        current_ts_ = ptp_ts;
+
+    auto drift = rav::WrappingUint32 (ptp_ts).diff (*current_ts_);
+
+    if (static_cast<uint32_t>(std::abs (drift)) > outputBuffer.num_frames() * 2)
+    {
+        current_ts_ = ptp_ts;
+        RAV_WARNING ("Updated current timestamp to: {}", ptp_ts);
+        drift = rav::WrappingUint32 (ptp_ts).diff (*current_ts_);
+    }
+
+    TRACY_PLOT ("receiver drift", static_cast<double> (drift));
+
     const auto lock = realtimeSharedContext_.lock_realtime();
 
-    std::optional<uint32_t> atTimestamp;
     for (auto* receiver : lock->receivers)
     {
-        atTimestamp = receiver->processBlock (intermediateBuffer, atTimestamp);
-        outputBuffer.add (intermediateBuffer);
+        if (receiver->processBlock (intermediateBuffer, *current_ts_))
+            outputBuffer.add (intermediateBuffer);
     }
+
+    *current_ts_ += static_cast<uint32_t> (outputBuffer.num_frames());
 }
 
 void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
@@ -222,7 +245,7 @@ void AudioReceiversModel::Receiver::prepareOutput (const rav::AudioFormat& forma
 
 std::optional<uint32_t> AudioReceiversModel::Receiver::processBlock (
     const rav::AudioBufferView<float>& outputBuffer,
-    const std::optional<uint32_t> atTimestamp)
+    const uint32_t currentTs)
 {
     TRACY_ZONE_SCOPED;
 
@@ -239,7 +262,8 @@ std::optional<uint32_t> AudioReceiversModel::Receiver::processBlock (
         return std::nullopt;
     }
 
-    return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, atTimestamp, {});
+    return owner_.node_
+        .read_audio_data_realtime (receiverId_, outputBuffer, currentTs - state->configuration.delay_frames, {});
 }
 
 void AudioReceiversModel::Receiver::ravenna_receiver_parameters_updated (

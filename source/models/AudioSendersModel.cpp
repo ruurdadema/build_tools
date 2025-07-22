@@ -155,7 +155,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
 
     // Positive means audio device is ahead of the PTP clock, negative means behind
     TRACY_PLOT (
-        "drift",
+        "sender drift",
         static_cast<int64_t> (rav::WrappingUint32 (ptp_ts).diff (rav::WrappingUint32 (*lock->rtp_ts))));
 
     for (const auto* sender : lock->senders)
