@@ -25,8 +25,8 @@ class AudioReceiversModel : public rav::RavennaNode::Subscriber, public juce::Au
 public:
     struct StreamState
     {
-        rav::rtp::Receiver3::StreamInfo stream;
-        rav::rtp::Receiver3::StreamState state {};
+        rav::rtp::AudioReceiver::StreamInfo stream;
+        rav::rtp::AudioReceiver::StreamState state {};
     };
 
     struct ReceiverState
@@ -137,19 +137,17 @@ private:
         std::optional<uint32_t> processBlock (const rav::AudioBufferView<float>& outputBuffer, uint32_t currentTs);
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void ravenna_receiver_parameters_updated (const rav::rtp::Receiver3::ReaderParameters& parameters) override;
+        void ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::ReaderParameters& parameters) override;
         void ravenna_receiver_configuration_updated (
             const rav::RavennaReceiver& receiver,
             const rav::RavennaReceiver::Configuration& configuration) override;
         void ravenna_receiver_stream_state_updated (
-            const rav::rtp::Receiver3::StreamInfo& stream_info,
-            rav::rtp::Receiver3::StreamState state) override;
+            const rav::rtp::AudioReceiver::StreamInfo& stream_info,
+            rav::rtp::AudioReceiver::StreamState state) override;
         void ravenna_receiver_stream_stats_updated (
             rav::Id receiver_id,
             size_t stream_index,
             const rav::rtp::PacketStats::Counters& stats) override;
-        void on_data_received (rav::WrappingUint32 timestamp) override;
-        void on_data_ready (rav::WrappingUint32 timestamp) override;
 
     private:
         AudioReceiversModel& owner_;

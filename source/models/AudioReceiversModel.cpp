@@ -268,7 +268,7 @@ std::optional<uint32_t> AudioReceiversModel::Receiver::processBlock (
 }
 
 void AudioReceiversModel::Receiver::ravenna_receiver_parameters_updated (
-    const rav::rtp::Receiver3::ReaderParameters& parameters)
+    const rav::rtp::AudioReceiver::ReaderParameters& parameters)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
@@ -303,8 +303,8 @@ void AudioReceiversModel::Receiver::ravenna_receiver_configuration_updated (
 }
 
 void AudioReceiversModel::Receiver::ravenna_receiver_stream_state_updated (
-    const rav::rtp::Receiver3::StreamInfo& stream_info,
-    const rav::rtp::Receiver3::StreamState state)
+    const rav::rtp::AudioReceiver::StreamInfo& stream_info,
+    const rav::rtp::AudioReceiver::StreamState state)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 
@@ -337,16 +337,6 @@ void AudioReceiversModel::Receiver::ravenna_receiver_stream_stats_updated (
         for (auto* subscriber : owner_.subscribers_)
             subscriber->onAudioReceiverStatsUpdated (receiver_id, stream_index, stats);
     });
-}
-
-void AudioReceiversModel::Receiver::on_data_received ([[maybe_unused]] const rav::WrappingUint32 timestamp)
-{
-    RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
-}
-
-void AudioReceiversModel::Receiver::on_data_ready ([[maybe_unused]] const rav::WrappingUint32 timestamp)
-{
-    RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 }
 
 void AudioReceiversModel::Receiver::updateRealtimeSharedState()
