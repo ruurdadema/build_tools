@@ -120,11 +120,16 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     RAV_ASSERT (numOutputChannels >= 0, "Num output channels must be >= 0");
     RAV_ASSERT (numSamples >= 0, "Num samples must be >= 0");
 
+
     rav::AudioBufferView outputBuffer { outputChannelData,
                                         static_cast<uint32_t> (numOutputChannels),
                                         static_cast<uint32_t> (numSamples) };
 
     outputBuffer.clear();
+
+    if (!targetFormat_.is_valid()) {
+        return;
+    }
 
     const auto& local_clock = ptpSubscriber_.get_local_clock();
     if (!local_clock.is_calibrated())
@@ -177,7 +182,7 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
 
     if (!new_format.is_valid())
     {
-        RAV_WARNING ("Audio device format is not valid");
+        RAV_WARNING ("Audio device format is not valid: {}", new_format.to_string());
         return;
     }
 
