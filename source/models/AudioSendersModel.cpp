@@ -13,12 +13,12 @@
 AudioSendersModel::AudioSendersModel (rav::RavennaNode& node) : node_ (node)
 {
     node_.subscribe (this).wait();
-    node_.subscribe_to_ptp_instance (this).wait();
+    node_.subscribe_to_ptp_instance (&ptpSubscriber_).wait();
 }
 
 AudioSendersModel::~AudioSendersModel()
 {
-    node_.unsubscribe_from_ptp_instance (this).wait();
+    node_.unsubscribe_from_ptp_instance (&ptpSubscriber_).wait();
     node_.unsubscribe (this).wait();
 }
 
@@ -143,25 +143,31 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     if (!lock->deviceFormat.is_valid())
         return;
 
-    const auto clock = get_local_clock();
-    auto ptp_ts = static_cast<uint32_t> (clock.now().to_samples (lock->deviceFormat.sample_rate));
+    const auto& local_clock = ptpSubscriber_.get_local_clock();
+    if (!local_clock.is_calibrated())
+        return;
 
-    if (!lock->rtp_ts.has_value())
-    {
-        if (!clock.is_calibrated())
-            return;
-        lock->rtp_ts = ptp_ts;
-    }
+    auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_samples (lock->deviceFormat.sample_rate));
+
+    if (!lock->current_ts.has_value())
+        lock->current_ts = ptp_ts;
 
     // Positive means audio device is ahead of the PTP clock, negative means behind
-    TRACY_PLOT (
-        "drift",
-        static_cast<int64_t> (rav::WrappingUint32 (ptp_ts).diff (rav::WrappingUint32 (*lock->rtp_ts))));
+    auto drift = rav::WrappingUint32 (ptp_ts).diff (*lock->current_ts);
+
+    if (static_cast<uint32_t>(std::abs (drift)) > outputBuffer.num_frames() * 2)
+    {
+        lock->current_ts = ptp_ts;
+        RAV_WARNING ("Re-aligned senders to: {}", ptp_ts);
+        drift = 0;
+    }
+
+    TRACY_PLOT ("sender drift", static_cast<double> (drift));
 
     for (const auto* sender : lock->senders)
-        sender->processBlock (buffer, *lock->rtp_ts);
+        sender->processBlock (buffer, *lock->current_ts);
 
-    *lock->rtp_ts += static_cast<uint32_t> (numSamples);
+    *lock->current_ts += static_cast<uint32_t> (outputBuffer.num_frames());
 }
 
 void AudioSendersModel::audioDeviceAboutToStart (juce::AudioIODevice* device)

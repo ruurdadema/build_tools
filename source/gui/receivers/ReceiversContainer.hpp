@@ -27,6 +27,10 @@ public:
     void resizeToFitContent();
 
     void onAudioReceiverUpdated (rav::Id receiverId, const AudioReceiversModel::ReceiverState* state) override;
+    void onAudioReceiverStatsUpdated (
+        rav::Id receiverId,
+        size_t streamIndex,
+        const rav::rtp::PacketStats::Counters& stats) override;
 
 private:
     static constexpr int kRowHeight = 158;
@@ -68,7 +72,7 @@ private:
     {
     public:
         PacketStatsComponent();
-        void update (const rav::rtp::AudioReceiver::SessionStats* stats);
+        void update (const rav::rtp::PacketStats::Counters& stats);
         void resized() override;
 
     private:
@@ -80,7 +84,7 @@ private:
         juce::Label tooLateLabel_ { "too_late" };
     };
 
-    class Row : public Component, public juce::Timer
+    class Row : public Component
     {
     public:
         explicit Row (AudioReceiversModel& audioReceivers, rav::Id receiverId);
@@ -88,6 +92,7 @@ private:
         rav::Id getId() const;
 
         void update (const AudioReceiversModel::ReceiverState& state);
+        void update (size_t streamIndex, const rav::rtp::PacketStats::Counters& stats);
         void paint (juce::Graphics& g) override;
         void resized() override;
 
@@ -118,9 +123,6 @@ private:
         PacketStatsComponent secondaryPacketStats_;
 
         MessageThreadExecutor executor_;
-
-        void timerCallback() override;
-        void update();
     };
 
     ApplicationContext& context_;

@@ -91,6 +91,16 @@ void ReceiversContainer::onAudioReceiverUpdated (rav::Id receiverId, const Audio
     }
 }
 
+void ReceiversContainer::onAudioReceiverStatsUpdated (
+    const rav::Id receiverId,
+    const size_t streamIndex,
+    const rav::rtp::PacketStats::Counters& stats)
+{
+    for (auto* row : rows_)
+        if (row->getId() == receiverId)
+            row->update (streamIndex, stats);
+}
+
 ReceiversContainer::SdpViewer::SdpViewer (const std::string& sdpText)
 {
     applyButton_.onClick = [this] {
@@ -181,9 +191,7 @@ void ReceiversContainer::SessionInfoComponent::update (const AudioReceiversModel
     packetTimeLabel_.setText (
         "Packet time: " + juce::String (state->stream.packet_time_frames),
         juce::dontSendNotification);
-    statusLabel_.setText (
-        juce::String ("Status: ") + rav::rtp::AudioReceiver::to_string (state->state),
-        juce::dontSendNotification);
+    statusLabel_.setText (juce::String ("Status: ") + rav::rtp::to_string (state->state), juce::dontSendNotification);
 }
 
 void ReceiversContainer::SessionInfoComponent::resized()
@@ -208,22 +216,13 @@ ReceiversContainer::PacketStatsComponent::PacketStatsComponent()
     addAndMakeVisible (tooLateLabel_);
 }
 
-void ReceiversContainer::PacketStatsComponent::update (const rav::rtp::AudioReceiver::SessionStats* stats)
+void ReceiversContainer::PacketStatsComponent::update (const rav::rtp::PacketStats::Counters& stats)
 {
-    if (stats == nullptr)
-        return;
-
-    jitterMaxLabel_.setText (
-        "Max interval (ms): " + juce::String (stats->packet_interval_stats.max),
-        juce::dontSendNotification);
-    droppedLabel_.setText ("Dropped: " + juce::String (stats->packet_stats.dropped), juce::dontSendNotification);
-    duplicatesLabel_.setText (
-        "Duplicates: " + juce::String (stats->packet_stats.duplicates),
-        juce::dontSendNotification);
-    outOfOrderLabel_.setText (
-        "Out of Order: " + juce::String (stats->packet_stats.out_of_order),
-        juce::dontSendNotification);
-    tooLateLabel_.setText ("Too Late: " + juce::String (stats->packet_stats.too_late), juce::dontSendNotification);
+    jitterMaxLabel_.setText ("Jitter (ms): " + juce::String (stats.jitter), juce::dontSendNotification);
+    droppedLabel_.setText ("Dropped: " + juce::String (stats.dropped), juce::dontSendNotification);
+    duplicatesLabel_.setText ("Duplicates: " + juce::String (stats.duplicates), juce::dontSendNotification);
+    outOfOrderLabel_.setText ("Out of Order: " + juce::String (stats.out_of_order), juce::dontSendNotification);
+    tooLateLabel_.setText ("Too Late: " + juce::String (stats.too_late), juce::dontSendNotification);
 }
 
 void ReceiversContainer::PacketStatsComponent::resized()
@@ -261,6 +260,7 @@ ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id
         auto config = configuration_;
         config.delay_frames = value;
         audioReceivers_.updateReceiverConfiguration (receiverId_, std::move (config));
+        unfocusAllComponents();
     };
     delayEditor_.onEscapeKey = [this] {
         delayEditor_.setText (juce::String (configuration_.delay_frames));
@@ -324,8 +324,8 @@ ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id
     warningLabel_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
     addAndMakeVisible (warningLabel_);
 
-    update();
-    startTimer (1000);
+    update (0, {});
+    update (1, {});
 }
 
 rav::Id ReceiversContainer::Row::getId() const
@@ -354,8 +354,8 @@ void ReceiversContainer::Row::update (const AudioReceiversModel::ReceiverState& 
     else
         warningLabel_.setText ({}, juce::dontSendNotification);
 
-    const auto* pri = state.find_stream_for_rank (rav::Rank::primary());
-    const auto* sec = state.find_stream_for_rank (rav::Rank::secondary());
+    const auto* pri = !state.streams.empty() ? &state.streams[0] : nullptr;
+    const auto* sec = state.streams.size() >= 2 ? &state.streams[1] : nullptr;
 
     audioFormatLabel_.setText (state.inputFormat.to_string(), juce::dontSendNotification);
 
@@ -370,6 +370,18 @@ void ReceiversContainer::Row::update (const AudioReceiversModel::ReceiverState& 
 
     onOffButton_.setToggleState (state.configuration.enabled, juce::dontSendNotification);
     onOffButton_.setButtonText (state.configuration.enabled ? "On" : "Off");
+
+    repaint();
+}
+
+void ReceiversContainer::Row::update (const size_t streamIndex, const rav::rtp::PacketStats::Counters& stats)
+{
+    JUCE_ASSERT_MESSAGE_THREAD;
+
+    if (streamIndex == 0)
+        primaryPacketStats_.update (stats);
+    if (streamIndex == 1)
+        secondaryPacketStats_.update (stats);
 
     repaint();
 }
@@ -422,22 +434,4 @@ void ReceiversContainer::Row::resized()
 
     primaryPacketStats_.setBounds (column3.removeFromTop (rowHeight * 6));
     secondaryPacketStats_.setBounds (column4.removeFromTop (rowHeight * 6));
-}
-
-void ReceiversContainer::Row::timerCallback()
-{
-    update();
-}
-
-void ReceiversContainer::Row::update()
-{
-    TRACY_ZONE_SCOPED;
-
-    const auto stats_pri = audioReceivers_.getStatisticsForReceiver (receiverId_, rav::Rank::primary());
-    primaryPacketStats_.update (&stats_pri);
-
-    const auto stats_sec = audioReceivers_.getStatisticsForReceiver (receiverId_, rav::Rank::secondary());
-    secondaryPacketStats_.update (&stats_sec);
-
-    repaint();
 }

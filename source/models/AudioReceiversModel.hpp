@@ -25,8 +25,8 @@ class AudioReceiversModel : public rav::RavennaNode::Subscriber, public juce::Au
 public:
     struct StreamState
     {
-        rav::rtp::AudioReceiver::Stream stream;
-        rav::rtp::AudioReceiver::State state {};
+        rav::rtp::AudioReceiver::StreamInfo stream;
+        rav::rtp::AudioReceiver::StreamState state {};
     };
 
     struct ReceiverState
@@ -35,8 +35,6 @@ public:
         std::vector<StreamState> streams;
         rav::AudioFormat inputFormat;
         rav::AudioFormat outputFormat;
-
-        [[nodiscard]] const StreamState* find_stream_for_rank (rav::Rank rank) const;
     };
 
     class Subscriber
@@ -47,6 +45,16 @@ public:
         {
             std::ignore = receiverId;
             std::ignore = state;
+        }
+
+        virtual void onAudioReceiverStatsUpdated (
+            const rav::Id receiverId,
+            size_t streamIndex,
+            const rav::rtp::PacketStats::Counters& stats)
+        {
+            std::ignore = receiverId;
+            std::ignore = streamIndex;
+            std::ignore = stats;
         }
     };
 
@@ -83,15 +91,6 @@ public:
      * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
      */
     [[nodiscard]] std::optional<std::string> getSdpTextForReceiver (rav::Id receiverId) const;
-
-    /**
-     * Gets the packet statistics for a receiver.
-     * @param receiverId The receiver to get the packet statistics for.
-     * @param rank The rank of the stream to get the statistics for.
-     * @return The packet statistics for the receiver, or an empty structure if the receiver doesn't exist.
-     */
-    [[nodiscard]] rav::rtp::AudioReceiver::SessionStats getStatisticsForReceiver (rav::Id receiverId, rav::Rank rank)
-        const;
 
     /**
      * Adds a subscriber.
@@ -135,20 +134,20 @@ private:
         void prepareInput (const rav::AudioFormat& format);
         void prepareOutput (const rav::AudioFormat& format, uint32_t maxNumFramesPerBlock);
 
-        std::optional<uint32_t> processBlock (
-            const rav::AudioBufferView<float>& outputBuffer,
-            std::optional<uint32_t> atTimestamp);
+        std::optional<uint32_t> processBlock (const rav::AudioBufferView<float>& outputBuffer, uint32_t currentTs);
 
         // rav::rtp_stream_receiver::subscriber overrides
-        void ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::Parameters& parameters) override;
+        void ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::ReaderParameters& parameters) override;
         void ravenna_receiver_configuration_updated (
             const rav::RavennaReceiver& receiver,
             const rav::RavennaReceiver::Configuration& configuration) override;
         void ravenna_receiver_stream_state_updated (
-            const rav::rtp::AudioReceiver::Stream& stream,
-            rav::rtp::AudioReceiver::State state) override;
-        void on_data_received (rav::WrappingUint32 timestamp) override;
-        void on_data_ready (rav::WrappingUint32 timestamp) override;
+            const rav::rtp::AudioReceiver::StreamInfo& stream_info,
+            rav::rtp::AudioReceiver::StreamState state) override;
+        void ravenna_receiver_stream_stats_updated (
+            rav::Id receiver_id,
+            size_t stream_index,
+            const rav::rtp::PacketStats::Counters& stats) override;
 
     private:
         AudioReceiversModel& owner_;
@@ -166,6 +165,7 @@ private:
     };
 
     rav::RavennaNode& node_;
+    rav::ptp::Instance::Subscriber ptpSubscriber_;
     std::vector<std::unique_ptr<Receiver>> receivers_;
     rav::AudioFormat targetFormat_;
     uint32_t maxNumFramesPerBlock_ {};
@@ -173,6 +173,9 @@ private:
     rav::SubscriberList<Subscriber> subscribers_;
     rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
     MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
+
+    // Audio thread:
+    std::optional<uint32_t> current_ts_{};
 
     [[nodiscard]] Receiver* findReceiver (rav::Id receiverId) const;
     void updateRealtimeSharedContext();
