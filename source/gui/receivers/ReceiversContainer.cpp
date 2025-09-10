@@ -274,7 +274,7 @@ ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id
     showSdpButton_.setButtonText ("SDP");
     showSdpButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     showSdpButton_.onClick = [this] {
-        auto content = std::make_unique<SdpViewer> (rav::sdp::to_string (configuration_.sdp));
+        auto content = std::make_unique<SdpViewer> (rav::sdp::to_string (configuration_.sdp).value_or (""));
         content->setSize (400, 400);
         content->onApply = [this] (rav::sdp::SessionDescription sdp) {
             auto config = configuration_;
