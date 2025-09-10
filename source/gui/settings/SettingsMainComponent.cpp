@@ -75,7 +75,7 @@ void SettingsMainComponent::network_interface_config_updated (const rav::Network
 
         const auto networkInterfaces = rav::NetworkInterfaceList::get_system_interfaces();
 
-        if (const auto* primary = config.get_interface_for_rank (rav::Rank::primary()))
+        if (const auto* primary = config.get_interface_for_rank (rav::Rank::primary().value()))
         {
             if (auto* iface = networkInterfaces.get_interface (*primary))
             {
@@ -95,7 +95,7 @@ void SettingsMainComponent::network_interface_config_updated (const rav::Network
             safeThis->primaryNetworkInterfaceComboBox_.setSelectedId (0, juce::dontSendNotification);
         }
 
-        if (const auto* secondary = config.get_interface_for_rank (rav::Rank::secondary()))
+        if (const auto* secondary = config.get_interface_for_rank (rav::Rank::secondary().value()))
         {
             if (auto* iface = networkInterfaces.get_interface (*secondary))
             {
@@ -148,12 +148,12 @@ void SettingsMainComponent::selectNetworkInterfaces() const
     auto id = primaryNetworkInterfaceComboBox_.getSelectedId();
     RAV_ASSERT (id <= networkInterfaces_.size(), "Invalid id");
     if (id > 0)
-        config.set_interface (rav::Rank::primary(), networkInterfaces_[id - 1]);
+        config.set_interface (rav::Rank::primary().value(), networkInterfaces_[id - 1]);
 
     id = secondaryNetworkInterfaceComboBox_.getSelectedId();
     RAV_ASSERT (id <= networkInterfaces_.size(), "Invalid id");
     if (id > 0)
-        config.set_interface (rav::Rank::secondary(), networkInterfaces_[id - 1]);
+        config.set_interface (rav::Rank::secondary().value(), networkInterfaces_[id - 1]);
 
     context_.getRavennaNode().set_network_interface_config (config).wait();
 }

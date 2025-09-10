@@ -114,7 +114,7 @@ def get_signtool_command(args):
     return ' '.join(signtool_get_sign_command(args.windows_code_sign_identity))
 
 
-def pack_windows(args, path_to_build_x64: Path, build_config: Config):
+def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     path_to_build_archive = Path(args.path_to_build).joinpath('archive')
 
     def copy_into_archive(file: Path, sub_folder: Path = Path()):
@@ -306,7 +306,7 @@ def build(args):
         archive = pack_and_sign_macos(args, path_to_build, build_config)
     elif platform.system() == 'Windows':
         path_to_build_x64 = build_windows(args, 'x64', build_config)
-        archive = pack_windows(args, path_to_build_x64, build_config)
+        archive = pack_and_sign_windows(args, path_to_build_x64, build_config)
 
     if archive and args.upload:
         upload_to_spaces(args, archive)
