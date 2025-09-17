@@ -14,6 +14,7 @@ DiscoveredMainComponent::DiscoveredMainComponent (ApplicationContext& appContext
     discoveredContainer_ (appContext, windowContext)
 {
     viewport_.setViewedComponent (&discoveredContainer_, false);
+    viewport_.setScrollBarsShown (true, false, true, false);
     addAndMakeVisible (viewport_);
 }
 

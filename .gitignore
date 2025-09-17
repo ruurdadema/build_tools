@@ -7,3 +7,4 @@ build/
 test-reports/
 xcode-build/
 win-build/
+application_state.json
