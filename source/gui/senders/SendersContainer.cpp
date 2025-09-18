@@ -138,7 +138,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         juce::TextEditor::unfocusAllComponents();
     };
     sessionNameEditor_.onFocusLost = [this] {
-        sessionNameEditor_.setText (senderState_.senderConfiguration.session_name, juce::dontSendNotification);
+        sessionNameEditor_.onReturnKey();
     };
     addAndMakeVisible (sessionNameEditor_);
 
@@ -215,9 +215,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         juce::TextEditor::unfocusAllComponents();
     };
     primaryAddressEditor_.onFocusLost = [this] {
-        primaryAddressEditor_.setText (
-            getDestinationAddress (rav::Rank::primary()).to_string(),
-            juce::dontSendNotification);
+        primaryAddressEditor_.onReturnKey();
     };
     addAndMakeVisible (primaryAddressEditor_);
 
@@ -264,9 +262,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         juce::TextEditor::unfocusAllComponents();
     };
     secondaryAddressEditor_.onFocusLost = [this] {
-        secondaryAddressEditor_.setText (
-            getDestinationAddress (rav::Rank::secondary()).to_string(),
-            juce::dontSendNotification);
+        secondaryAddressEditor_.onReturnKey();
     };
     addAndMakeVisible (secondaryAddressEditor_);
 
@@ -287,7 +283,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         juce::TextEditor::unfocusAllComponents();
     };
     ttlEditor_.onFocusLost = [this] {
-        ttlEditor_.setText (juce::String (senderState_.senderConfiguration.ttl), juce::dontSendNotification);
+        ttlEditor_.onReturnKey();
     };
     addAndMakeVisible (ttlEditor_);
 
@@ -310,9 +306,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         juce::TextEditor::unfocusAllComponents();
     };
     payloadTypeEditor_.onFocusLost = [this] {
-        payloadTypeEditor_.setText (
-            juce::String (senderState_.senderConfiguration.payload_type),
-            juce::dontSendNotification);
+        payloadTypeEditor_.onReturnKey();
     };
     addAndMakeVisible (payloadTypeEditor_);
 
@@ -336,9 +330,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         juce::TextEditor::unfocusAllComponents();
     };
     numChannelsEditor_.onFocusLost = [this] {
-        numChannelsEditor_.setText (
-            juce::String (senderState_.senderConfiguration.audio_format.num_channels),
-            juce::dontSendNotification);
+        numChannelsEditor_.onReturnKey();
     };
     addAndMakeVisible (numChannelsEditor_);
 

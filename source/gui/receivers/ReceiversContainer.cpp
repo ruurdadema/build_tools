@@ -267,7 +267,7 @@ ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id
         unfocusAllComponents();
     };
     delayEditor_.onFocusLost = [this] {
-        delayEditor_.setText (juce::String (configuration_.delay_frames));
+        delayEditor_.onReturnKey();
     };
     addAndMakeVisible (delayEditor_);
 
