@@ -128,9 +128,9 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
 
     sessionNameEditor_.setIndents (8, 8);
     sessionNameEditor_.onReturnKey = [this] {
-        rav::RavennaSender::Configuration update;
-        update.session_name = sessionNameEditor_.getText().toStdString();
-        audioSenders_.updateSenderConfiguration (senderId_, std::move (update));
+        auto configuration = senderState_.senderConfiguration;
+        configuration.session_name = sessionNameEditor_.getText().toStdString();
+        audioSenders_.updateSenderConfiguration (senderId_, std::move (configuration));
         juce::TextEditor::unfocusAllComponents();
     };
     sessionNameEditor_.onEscapeKey = [this] {
