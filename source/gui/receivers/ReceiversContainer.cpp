@@ -267,14 +267,14 @@ ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id
         unfocusAllComponents();
     };
     delayEditor_.onFocusLost = [this] {
-        delayEditor_.setText (juce::String (configuration_.delay_frames));
+        delayEditor_.onReturnKey();
     };
     addAndMakeVisible (delayEditor_);
 
     showSdpButton_.setButtonText ("SDP");
     showSdpButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     showSdpButton_.onClick = [this] {
-        auto content = std::make_unique<SdpViewer> (rav::sdp::to_string (configuration_.sdp));
+        auto content = std::make_unique<SdpViewer> (rav::sdp::to_string (configuration_.sdp).value_or (""));
         content->setSize (400, 400);
         content->onApply = [this] (rav::sdp::SessionDescription sdp) {
             auto config = configuration_;

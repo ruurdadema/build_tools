@@ -63,7 +63,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
         juce::TextEditor::unfocusAllComponents();
     };
     registryAddressEditor_.onFocusLost = [this] {
-        registryAddressEditor_.setText (nmosConfiguration_.registry_address, juce::dontSendNotification);
+        registryAddressEditor_.onReturnKey();
     };
     registryAddressEditor_.setTextToShowWhenEmpty ("http://<ip-address>:<port>", Constants::Colours::textDisabled);
     registryAddressEditor_.setIndents (6, 6);
@@ -109,7 +109,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
         juce::TextEditor::unfocusAllComponents();
     };
     nmosLabelEditor_.onFocusLost = [this] {
-        nmosLabelEditor_.setText (nmosConfiguration_.label, juce::dontSendNotification);
+        nmosLabelEditor_.onReturnKey();
     };
     nmosLabelEditor_.setTextToShowWhenEmpty ("Optional freeform label", Constants::Colours::textDisabled);
     nmosLabelEditor_.setIndents (6, 6);
@@ -131,7 +131,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
         juce::TextEditor::unfocusAllComponents();
     };
     nmosDescriptionEditor_.onFocusLost = [this] {
-        nmosDescriptionEditor_.setText (nmosConfiguration_.description, juce::dontSendNotification);
+        nmosDescriptionEditor_.onReturnKey();
     };
     nmosDescriptionEditor_.setTextToShowWhenEmpty ("Optional description", Constants::Colours::textDisabled);
     nmosDescriptionEditor_.setIndents (6, 6);
@@ -152,7 +152,10 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
         update_api_port_editor(nmosConfiguration_.api_port);
         juce::TextEditor::unfocusAllComponents();
     };
-    // nmosApiPortEditor_.setInputRestrictions (5, "0123456789");
+    nmosApiPortEditor_.onFocusLost = [this] {
+        nmosApiPortEditor_.onReturnKey();
+    };
+    nmosApiPortEditor_.setInputRestrictions (5, "0123456789");
     nmosApiPortEditor_.setIndents (6, 6);
     addAndMakeVisible (nmosApiPortEditor_);
 
