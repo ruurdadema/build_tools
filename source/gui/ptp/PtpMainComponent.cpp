@@ -21,7 +21,7 @@ juce::Colour ptpStateToColour (const rav::ptp::State state)
     case rav::ptp::State::uncalibrated:
         return juce::Colours::orange;
     case rav::ptp::State::slave:
-        return juce::Colours::green.brighter(0.5f);
+        return juce::Colours::green.brighter (0.5f);
     default:
         return juce::Colours::white;
     }
@@ -50,18 +50,40 @@ PtpMainComponent::PtpMainComponent ([[maybe_unused]] ApplicationContext& context
     port1StatusTitle_.setText ("Port 1 Status", juce::dontSendNotification);
     addAndMakeVisible (port1StatusTitle_);
 
-    port1StatusValue_.setText ("disabled", juce::dontSendNotification);
     addAndMakeVisible (port1StatusValue_);
 
     port2StatusTitle_.setText ("Port 2 Status", juce::dontSendNotification);
     addAndMakeVisible (port2StatusTitle_);
 
-    port2StatusValue_.setText ("disabled", juce::dontSendNotification);
     addAndMakeVisible (port2StatusValue_);
 
     currentTimeTitle_.setText ("Current time (TAI)", juce::dontSendNotification);
     addAndMakeVisible (currentTimeTitle_);
     addAndMakeVisible (currentTimeValue_);
+
+    domainTitle_.setText ("Domain", juce::dontSendNotification);
+    addAndMakeVisible (domainTitle_);
+
+    domainTextEditor_.setInputRestrictions (3, "0123456789");
+    domainTextEditor_.onReturnKey = [this] {
+        auto config = ptp_config_;
+        config.domain_number = static_cast<uint8_t> (domainTextEditor_.getText().getIntValue());
+        if (auto result = ravenna_node_.set_ptp_instance_configuration (config).get(); !result)
+        {
+            RAV_ERROR ("Failed to update PTP config: {}", result.error());
+        }
+        juce::TextEditor::unfocusAllComponents();
+    };
+    domainTextEditor_.onEscapeKey = [this] {
+        domainTextEditor_.setText (juce::String (ptp_config_.domain_number), juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
+    };
+    domainTextEditor_.onFocusLost = [this] {
+        domainTextEditor_.onReturnKey();
+    };
+    addAndMakeVisible (domainTextEditor_);
+
+    reset();
 
     ravenna_node_.subscribe_to_ptp_instance (this).wait();
 
@@ -77,22 +99,27 @@ PtpMainComponent::~PtpMainComponent()
 
 void PtpMainComponent::resized()
 {
-    using Tr = juce::Grid::TrackInfo;
-    using Fr = juce::Grid::Fr;
+    auto b = getLocalBounds().reduced (20);
 
-    juce::Grid grid;
-    grid.templateRows = { Tr (Fr (1)), Tr (Fr (1)), Tr (Fr (1)), Tr (Fr (1)),
-                          Tr (Fr (1)), Tr (Fr (1)), Tr (Fr (1)), Tr (Fr (1)) };
-    grid.templateColumns = { Tr (Fr (1)), Tr (Fr (3)) };
-    grid.items = {
-        juce::GridItem (grandmasterIdTitle_), juce::GridItem (grandmasterIdValue_), juce::GridItem (parentPortIdTitle_),
-        juce::GridItem (parentPortIdValue_),  juce::GridItem (priority1Title_),     juce::GridItem (priority1Value_),
-        juce::GridItem (priority2Title_),     juce::GridItem (priority2Value_),     juce::GridItem (port1StatusTitle_),
-        juce::GridItem (port1StatusValue_),   juce::GridItem (port2StatusTitle_),   juce::GridItem (port2StatusValue_),
-        juce::GridItem (currentTimeTitle_),   juce::GridItem (currentTimeValue_),
+    auto left = b.removeFromLeft (200);
+    auto right = b.removeFromLeft (300);
+
+    auto h = 30;
+    auto addRow = [&left, &right, &h] (Component& l, Component& r) {
+        l.setBounds (left.removeFromTop (h));
+        r.setBounds (right.removeFromTop (h));
     };
 
-    grid.performLayout (getLocalBounds().reduced (20).withWidth (580).withHeight (220));
+    addRow (grandmasterIdTitle_, grandmasterIdValue_);
+    addRow (parentPortIdTitle_, parentPortIdValue_);
+    addRow (priority1Title_, priority1Value_);
+    addRow (priority2Title_, priority2Value_);
+    addRow (port1StatusTitle_, port1StatusValue_);
+    addRow (port2StatusTitle_, port2StatusValue_);
+    addRow (currentTimeTitle_, currentTimeValue_);
+
+    domainTitle_.setBounds (left.removeFromTop (h));
+    domainTextEditor_.setBounds (right.removeFromTop (h).reduced (3).withWidth (80));
 }
 
 void PtpMainComponent::ptp_parent_changed (const rav::ptp::ParentDs& parent)
@@ -144,7 +171,32 @@ void PtpMainComponent::ptp_port_removed (const uint16_t portNumber)
     });
 }
 
+void PtpMainComponent::ptp_configuration_updated (const rav::ptp::Instance::Configuration& config)
+{
+    executor_.callAsync ([this, config] {
+        ptp_config_ = config;
+        domainTextEditor_.setText (juce::String (ptp_config_.domain_number), juce::dontSendNotification);
+    });
+}
+
 void PtpMainComponent::timerCallback()
 {
     currentTimeValue_.setText (get_local_clock().now().to_rfc3339_tai(), juce::dontSendNotification);
+}
+
+void PtpMainComponent::reset()
+{
+    grandmasterIdValue_.setText ({}, juce::dontSendNotification);
+    parentPortIdValue_.setText ({}, juce::dontSendNotification);
+
+    priority1Value_.setText ({}, juce::dontSendNotification);
+    priority2Value_.setText ({}, juce::dontSendNotification);
+
+    port1StatusValue_.setColour (juce::Label::ColourIds::textColourId, juce::Colours::grey);
+    port1StatusValue_.setText ("disabled", juce::dontSendNotification);
+
+    port2StatusValue_.setColour (juce::Label::ColourIds::textColourId, juce::Colours::grey);
+    port2StatusValue_.setText ("disabled", juce::dontSendNotification);
+
+    currentTimeValue_.setText ({}, juce::dontSendNotification);
 }
