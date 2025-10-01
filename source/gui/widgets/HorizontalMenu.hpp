@@ -32,6 +32,7 @@ private:
     public:
         MenuItem (const juce::String& name, const juce::String& path, std::function<void()> onClick);
 
+        float getIdealWidth() const;
         void triggerClick();
         void setActive (bool active);
         const juce::String& getPath() const;
@@ -39,6 +40,7 @@ private:
         void resized() override;
 
     private:
+        juce::FontOptions font_ {16.f};
         bool active_ = false;
         juce::String path_;
         juce::HyperlinkButton button_;

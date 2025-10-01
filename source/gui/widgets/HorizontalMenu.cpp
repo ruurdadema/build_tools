@@ -57,16 +57,22 @@ void HorizontalMenu::resized()
 {
     auto b = getLocalBounds();
     for (auto* item : buttons_)
-        item->setBounds (b.removeFromLeft (100));
+        item->setBounds (b.removeFromLeft (static_cast<int> (item->getIdealWidth())));
 }
+
 HorizontalMenu::MenuItem::MenuItem (const juce::String& name, const juce::String& path, std::function<void()> onClick)
 {
     path_ = path;
     button_.setButtonText (name);
-    button_.setFont (juce::FontOptions (16.f), false);
+    button_.setFont (font_, false);
     button_.onClick = std::move (onClick);
 
     addAndMakeVisible (button_);
+}
+
+float HorizontalMenu::MenuItem::getIdealWidth() const
+{
+    return juce::TextLayout::getStringWidth (font_, button_.getButtonText()) + 50;
 }
 
 void HorizontalMenu::MenuItem::triggerClick()
