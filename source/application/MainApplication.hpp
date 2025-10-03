@@ -16,8 +16,6 @@
 #include "ravennakit/core/support.hpp"
 #include "ravennakit/core/system.hpp"
 
-#include <CLI/CLI.hpp>
-
 #include <memory>
 
 class MainApplication final : public juce::JUCEApplication, public ApplicationContext
