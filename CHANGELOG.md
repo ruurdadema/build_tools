@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- A tab showing PTP status information.
-- The ability to configure the PTP domain.
+- Added a tab showing PTP status information.
+- Added the ability to configure the PTP domain.
+- Added the version info (under settings)
 
 ## v0.13.0 - September 18, 2025

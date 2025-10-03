@@ -35,6 +35,16 @@ SettingsMainComponent::SettingsMainComponent (ApplicationContext& context) : con
     };
     addAndMakeVisible (secondaryNetworkInterfaceComboBox_);
 
+    buildInfoTitleLabel_.setText ("Version", juce::dontSendNotification);
+    buildInfoTitleLabel_.setFont (juce::FontOptions (16.f, juce::Font::bold));
+    addAndMakeVisible (buildInfoTitleLabel_);
+
+    applicationVersionTitleLabel_.setText ("Application Version", juce::dontSendNotification);
+    addAndMakeVisible (applicationVersionTitleLabel_);
+
+    applicationVersionLabel_.setText (PROJECT_VERSION_STRING, juce::dontSendNotification);
+    addAndMakeVisible (applicationVersionLabel_);
+
     updateNetworkInterfaces();
 
     context_.getRavennaNode().subscribe (this).wait();
@@ -62,6 +72,15 @@ void SettingsMainComponent::resized()
     row = b.removeFromTop (28);
     secondaryNetworkInterfaceLabel_.setBounds (row.removeFromLeft (left));
     secondaryNetworkInterfaceComboBox_.setBounds (row.withWidth (width));
+
+    b.removeFromTop (10);
+
+    buildInfoTitleLabel_.setBounds (b.removeFromTop (28));
+
+    row = b.removeFromTop (28);
+
+    applicationVersionTitleLabel_.setBounds (row.removeFromLeft (left));
+    applicationVersionLabel_.setBounds (row.withWidth (width));
 }
 
 void SettingsMainComponent::network_interface_config_updated (const rav::NetworkInterfaceConfig& config)

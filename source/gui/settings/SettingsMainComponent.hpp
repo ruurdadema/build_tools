@@ -28,11 +28,19 @@ public:
 private:
     [[maybe_unused]] ApplicationContext& context_;
     juce::Label networkSettingsLabel_;
+
     juce::Label primaryNetworkInterfaceLabel_;
     juce::ComboBox primaryNetworkInterfaceComboBox_;
+
     juce::Label secondaryNetworkInterfaceLabel_;
     juce::ComboBox secondaryNetworkInterfaceComboBox_;
+
     juce::Array<rav::NetworkInterface::Identifier> networkInterfaces_;
+
+    juce::Label buildInfoTitleLabel_;
+
+    juce::Label applicationVersionTitleLabel_;
+    juce::Label applicationVersionLabel_;
 
     void updateNetworkInterfaces();
     void selectNetworkInterfaces() const;
