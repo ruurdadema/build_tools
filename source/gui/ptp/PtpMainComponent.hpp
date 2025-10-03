@@ -17,7 +17,7 @@
 class PtpMainComponent : public juce::Component, public rav::ptp::Instance::Subscriber, juce::Timer
 {
 public:
-    explicit PtpMainComponent(ApplicationContext& context);
+    explicit PtpMainComponent (ApplicationContext& context);
     ~PtpMainComponent() override;
 
     void resized() override;

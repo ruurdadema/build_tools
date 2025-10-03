@@ -27,10 +27,7 @@ public:
     void resizeToFitContent();
 
     void onAudioReceiverUpdated (rav::Id receiverId, const AudioReceiversModel::ReceiverState* state) override;
-    void onAudioReceiverStatsUpdated (
-        rav::Id receiverId,
-        size_t streamIndex,
-        const rav::rtp::PacketStats::Counters& stats) override;
+    void onAudioReceiverStatsUpdated (rav::Id receiverId, size_t streamIndex, const rav::rtp::PacketStats::Counters& stats) override;
 
 private:
     static constexpr int kRowHeight = 158;
@@ -40,7 +37,7 @@ private:
     class SdpViewer : public Component
     {
     public:
-        rav::SafeFunction<void(rav::sdp::SessionDescription sdp)> onApply;
+        rav::SafeFunction<void (rav::sdp::SessionDescription sdp)> onApply;
 
         explicit SdpViewer (const std::string& sdpText);
         ~SdpViewer() override;

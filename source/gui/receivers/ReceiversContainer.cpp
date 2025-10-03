@@ -188,9 +188,7 @@ void ReceiversContainer::SessionInfoComponent::update (const AudioReceiversModel
         return;
 
     sessionInfoLabel_.setText ("Session: " + state->stream.session.to_string(), juce::dontSendNotification);
-    packetTimeLabel_.setText (
-        "Packet time: " + juce::String (state->stream.packet_time_frames),
-        juce::dontSendNotification);
+    packetTimeLabel_.setText ("Packet time: " + juce::String (state->stream.packet_time_frames), juce::dontSendNotification);
     statusLabel_.setText (juce::String ("Status: ") + rav::rtp::to_string (state->state), juce::dontSendNotification);
 }
 

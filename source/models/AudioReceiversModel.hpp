@@ -144,10 +144,8 @@ private:
         void ravenna_receiver_stream_state_updated (
             const rav::rtp::AudioReceiver::StreamInfo& stream_info,
             rav::rtp::AudioReceiver::StreamState state) override;
-        void ravenna_receiver_stream_stats_updated (
-            rav::Id receiver_id,
-            size_t stream_index,
-            const rav::rtp::PacketStats::Counters& stats) override;
+        void ravenna_receiver_stream_stats_updated (rav::Id receiver_id, size_t stream_index, const rav::rtp::PacketStats::Counters& stats)
+            override;
 
     private:
         AudioReceiversModel& owner_;
@@ -175,7 +173,7 @@ private:
     MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
 
     // Audio thread:
-    std::optional<uint32_t> current_ts_{};
+    std::optional<uint32_t> current_ts_ {};
 
     [[nodiscard]] Receiver* findReceiver (rav::Id receiverId) const;
     void updateRealtimeSharedContext();

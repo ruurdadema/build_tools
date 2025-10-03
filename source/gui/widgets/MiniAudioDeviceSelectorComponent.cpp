@@ -23,9 +23,7 @@ namespace
 constexpr auto kNoneDevice = "< < none > >";
 }
 
-MiniAudioDeviceSelectorComponent::MiniAudioDeviceSelectorComponent (
-    juce::AudioDeviceManager& deviceManager,
-    const Direction direction) :
+MiniAudioDeviceSelectorComponent::MiniAudioDeviceSelectorComponent (juce::AudioDeviceManager& deviceManager, const Direction direction) :
     audioDeviceManager_ (deviceManager),
     direction_ (direction)
 {

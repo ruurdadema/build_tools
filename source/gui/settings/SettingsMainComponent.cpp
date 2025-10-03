@@ -98,15 +98,11 @@ void SettingsMainComponent::network_interface_config_updated (const rav::Network
         {
             if (auto* iface = networkInterfaces.get_interface (*primary))
             {
-                safeThis->primaryNetworkInterfaceComboBox_.setText (
-                    iface->get_extended_display_name(),
-                    juce::dontSendNotification);
+                safeThis->primaryNetworkInterfaceComboBox_.setText (iface->get_extended_display_name(), juce::dontSendNotification);
             }
             else
             {
-                safeThis->primaryNetworkInterfaceComboBox_.setText (
-                    *primary + " (not found)",
-                    juce::dontSendNotification);
+                safeThis->primaryNetworkInterfaceComboBox_.setText (*primary + " (not found)", juce::dontSendNotification);
             }
         }
         else
@@ -118,15 +114,11 @@ void SettingsMainComponent::network_interface_config_updated (const rav::Network
         {
             if (auto* iface = networkInterfaces.get_interface (*secondary))
             {
-                safeThis->secondaryNetworkInterfaceComboBox_.setText (
-                    iface->get_extended_display_name(),
-                    juce::dontSendNotification);
+                safeThis->secondaryNetworkInterfaceComboBox_.setText (iface->get_extended_display_name(), juce::dontSendNotification);
             }
             else
             {
-                safeThis->secondaryNetworkInterfaceComboBox_.setText (
-                    *secondary + " (not found)",
-                    juce::dontSendNotification);
+                safeThis->secondaryNetworkInterfaceComboBox_.setText (*secondary + " (not found)", juce::dontSendNotification);
             }
         }
         else

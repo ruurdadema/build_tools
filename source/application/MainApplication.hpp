@@ -10,9 +10,9 @@
 
 #pragma once
 
-#include "models/AudioReceiversModel.hpp"
 #include "gui/MainComponent.hpp"
 #include "gui/lookandfeel/ThisLookAndFeel.hpp"
+#include "models/AudioReceiversModel.hpp"
 #include "ravennakit/core/support.hpp"
 #include "ravennakit/core/system.hpp"
 

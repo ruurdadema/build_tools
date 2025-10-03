@@ -80,9 +80,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
     }
 
     nmosVersionComboBox_.onChange = [this] {
-        RAV_ASSERT (
-            nmosVersionComboBox_.getSelectedId() > 0,
-            "NMOS version combo box selected ID should be greater than 0");
+        RAV_ASSERT (nmosVersionComboBox_.getSelectedId() > 0, "NMOS version combo box selected ID should be greater than 0");
         RAV_ASSERT (
             nmosVersionComboBox_.getSelectedId() <= static_cast<int> (rav::nmos::Node::k_node_api_versions.size()),
             "NMOS version combo box selected ID should be less than or equal to the number of supported API versions");
@@ -149,7 +147,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
         juce::TextEditor::unfocusAllComponents();
     };
     nmosApiPortEditor_.onEscapeKey = [this] {
-        update_api_port_editor(nmosConfiguration_.api_port);
+        update_api_port_editor (nmosConfiguration_.api_port);
         juce::TextEditor::unfocusAllComponents();
     };
     nmosApiPortEditor_.onFocusLost = [this] {
@@ -274,9 +272,7 @@ void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configu
     executor_.callAsync ([this, config] {
         nmosConfiguration_ = config;
         nmosEnabledToggle_.setToggleState (nmosConfiguration_.enabled, juce::dontSendNotification);
-        operationModeComboBox_.setSelectedId (
-            static_cast<int> (nmosConfiguration_.operation_mode) + 1,
-            juce::dontSendNotification);
+        operationModeComboBox_.setSelectedId (static_cast<int> (nmosConfiguration_.operation_mode) + 1, juce::dontSendNotification);
         registryAddressLabel_.setVisible (nmosConfiguration_.operation_mode == rav::nmos::OperationMode::manual);
         registryAddressEditor_.setVisible (nmosConfiguration_.operation_mode == rav::nmos::OperationMode::manual);
         registryAddressEditor_.setText (nmosConfiguration_.registry_address, juce::dontSendNotification);
@@ -288,14 +284,12 @@ void NmosMainComponent::nmos_node_config_updated (const rav::nmos::Node::Configu
 
         nmosLabelEditor_.setText (nmosConfiguration_.label, juce::dontSendNotification);
         nmosDescriptionEditor_.setText (nmosConfiguration_.description, juce::dontSendNotification);
-        update_api_port_editor(nmosConfiguration_.api_port);
+        update_api_port_editor (nmosConfiguration_.api_port);
         resized();
     });
 }
 
-void NmosMainComponent::nmos_node_status_changed (
-    rav::nmos::Node::Status status,
-    const rav::nmos::Node::StatusInfo& registry_info)
+void NmosMainComponent::nmos_node_status_changed (rav::nmos::Node::Status status, const rav::nmos::Node::StatusInfo& registry_info)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (applicationContext_.getRavennaNode());
     executor_.callAsync ([this, status, registry_info] {
@@ -305,9 +299,7 @@ void NmosMainComponent::nmos_node_status_changed (
             status == rav::nmos::Node::Status::error ? Constants::Colours::error : Constants::Colours::text);
         nmosRegistryNameValueLabel_.setText (registry_info.name, juce::dontSendNotification);
         nmosRegistryAddressValue_.setButtonText (registry_info.address);
-        nmosApiPortEditor_.setTextToShowWhenEmpty (
-            juce::String (registry_info.api_port),
-            Constants::Colours::textDisabled);
+        nmosApiPortEditor_.setTextToShowWhenEmpty (juce::String (registry_info.api_port), Constants::Colours::textDisabled);
     });
 }
 

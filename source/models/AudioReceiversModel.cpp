@@ -25,8 +25,7 @@ AudioReceiversModel::~AudioReceiversModel()
     node_.unsubscribe (this).wait();
 }
 
-tl::expected<rav::Id, std::string> AudioReceiversModel::createReceiver (
-    rav::RavennaReceiver::Configuration config) const
+tl::expected<rav::Id, std::string> AudioReceiversModel::createReceiver (rav::RavennaReceiver::Configuration config) const
 {
     return node_.create_receiver (std::move (config)).get();
 }
@@ -36,9 +35,7 @@ void AudioReceiversModel::removeReceiver (const rav::Id receiverId) const
     node_.remove_receiver (receiverId).wait();
 }
 
-void AudioReceiversModel::updateReceiverConfiguration (
-    const rav::Id senderId,
-    rav::RavennaReceiver::Configuration config) const
+void AudioReceiversModel::updateReceiverConfiguration (const rav::Id senderId, rav::RavennaReceiver::Configuration config) const
 {
     auto result = node_.update_receiver_configuration (senderId, std::move (config)).get();
     if (!result)
@@ -120,14 +117,12 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     RAV_ASSERT (numOutputChannels >= 0, "Num output channels must be >= 0");
     RAV_ASSERT (numSamples >= 0, "Num samples must be >= 0");
 
-
-    rav::AudioBufferView outputBuffer { outputChannelData,
-                                        static_cast<uint32_t> (numOutputChannels),
-                                        static_cast<uint32_t> (numSamples) };
+    rav::AudioBufferView outputBuffer { outputChannelData, static_cast<uint32_t> (numOutputChannels), static_cast<uint32_t> (numSamples) };
 
     outputBuffer.clear();
 
-    if (!targetFormat_.is_valid()) {
+    if (!targetFormat_.is_valid())
+    {
         return;
     }
 
@@ -190,9 +185,7 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
 
     maxNumFramesPerBlock_ = static_cast<uint32_t> (device->getCurrentBufferSizeSamples());
 
-    intermediateBuffer_.resize (
-        static_cast<size_t> (device->getActiveOutputChannels().countNumberOfSetBits()),
-        maxNumFramesPerBlock_);
+    intermediateBuffer_.resize (static_cast<size_t> (device->getActiveOutputChannels().countNumberOfSetBits()), maxNumFramesPerBlock_);
 
     for (const auto& stream : receivers_)
         stream->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
@@ -206,9 +199,7 @@ void AudioReceiversModel::audioDeviceStopped()
     RAV_TRACE ("Audio device stopped");
 }
 
-AudioReceiversModel::Receiver::Receiver (AudioReceiversModel& owner, const rav::Id receiverId) :
-    owner_ (owner),
-    receiverId_ (receiverId)
+AudioReceiversModel::Receiver::Receiver (AudioReceiversModel& owner, const rav::Id receiverId) : owner_ (owner), receiverId_ (receiverId)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     owner_.node_.subscribe_to_receiver (receiverId_, this).wait();
@@ -268,12 +259,10 @@ std::optional<uint32_t> AudioReceiversModel::Receiver::processBlock (
         return std::nullopt;
     }
 
-    return owner_.node_
-        .read_audio_data_realtime (receiverId_, outputBuffer, currentTs - state->configuration.delay_frames, {});
+    return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, currentTs - state->configuration.delay_frames, {});
 }
 
-void AudioReceiversModel::Receiver::ravenna_receiver_parameters_updated (
-    const rav::rtp::AudioReceiver::ReaderParameters& parameters)
+void AudioReceiversModel::Receiver::ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::ReaderParameters& parameters)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (owner_.node_);
 

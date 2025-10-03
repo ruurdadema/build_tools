@@ -21,7 +21,7 @@ class ApplicationContext
 {
 public:
     virtual ~ApplicationContext() = default;
-    virtual void closeWindow(juce::Component* window) = 0;
+    virtual void closeWindow (juce::Component* window) = 0;
     virtual void cloneWindow() = 0;
     [[nodiscard]] virtual rav::RavennaNode& getRavennaNode() = 0;
     [[nodiscard]] virtual DiscoveredSessionsModel& getSessions() = 0;

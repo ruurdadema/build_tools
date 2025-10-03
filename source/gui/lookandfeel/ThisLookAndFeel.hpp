@@ -12,7 +12,8 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class ThisLookAndFeel : public juce::LookAndFeel_V4 {
+class ThisLookAndFeel : public juce::LookAndFeel_V4
+{
 public:
     ThisLookAndFeel();
 

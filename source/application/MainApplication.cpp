@@ -16,10 +16,7 @@ class MainWindow final : public juce::DocumentWindow
 {
 public:
     explicit MainWindow (const juce::String& name, ApplicationContext& context) :
-        DocumentWindow (
-            name,
-            juce::Desktop::getInstance().getDefaultLookAndFeel().findColour (backgroundColourId),
-            allButtons),
+        DocumentWindow (name, juce::Desktop::getInstance().getDefaultLookAndFeel().findColour (backgroundColourId), allButtons),
         context_ (context)
     {
         setLookAndFeel (&rav::get_global_instance_of_type<ThisLookAndFeel>());
@@ -119,11 +116,7 @@ void MainApplication::unhandledException (const std::exception* e, const juce::S
     RAV_ERROR ("Unhandled exception: {}, {}:{}", e->what(), sourceFilename.toRawUTF8(), lineNumber);
     RAV_ASSERT (e != nullptr, "Unhandled exception without exception object");
 
-    juce::NativeMessageBox::showMessageBoxAsync (
-        juce::AlertWindow::AlertIconType::WarningIcon,
-        "Exception",
-        e->what(),
-        nullptr);
+    juce::NativeMessageBox::showMessageBoxAsync (juce::AlertWindow::AlertIconType::WarningIcon, "Exception", e->what(), nullptr);
 }
 
 void MainApplication::cloneWindow()
@@ -302,8 +295,7 @@ bool MainApplication::restoreFromBoostJson (const boost::json::value& json)
 
 const juce::File& MainApplication::getApplicationStateFile()
 {
-    const static auto applicationStateFilePath = juce::File::getSpecialLocation (
-                                                     juce::File::userApplicationDataDirectory)
+    const static auto applicationStateFilePath = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
                                                      .getChildFile (PROJECT_COMPANY_NAME)
                                                      .getChildFile (PROJECT_PRODUCT_NAME)
                                                      .getChildFile ("application_state.json");

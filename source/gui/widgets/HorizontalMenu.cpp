@@ -16,13 +16,12 @@ HorizontalMenu::HorizontalMenu() = default;
 
 void HorizontalMenu::addItem (const juce::String& name, const juce::String& path, std::function<void()> onClick)
 {
-    auto* newButton = buttons_.add (
-        std::make_unique<MenuItem> (name, path, [this, handler = std::move (onClick), path] {
-            if (handler)
-                handler();
-            for (auto* item : buttons_)
-                item->setActive (item->getPath() == path);
-        }));
+    auto* newButton = buttons_.add (std::make_unique<MenuItem> (name, path, [this, handler = std::move (onClick), path] {
+        if (handler)
+            handler();
+        for (auto* item : buttons_)
+            item->setActive (item->getPath() == path);
+    }));
 
     if (newButton == nullptr)
         return;

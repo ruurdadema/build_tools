@@ -28,8 +28,7 @@ juce::Colour ptpStateToColour (const rav::ptp::State state)
 }
 } // namespace
 
-PtpMainComponent::PtpMainComponent ([[maybe_unused]] ApplicationContext& context) :
-    ravenna_node_ (context.getRavennaNode())
+PtpMainComponent::PtpMainComponent ([[maybe_unused]] ApplicationContext& context) : ravenna_node_ (context.getRavennaNode())
 {
     grandmasterIdTitle_.setText ("Grandmaster ID", juce::dontSendNotification);
     addAndMakeVisible (grandmasterIdTitle_);

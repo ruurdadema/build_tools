@@ -1,5 +1,5 @@
 /*
-* Owllab License Agreement
+ * Owllab License Agreement
  *
  * This software is provided by Owllab and may not be used, copied, modified,
  * merged, published, distributed, sublicensed, or sold without a valid and
@@ -19,7 +19,7 @@
 class MainComponent final : public juce::Component, public WindowContext
 {
 public:
-    explicit MainComponent(ApplicationContext& context);
+    explicit MainComponent (ApplicationContext& context);
 
     void paint (juce::Graphics&) override;
     void resized() override;
@@ -36,9 +36,9 @@ private:
         void paint (juce::Graphics& g) override;
 
     private:
-        juce::TextButton saveButton_ {"Save"};
-        juce::TextButton loadButton_ {"Load"};
-        juce::TextButton cloneWindowButton_ {"Clone Window"};
+        juce::TextButton saveButton_ { "Save" };
+        juce::TextButton loadButton_ { "Load" };
+        juce::TextButton cloneWindowButton_ { "Clone Window" };
         std::unique_ptr<juce::FileChooser> chooser_;
     };
 

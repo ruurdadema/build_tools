@@ -16,9 +16,10 @@
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class ReceiversMainComponent : public juce::Component {
+class ReceiversMainComponent : public juce::Component
+{
 public:
-    explicit ReceiversMainComponent(ApplicationContext& context);
+    explicit ReceiversMainComponent (ApplicationContext& context);
 
     void paint (juce::Graphics& g) override;
     void resized() override;

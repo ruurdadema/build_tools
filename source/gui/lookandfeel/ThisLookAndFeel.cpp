@@ -66,11 +66,7 @@ void ThisLookAndFeel::drawButtonBackground (
     graphics.fillRoundedRectangle (b.toFloat(), cornerSize);
 }
 
-void ThisLookAndFeel::drawTextEditorOutline (
-    juce::Graphics& graphics,
-    const int width,
-    const int height,
-    juce::TextEditor& textEditor)
+void ThisLookAndFeel::drawTextEditorOutline (juce::Graphics& graphics, const int width, const int height, juce::TextEditor& textEditor)
 {
     if (dynamic_cast<juce::AlertWindow*> (textEditor.getParentComponent()) == nullptr)
     {

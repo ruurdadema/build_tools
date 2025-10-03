@@ -49,8 +49,7 @@ void AudioSendersModel::removeSender (const rav::Id senderId) const
     return node_.remove_sender (senderId).wait();
 }
 
-void AudioSendersModel::updateSenderConfiguration (const rav::Id senderId, rav::RavennaSender::Configuration config)
-    const
+void AudioSendersModel::updateSenderConfiguration (const rav::Id senderId, rav::RavennaSender::Configuration config) const
 {
     // Override audio format
     config.audio_format.byte_order = rav::AudioFormat::ByteOrder::be;
@@ -127,16 +126,10 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     std::ignore = numOutputChannels;
     std::ignore = context;
 
-    const rav::AudioBufferView outputBuffer (
-        outputChannelData,
-        static_cast<size_t> (numOutputChannels),
-        static_cast<size_t> (numSamples));
+    const rav::AudioBufferView outputBuffer (outputChannelData, static_cast<size_t> (numOutputChannels), static_cast<size_t> (numSamples));
     outputBuffer.clear();
 
-    const rav::AudioBufferView buffer (
-        inputChannelData,
-        static_cast<size_t> (numInputChannels),
-        static_cast<size_t> (numSamples));
+    const rav::AudioBufferView buffer (inputChannelData, static_cast<size_t> (numInputChannels), static_cast<size_t> (numSamples));
 
     auto lock = realtimeSharedContext_.lock_realtime();
 
@@ -155,7 +148,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     // Positive means audio device is ahead of the PTP clock, negative means behind
     auto drift = rav::WrappingUint32 (ptp_ts).diff (*lock->current_ts);
 
-    if (static_cast<uint32_t>(std::abs (drift)) > outputBuffer.num_frames() * 2)
+    if (static_cast<uint32_t> (std::abs (drift)) > outputBuffer.num_frames() * 2)
     {
         lock->current_ts = ptp_ts;
         RAV_WARNING ("Re-aligned senders to: {}", ptp_ts);
@@ -214,9 +207,7 @@ void AudioSendersModel::updateRealtimeSharedContext()
     }
 }
 
-AudioSendersModel::Sender::Sender (AudioSendersModel& owner, const rav::Id senderId) :
-    owner_ (owner),
-    senderId_ (senderId)
+AudioSendersModel::Sender::Sender (AudioSendersModel& owner, const rav::Id senderId) : owner_ (owner), senderId_ (senderId)
 {
     JUCE_ASSERT_MESSAGE_THREAD;
     owner_.node_.subscribe_to_sender (senderId_, this).wait();
@@ -259,9 +250,7 @@ void AudioSendersModel::Sender::prepareInput (const rav::AudioFormat inputFormat
         subscriber->onAudioSenderUpdated (senderId_, &state_);
 }
 
-void AudioSendersModel::Sender::processBlock (
-    const rav::AudioBufferView<const float>& inputBuffer,
-    const uint32_t timestamp) const
+void AudioSendersModel::Sender::processBlock (const rav::AudioBufferView<const float>& inputBuffer, const uint32_t timestamp) const
 {
     std::ignore = owner_.node_.send_audio_data_realtime (senderId_, inputBuffer, timestamp);
 }

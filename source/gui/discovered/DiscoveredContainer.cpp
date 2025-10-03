@@ -50,9 +50,7 @@ void DiscoveredContainer::resizeToFitContent()
     setSize (getWidth(), std::max (calculateHeight, 100)); // Min to leave space for the empty label
 }
 
-void DiscoveredContainer::onSessionUpdated (
-    const std::string& sessionName,
-    const DiscoveredSessionsModel::SessionState* state)
+void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const DiscoveredSessionsModel::SessionState* state)
 {
     if (state != nullptr)
     {
@@ -122,8 +120,7 @@ void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const Disc
     updateGuiState();
 }
 
-DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windowContext, const Type type) :
-    type_ (type)
+DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windowContext, const Type type) : type_ (type)
 {
     nameLabel_.setText (type == Type::Session ? "Session" : "Node", juce::dontSendNotification);
     nameLabel_.setJustificationType (juce::Justification::topRight);

@@ -104,9 +104,7 @@ private:
         [[nodiscard]] rav::Id getSenderId() const;
         [[nodiscard]] const SenderState& getState() const;
 
-        void ravenna_sender_configuration_updated (
-            rav::Id sender_id,
-            const rav::RavennaSender::Configuration& configuration) override;
+        void ravenna_sender_configuration_updated (rav::Id sender_id, const rav::RavennaSender::Configuration& configuration) override;
 
         void prepareInput (rav::AudioFormat inputFormat);
         void processBlock (const rav::AudioBufferView<const float>& inputBuffer, uint32_t timestamp) const;

@@ -40,7 +40,7 @@ private:
         void resized() override;
 
     private:
-        juce::FontOptions font_ {16.f};
+        juce::FontOptions font_ { 16.f };
         bool active_ = false;
         juce::String path_;
         juce::HyperlinkButton button_;

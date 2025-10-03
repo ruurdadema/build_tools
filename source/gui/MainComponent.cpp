@@ -30,8 +30,8 @@ MainComponent::MainComponent (ApplicationContext& context) : context_ (context),
         showContent (std::make_unique<SendersMainComponent> (context_));
     });
     menu_.addItem ("PTP", "ptp", [this] {
-       showContent (std::make_unique<PtpMainComponent> (context_));
-   });
+        showContent (std::make_unique<PtpMainComponent> (context_));
+    });
     menu_.addItem ("NMOS", "nmos", [this] {
         showContent (std::make_unique<NmosMainComponent> (context_));
     });
