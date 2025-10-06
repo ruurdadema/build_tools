@@ -252,6 +252,7 @@ def build_dist(args):
     copy2('CMakeLists.txt', path_to_dist)
     copy2('LICENSE.md', path_to_dist)
     copy2('README.md', path_to_dist)
+    copy2('CHANGELOG.md', path_to_dist)
     copy2('vcpkg.json', path_to_dist)
 
     (path_to_dist / 'ravennakit').mkdir(exist_ok=True)
