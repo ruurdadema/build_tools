@@ -30,6 +30,25 @@ juce::Colour ptpStateToColour (const rav::ptp::State state)
 
 PtpMainComponent::PtpMainComponent ([[maybe_unused]] ApplicationContext& context) : ravenna_node_ (context.getRavennaNode())
 {
+    domainTextEditor_.setInputRestrictions (3, "0123456789");
+    domainTextEditor_.onReturnKey = [this] {
+        auto config = ptp_config_;
+        config.domain_number = static_cast<uint8_t> (domainTextEditor_.getText().getIntValue());
+        if (auto result = ravenna_node_.set_ptp_instance_configuration (config).get(); !result)
+        {
+            RAV_ERROR ("Failed to update PTP config: {}", result.error());
+        }
+        juce::TextEditor::unfocusAllComponents();
+    };
+    domainTextEditor_.onEscapeKey = [this] {
+        domainTextEditor_.setText (juce::String (ptp_config_.domain_number), juce::dontSendNotification);
+        juce::TextEditor::unfocusAllComponents();
+    };
+    domainTextEditor_.onFocusLost = [this] {
+        domainTextEditor_.onReturnKey();
+    };
+    addAndMakeVisible (domainTextEditor_);
+
     grandmasterIdTitle_.setText ("Grandmaster ID", juce::dontSendNotification);
     addAndMakeVisible (grandmasterIdTitle_);
     addAndMakeVisible (grandmasterIdValue_);
@@ -63,24 +82,17 @@ PtpMainComponent::PtpMainComponent ([[maybe_unused]] ApplicationContext& context
     domainTitle_.setText ("Domain", juce::dontSendNotification);
     addAndMakeVisible (domainTitle_);
 
-    domainTextEditor_.setInputRestrictions (3, "0123456789");
-    domainTextEditor_.onReturnKey = [this] {
-        auto config = ptp_config_;
-        config.domain_number = static_cast<uint8_t> (domainTextEditor_.getText().getIntValue());
-        if (auto result = ravenna_node_.set_ptp_instance_configuration (config).get(); !result)
-        {
-            RAV_ERROR ("Failed to update PTP config: {}", result.error());
-        }
-        juce::TextEditor::unfocusAllComponents();
-    };
-    domainTextEditor_.onEscapeKey = [this] {
-        domainTextEditor_.setText (juce::String (ptp_config_.domain_number), juce::dontSendNotification);
-        juce::TextEditor::unfocusAllComponents();
-    };
-    domainTextEditor_.onFocusLost = [this] {
-        domainTextEditor_.onReturnKey();
-    };
-    addAndMakeVisible (domainTextEditor_);
+    offsetFromMasterMinTitle_.setText ("Offset from master min", juce::dontSendNotification);
+    addAndMakeVisible (offsetFromMasterMinTitle_);
+    addAndMakeVisible (offsetFromMasterMinValue_);
+
+    offsetFromMasterMaxTitle_.setText ("Offset from master max", juce::dontSendNotification);
+    addAndMakeVisible (offsetFromMasterMaxTitle_);
+    addAndMakeVisible (offsetFromMasterMaxValue_);
+
+    ignoredOutliersTitle_.setText ("Ignored outliers", juce::dontSendNotification);
+    addAndMakeVisible (ignoredOutliersTitle_);
+    addAndMakeVisible (ignoredOutliersValue_);
 
     reset();
 
@@ -109,6 +121,9 @@ void PtpMainComponent::resized()
         r.setBounds (right.removeFromTop (h));
     };
 
+    domainTitle_.setBounds (left.removeFromTop (h));
+    domainTextEditor_.setBounds (right.removeFromTop (h).reduced (3).withWidth (80));
+
     addRow (grandmasterIdTitle_, grandmasterIdValue_);
     addRow (parentPortIdTitle_, parentPortIdValue_);
     addRow (priority1Title_, priority1Value_);
@@ -116,9 +131,9 @@ void PtpMainComponent::resized()
     addRow (port1StatusTitle_, port1StatusValue_);
     addRow (port2StatusTitle_, port2StatusValue_);
     addRow (currentTimeTitle_, currentTimeValue_);
-
-    domainTitle_.setBounds (left.removeFromTop (h));
-    domainTextEditor_.setBounds (right.removeFromTop (h).reduced (3).withWidth (80));
+    addRow (offsetFromMasterMinTitle_, offsetFromMasterMinValue_);
+    addRow (offsetFromMasterMaxTitle_, offsetFromMasterMaxValue_);
+    addRow (ignoredOutliersTitle_, ignoredOutliersValue_);
 }
 
 void PtpMainComponent::ptp_parent_changed (const rav::ptp::ParentDs& parent)
@@ -175,6 +190,21 @@ void PtpMainComponent::ptp_configuration_updated (const rav::ptp::Instance::Conf
     executor_.callAsync ([this, config] {
         ptp_config_ = config;
         domainTextEditor_.setText (juce::String (ptp_config_.domain_number), juce::dontSendNotification);
+    });
+}
+
+void PtpMainComponent::ptp_stats_updated (const rav::ptp::Stats& ptp_stats)
+{
+    auto offsetFromMasterMin = ptp_stats.filtered_offset.min();
+    auto offsetFromMasterMax = ptp_stats.filtered_offset.max();
+    auto ignoredOutliers = ptp_stats.ignored_outliers;
+    executor_.callAsync ([this, offsetFromMasterMin, offsetFromMasterMax, ignoredOutliers] {
+        offsetFromMasterMinValue_.setText (juce::String (offsetFromMasterMin * 1000.0) + " ms", juce::dontSendNotification);
+        offsetFromMasterMaxValue_.setText (juce::String (offsetFromMasterMax * 1000.0) + " ms", juce::dontSendNotification);
+        totalIgnoredOutliers += ignoredOutliers;
+        ignoredOutliersValue_.setText (
+            juce::String (ignoredOutliers) + " since last update, total: " + juce::String (totalIgnoredOutliers),
+            juce::dontSendNotification);
     });
 }
 

@@ -122,12 +122,10 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     outputBuffer.clear();
 
     if (!targetFormat_.is_valid())
-    {
         return;
-    }
 
     const auto& local_clock = ptpSubscriber_.get_local_clock();
-    if (!local_clock.is_calibrated())
+    if (!local_clock.is_locked())
         return;
 
     const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))

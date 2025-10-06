@@ -26,10 +26,14 @@ public:
     void ptp_port_changed_state (const rav::ptp::Port& port) override;
     void ptp_port_removed (uint16_t portNumber) override;
     void ptp_configuration_updated (const rav::ptp::Instance::Configuration& config) override;
+    void ptp_stats_updated (const rav::ptp::Stats& ptp_stats) override;
 
 private:
     rav::RavennaNode& ravenna_node_;
     rav::ptp::Instance::Configuration ptp_config_;
+
+    juce::Label domainTitle_;
+    juce::TextEditor domainTextEditor_;
 
     juce::Label grandmasterIdTitle_;
     juce::Label grandmasterIdValue_;
@@ -52,8 +56,15 @@ private:
     juce::Label currentTimeTitle_;
     juce::Label currentTimeValue_;
 
-    juce::Label domainTitle_;
-    juce::TextEditor domainTextEditor_;
+    juce::Label offsetFromMasterMinTitle_;
+    juce::Label offsetFromMasterMinValue_;
+
+    juce::Label offsetFromMasterMaxTitle_;
+    juce::Label offsetFromMasterMaxValue_;
+
+    juce::Label ignoredOutliersTitle_;
+    juce::Label ignoredOutliersValue_;
+    uint32_t totalIgnoredOutliers{};
 
     MessageThreadExecutor executor_;
 
