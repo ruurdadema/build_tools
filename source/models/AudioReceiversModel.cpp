@@ -131,7 +131,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
                                         .with_num_frames (static_cast<size_t> (numSamples));
 
-    const auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_samples (targetFormat_.sample_rate));
+    const auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_rtp_timestamp (targetFormat_.sample_rate));
 
     if (!current_ts_.has_value())
         current_ts_ = ptp_ts;

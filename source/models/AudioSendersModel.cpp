@@ -140,7 +140,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     if (!local_clock.is_calibrated())
         return;
 
-    auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_samples (lock->deviceFormat.sample_rate));
+    auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_rtp_timestamp (lock->deviceFormat.sample_rate));
 
     if (!lock->current_ts.has_value())
         lock->current_ts = ptp_ts;
