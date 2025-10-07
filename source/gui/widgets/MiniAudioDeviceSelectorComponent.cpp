@@ -40,7 +40,7 @@ MiniAudioDeviceSelectorComponent::MiniAudioDeviceSelectorComponent (juce::AudioD
             deviceName = comboBox_.getText();
         if (const auto result = audioDeviceManager_.setAudioDeviceSetup (setup, true); result.isNotEmpty())
         {
-            RAV_ERROR ("Failed to select audio device: {}", result.toRawUTF8());
+            RAV_LOG_ERROR ("Failed to select audio device: {}", result.toRawUTF8());
         }
     };
     addAndMakeVisible (comboBox_);

@@ -36,7 +36,7 @@ PtpMainComponent::PtpMainComponent ([[maybe_unused]] ApplicationContext& context
         config.domain_number = static_cast<uint8_t> (domainTextEditor_.getText().getIntValue());
         if (auto result = ravenna_node_.set_ptp_instance_configuration (config).get(); !result)
         {
-            RAV_ERROR ("Failed to update PTP config: {}", result.error());
+            RAV_LOG_ERROR ("Failed to update PTP config: {}", result.error());
         }
         juce::TextEditor::unfocusAllComponents();
     };
@@ -163,7 +163,7 @@ void PtpMainComponent::ptp_port_changed_state (const rav::ptp::Port& port)
             port2StatusValue_.setText (rav::ptp::to_string (portState), juce::dontSendNotification);
         }
         else
-            RAV_ERROR ("Invalid port number {}", portNumber);
+            RAV_LOG_ERROR ("Invalid port number {}", portNumber);
     });
 }
 
@@ -181,7 +181,7 @@ void PtpMainComponent::ptp_port_removed (const uint16_t portNumber)
             port2StatusValue_.setText ("disabled", juce::dontSendNotification);
         }
         else
-            RAV_ERROR ("Invalid port number {}", portNumber);
+            RAV_LOG_ERROR ("Invalid port number {}", portNumber);
     });
 }
 

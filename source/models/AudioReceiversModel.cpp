@@ -40,7 +40,7 @@ void AudioReceiversModel::updateReceiverConfiguration (const rav::Id senderId, r
     auto result = node_.update_receiver_configuration (senderId, std::move (config)).get();
     if (!result)
     {
-        RAV_ERROR ("Failed to update receiver configuration: {}", result.error());
+        RAV_LOG_ERROR ("Failed to update receiver configuration: {}", result.error());
     }
 }
 
@@ -142,7 +142,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     if (static_cast<uint32_t> (std::abs (drift)) > outputBuffer.num_frames() * 2)
     {
         current_ts_ = ptp_ts;
-        RAV_WARNING ("Re-aligned receivers to: {}", ptp_ts);
+        RAV_LOG_WARNING ("Re-aligned receivers to: {}", ptp_ts);
         drift = 0;
     }
 
@@ -175,7 +175,7 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
 
     if (!new_format.is_valid())
     {
-        RAV_WARNING ("Audio device format is not valid: {}", new_format.to_string());
+        RAV_LOG_WARNING ("Audio device format is not valid: {}", new_format.to_string());
         return;
     }
 
@@ -188,13 +188,13 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
     for (const auto& stream : receivers_)
         stream->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
 
-    RAV_TRACE ("Audio device about to start");
+    RAV_LOG_TRACE ("Audio device about to start");
 }
 
 void AudioReceiversModel::audioDeviceStopped()
 {
     TRACY_ZONE_SCOPED;
-    RAV_TRACE ("Audio device stopped");
+    RAV_LOG_TRACE ("Audio device stopped");
 }
 
 AudioReceiversModel::Receiver::Receiver (AudioReceiversModel& owner, const rav::Id receiverId) : owner_ (owner), receiverId_ (receiverId)
@@ -336,11 +336,11 @@ void AudioReceiversModel::Receiver::updateRealtimeSharedState()
     auto newState = std::make_unique<ReceiverState> (state_);
     if (!realtimeSharedState_.update (std::move (newState)))
     {
-        RAV_ERROR ("Failed to update realtime shared state");
+        RAV_LOG_ERROR ("Failed to update realtime shared state");
     }
     else
     {
-        RAV_TRACE ("State updated");
+        RAV_LOG_TRACE ("State updated");
     }
 }
 
@@ -360,6 +360,6 @@ void AudioReceiversModel::updateRealtimeSharedContext()
         newContext->receivers.push_back (stream.get());
     if (!realtimeSharedContext_.update (std::move (newContext)))
     {
-        RAV_ERROR ("Failed to update realtime shared context");
+        RAV_LOG_ERROR ("Failed to update realtime shared context");
     }
 }

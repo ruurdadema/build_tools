@@ -81,7 +81,7 @@ void MainApplication::initialise (const juce::String& commandLine)
     if (const auto& applicationStateFile = getApplicationStateFile(); applicationStateFile.existsAsFile())
     {
         if (const auto result = loadFromFile (applicationStateFile); !result)
-            RAV_ERROR ("Failed to load previous state: {}", result.error());
+            RAV_LOG_ERROR ("Failed to load previous state: {}", result.error());
     }
 
     if (mainWindows_.empty())
@@ -94,7 +94,7 @@ void MainApplication::initialise (const juce::String& commandLine)
 void MainApplication::shutdown()
 {
     if (const auto result = saveToFile (getApplicationStateFile()); !result)
-        RAV_ERROR ("Failed to save application state: {}", result.error());
+        RAV_LOG_ERROR ("Failed to save application state: {}", result.error());
 
     audioDeviceManager_.removeAudioCallback (audioReceivers_.get());
     audioDeviceManager_.removeAudioCallback (audioSenders_.get());
@@ -113,7 +113,7 @@ void MainApplication::anotherInstanceStarted (const juce::String& commandLine)
 
 void MainApplication::unhandledException (const std::exception* e, const juce::String& sourceFilename, int lineNumber)
 {
-    RAV_ERROR ("Unhandled exception: {}, {}:{}", e->what(), sourceFilename.toRawUTF8(), lineNumber);
+    RAV_LOG_ERROR ("Unhandled exception: {}, {}:{}", e->what(), sourceFilename.toRawUTF8(), lineNumber);
     RAV_ASSERT (e != nullptr, "Unhandled exception without exception object");
 
     juce::NativeMessageBox::showMessageBoxAsync (juce::AlertWindow::AlertIconType::WarningIcon, "Exception", e->what(), nullptr);
@@ -170,7 +170,7 @@ tl::expected<void, std::string> MainApplication::saveToFile (const juce::File& f
         return tl::unexpected ("Failed to create parent directory");
     if (!file.replaceWithText (json_str))
         return tl::unexpected ("Failed to save to file: " + file.getFullPathName().toStdString());
-    RAV_TRACE ("Saved to file: {}", file.getFullPathName().toRawUTF8());
+    RAV_LOG_TRACE ("Saved to file: {}", file.getFullPathName().toRawUTF8());
     return {};
 }
 
@@ -190,7 +190,7 @@ tl::expected<void, std::string> MainApplication::loadFromFile (const juce::File&
     if (!restoreFromBoostJson (json))
         return tl::unexpected ("Failed to restore from JSON: " + file.getFullPathName().toStdString());
 
-    RAV_TRACE ("Loaded from file: {}", file.getFullPathName().toRawUTF8());
+    RAV_LOG_TRACE ("Loaded from file: {}", file.getFullPathName().toRawUTF8());
 
     return {};
 }
@@ -280,13 +280,13 @@ bool MainApplication::restoreFromBoostJson (const boost::json::value& json)
         auto restored = ravennaNode_->restore_from_boost_json (ravennaNode).get();
         if (!restored)
         {
-            RAV_ERROR ("Failed to restore from JSON: {}", restored.error());
+            RAV_LOG_ERROR ("Failed to restore from JSON: {}", restored.error());
             return false;
         }
     }
     catch (const std::exception& e)
     {
-        RAV_ERROR ("Failed to restore from JSON: {}", e.what());
+        RAV_LOG_ERROR ("Failed to restore from JSON: {}", e.what());
         return false;
     }
 

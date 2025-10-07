@@ -186,7 +186,7 @@ NmosMainComponent::NmosMainComponent (ApplicationContext& context) : application
         if (address.isEmpty())
             return;
         if (!juce::URL (address).launchInDefaultBrowser())
-            RAV_ERROR ("Failed to open NMOS registry address in browser: {}", address.toRawUTF8());
+            RAV_LOG_ERROR ("Failed to open NMOS registry address in browser: {}", address.toRawUTF8());
     };
     addAndMakeVisible (nmosRegistryAddressValue_);
 
