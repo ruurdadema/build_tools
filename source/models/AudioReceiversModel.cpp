@@ -138,6 +138,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     {
         if (!local_clock.is_locked())
             return;
+        // The next line determines the PTP timestamp at the start of this block of audio.
         current_ts_ = ptp_ts;
     }
 
@@ -146,6 +147,8 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
 
     if (static_cast<uint32_t> (std::abs (drift)) > outputBuffer.num_frames() * 2)
     {
+        // The next line determines the PTP timestamp at the start of this block of audio, overriding the previous timestamp. This is a
+        // quick and (very) dirty way of keeping the audio device and the PTP clock synchronised.
         current_ts_ = ptp_ts;
         RAV_LOG_WARNING ("Re-aligned receivers to: {}", ptp_ts);
         drift = 0;
