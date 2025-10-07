@@ -17,6 +17,9 @@
     "boost-circular-buffer",
     "boost-uuid",
     "boost-json",
-    "asiosdk"
+    {
+      "name": "asiosdk",
+      "platform": "windows"
+    }
   ]
 }

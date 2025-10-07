@@ -45,7 +45,9 @@ endif ()
 # VCPKG #
 #########
 
-find_package(asiosdk REQUIRED REQUIRED)
+if (WIN32)
+    find_package(asiosdk REQUIRED REQUIRED)
+endif ()
 
 ##############
 # RAVENNAKIT #
@@ -100,7 +102,11 @@ file(GLOB_RECURSE SOURCE_FILES source/*.hpp source/*.cpp)
 
 target_sources(ravennakit_juce_demo PRIVATE ${SOURCE_FILES})
 
-target_include_directories(ravennakit_juce_demo PRIVATE source ${ASIOSDK_INCLUDE_DIR})
+target_include_directories(ravennakit_juce_demo PRIVATE source)
+
+if (WIN32)
+    target_include_directories(ravennakit_juce_demo PRIVATE ${ASIOSDK_INCLUDE_DIR})
+endif ()
 
 target_compile_definitions(ravennakit_juce_demo PUBLIC ${JUCE_COMMON_TARGET_DEFINITIONS})
 

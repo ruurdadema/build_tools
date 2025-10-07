@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added and enabled ASIO (Steinberg) for much better performance. Note that this library requires a license from
   Steinberg.
 
+### Changed
+
+- Only check if PTP is locked when first aligning the audio device.
+
 ## [v0.14.0] - September 7, 2025
 
 ### Added
