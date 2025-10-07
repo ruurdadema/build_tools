@@ -122,11 +122,12 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     outputBuffer.clear();
 
     if (!targetFormat_.is_valid())
+    {
+        TRACY_MESSAGE ("Target format not valid");
         return;
+    }
 
     const auto& local_clock = ptpSubscriber_.get_local_clock();
-    if (!local_clock.is_locked())
-        return;
 
     const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
                                         .with_num_frames (static_cast<size_t> (numSamples));
@@ -134,7 +135,11 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     const auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_rtp_timestamp (targetFormat_.sample_rate));
 
     if (!current_ts_.has_value())
+    {
+        if (!local_clock.is_locked())
+            return;
         current_ts_ = ptp_ts;
+    }
 
     // Positive means audio device is ahead of the PTP clock, negative means behind
     auto drift = rav::WrappingUint32 (ptp_ts).diff (*current_ts_);
@@ -146,7 +151,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
         drift = 0;
     }
 
-    TRACY_PLOT ("receiver drift", static_cast<double> (drift));
+    TRACY_PLOT ("Receiver drift", static_cast<double> (drift));
 
     const auto lock = realtimeSharedContext_.lock_realtime();
 
