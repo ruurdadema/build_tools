@@ -16,6 +16,10 @@
     "boost-lockfree",
     "boost-circular-buffer",
     "boost-uuid",
-    "boost-json"
+    "boost-json",
+    {
+      "name": "asiosdk",
+      "platform": "windows"
+    }
   ]
 }

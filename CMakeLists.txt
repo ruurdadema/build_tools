@@ -41,6 +41,14 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_link_options("/NODEFAULTLIB:libcmt.lib" "/NODEFAULTLIB:libcmtd.lib")
 endif ()
 
+#########
+# VCPKG #
+#########
+
+if (WIN32)
+    find_package(asiosdk REQUIRED REQUIRED)
+endif ()
+
 ##############
 # RAVENNAKIT #
 ##############
@@ -77,7 +85,7 @@ set(JUCE_COMMON_TARGET_DEFINITIONS
         JucePlugin_AAXDisableDynamicProcessing=1
         JUCE_DIRECTSOUND=0
         JUCE_WASAPI=1
-        JUCE_ASIO=0
+        JUCE_ASIO=1
 )
 
 ####################
@@ -95,6 +103,10 @@ file(GLOB_RECURSE SOURCE_FILES source/*.hpp source/*.cpp)
 target_sources(ravennakit_juce_demo PRIVATE ${SOURCE_FILES})
 
 target_include_directories(ravennakit_juce_demo PRIVATE source)
+
+if (WIN32)
+    target_include_directories(ravennakit_juce_demo PRIVATE ${ASIOSDK_INCLUDE_DIR})
+endif ()
 
 target_compile_definitions(ravennakit_juce_demo PUBLIC ${JUCE_COMMON_TARGET_DEFINITIONS})
 

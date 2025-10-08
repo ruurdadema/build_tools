@@ -40,7 +40,7 @@ void AudioReceiversModel::updateReceiverConfiguration (const rav::Id senderId, r
     auto result = node_.update_receiver_configuration (senderId, std::move (config)).get();
     if (!result)
     {
-        RAV_ERROR ("Failed to update receiver configuration: {}", result.error());
+        RAV_LOG_ERROR ("Failed to update receiver configuration: {}", result.error());
     }
 }
 
@@ -122,31 +122,39 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     outputBuffer.clear();
 
     if (!targetFormat_.is_valid())
+    {
+        TRACY_MESSAGE ("Target format not valid");
         return;
+    }
 
     const auto& local_clock = ptpSubscriber_.get_local_clock();
-    if (!local_clock.is_locked())
-        return;
 
     const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
                                         .with_num_frames (static_cast<size_t> (numSamples));
 
-    const auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_samples (targetFormat_.sample_rate));
+    const auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_rtp_timestamp (targetFormat_.sample_rate));
 
     if (!current_ts_.has_value())
+    {
+        if (!local_clock.is_locked())
+            return;
+        // The next line determines the PTP timestamp at the start of this block of audio.
         current_ts_ = ptp_ts;
+    }
 
     // Positive means audio device is ahead of the PTP clock, negative means behind
     auto drift = rav::WrappingUint32 (ptp_ts).diff (*current_ts_);
 
     if (static_cast<uint32_t> (std::abs (drift)) > outputBuffer.num_frames() * 2)
     {
+        // The next line determines the PTP timestamp at the start of this block of audio, overriding the previous timestamp. This is a
+        // quick and (very) dirty way of keeping the audio device and the PTP clock synchronised.
         current_ts_ = ptp_ts;
-        RAV_WARNING ("Re-aligned receivers to: {}", ptp_ts);
+        RAV_LOG_WARNING ("Re-aligned receivers to: {}", ptp_ts);
         drift = 0;
     }
 
-    TRACY_PLOT ("receiver drift", static_cast<double> (drift));
+    TRACY_PLOT ("Receiver drift", static_cast<double> (drift));
 
     const auto lock = realtimeSharedContext_.lock_realtime();
 
@@ -175,7 +183,7 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
 
     if (!new_format.is_valid())
     {
-        RAV_WARNING ("Audio device format is not valid: {}", new_format.to_string());
+        RAV_LOG_WARNING ("Audio device format is not valid: {}", new_format.to_string());
         return;
     }
 
@@ -188,13 +196,13 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
     for (const auto& stream : receivers_)
         stream->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
 
-    RAV_TRACE ("Audio device about to start");
+    RAV_LOG_TRACE ("Audio device about to start");
 }
 
 void AudioReceiversModel::audioDeviceStopped()
 {
     TRACY_ZONE_SCOPED;
-    RAV_TRACE ("Audio device stopped");
+    RAV_LOG_TRACE ("Audio device stopped");
 }
 
 AudioReceiversModel::Receiver::Receiver (AudioReceiversModel& owner, const rav::Id receiverId) : owner_ (owner), receiverId_ (receiverId)
@@ -336,11 +344,11 @@ void AudioReceiversModel::Receiver::updateRealtimeSharedState()
     auto newState = std::make_unique<ReceiverState> (state_);
     if (!realtimeSharedState_.update (std::move (newState)))
     {
-        RAV_ERROR ("Failed to update realtime shared state");
+        RAV_LOG_ERROR ("Failed to update realtime shared state");
     }
     else
     {
-        RAV_TRACE ("State updated");
+        RAV_LOG_TRACE ("State updated");
     }
 }
 
@@ -360,6 +368,6 @@ void AudioReceiversModel::updateRealtimeSharedContext()
         newContext->receivers.push_back (stream.get());
     if (!realtimeSharedContext_.update (std::move (newContext)))
     {
-        RAV_ERROR ("Failed to update realtime shared context");
+        RAV_LOG_ERROR ("Failed to update realtime shared context");
     }
 }

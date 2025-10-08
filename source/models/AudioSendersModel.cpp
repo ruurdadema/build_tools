@@ -59,7 +59,7 @@ void AudioSendersModel::updateSenderConfiguration (const rav::Id senderId, rav::
     auto result = node_.update_sender_configuration (senderId, std::move (config)).get();
     if (!result)
     {
-        RAV_ERROR ("Failed to update sender configuration: {}", result.error());
+        RAV_LOG_ERROR ("Failed to update sender configuration: {}", result.error());
     }
 }
 
@@ -140,7 +140,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     if (!local_clock.is_calibrated())
         return;
 
-    auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_samples (lock->deviceFormat.sample_rate));
+    auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_rtp_timestamp (lock->deviceFormat.sample_rate));
 
     if (!lock->current_ts.has_value())
         lock->current_ts = ptp_ts;
@@ -151,7 +151,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     if (static_cast<uint32_t> (std::abs (drift)) > outputBuffer.num_frames() * 2)
     {
         lock->current_ts = ptp_ts;
-        RAV_WARNING ("Re-aligned senders to: {}", ptp_ts);
+        RAV_LOG_WARNING ("Re-aligned senders to: {}", ptp_ts);
         drift = 0;
     }
 
@@ -183,7 +183,7 @@ void AudioSendersModel::audioDeviceStopped() {}
 
 void AudioSendersModel::audioDeviceError (const juce::String& errorMessage)
 {
-    RAV_ERROR ("Audio device error: {}", errorMessage.toStdString());
+    RAV_LOG_ERROR ("Audio device error: {}", errorMessage.toStdString());
 }
 
 AudioSendersModel::Sender* AudioSendersModel::findSender (const rav::Id senderId) const
@@ -203,7 +203,7 @@ void AudioSendersModel::updateRealtimeSharedContext()
     newContext->deviceFormat = deviceFormat_;
     if (!realtimeSharedContext_.update (std::move (newContext)))
     {
-        RAV_ERROR ("Failed to update realtime shared context");
+        RAV_LOG_ERROR ("Failed to update realtime shared context");
     }
 }
 

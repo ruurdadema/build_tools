@@ -144,10 +144,10 @@ DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windo
         const auto result = context.getAudioReceivers().createReceiver (std::move (config));
         if (!result)
         {
-            RAV_ERROR ("Failed to create receiver: {}", result.error());
+            RAV_LOG_ERROR ("Failed to create receiver: {}", result.error());
             return;
         }
-        RAV_TRACE ("Created receiver with id: {}", result->value());
+        RAV_LOG_TRACE ("Created receiver with id: {}", result->value());
         windowContext.navigateTo ("receivers");
     };
     addAndMakeVisible (createReceiverButton_);

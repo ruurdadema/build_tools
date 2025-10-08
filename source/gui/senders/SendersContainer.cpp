@@ -51,7 +51,7 @@ SendersContainer::SendersContainer (ApplicationContext& context) : context_ (con
 
     if (!context_.getAudioSenders().subscribe (this))
     {
-        RAV_ERROR ("Failed to add subscriber");
+        RAV_LOG_ERROR ("Failed to add subscriber");
     }
 
     resizeToFitContent();
@@ -61,7 +61,7 @@ SendersContainer::~SendersContainer()
 {
     if (!context_.getAudioSenders().unsubscribe (this))
     {
-        RAV_ERROR ("Failed to remove subscriber");
+        RAV_LOG_ERROR ("Failed to remove subscriber");
     }
 }
 
@@ -184,7 +184,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
 
         if (it == destinations.end())
         {
-            RAV_ERROR ("Primary destination not found");
+            RAV_LOG_ERROR ("Primary destination not found");
             return;
         }
 
@@ -226,7 +226,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
 
         if (it == destinations.end())
         {
-            RAV_ERROR ("Primary destination not found");
+            RAV_LOG_ERROR ("Primary destination not found");
             return;
         }
 

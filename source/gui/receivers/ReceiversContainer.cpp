@@ -25,7 +25,7 @@ ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ 
 
     if (!context_.getAudioReceivers().subscribe (this))
     {
-        RAV_ERROR ("Failed to add subscriber");
+        RAV_LOG_ERROR ("Failed to add subscriber");
     }
 }
 
@@ -33,7 +33,7 @@ ReceiversContainer::~ReceiversContainer()
 {
     if (!context_.getAudioReceivers().unsubscribe (this))
     {
-        RAV_ERROR ("Failed to remove subscriber");
+        RAV_LOG_ERROR ("Failed to remove subscriber");
     }
 }
 
