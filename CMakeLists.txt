@@ -15,7 +15,7 @@ project(ravennakit_juce_demo VERSION ${GIT_VERSION_MAJOR}.${GIT_VERSION_MINOR}.$
 #####################
 
 add_project_variable(PROJECT_COMPANY_NAME "Sound on Digital")
-add_project_variable(PROJECT_PRODUCT_NAME "RAVENNAKIT JUCE Demo")
+add_project_variable(PROJECT_PRODUCT_NAME "RAVENNAKIT Demo")
 add_project_variable(PROJECT_BUNDLE_ID "com.soundondigital.ravennakit-juce-demo")
 add_project_variable(PROJECT_URL "https://soundondigital.com/")
 add_project_variable(PROJECT_SUPPORT_URL "https://soundondigital.com/support/")
