@@ -16,7 +16,7 @@ from ravennakit.submodules.build_tools.windows.signtool import signtool_get_sign
 
 app_target_name = 'ravennakit_juce_demo'
 app_artefacts_dir = f'{app_target_name}_artefacts'
-app_name = 'RAVENNAKIT JUCE Demo'
+app_name = 'RAVENNAKIT Demo'
 
 # Script location matters, cwd does not
 script_path = Path(__file__)
@@ -80,7 +80,7 @@ def pack_and_sign_macos(args, path_to_build: Path, build_config: Config):
 
         return full_path_to_bundle
 
-    # RAVENNAKIT JUCE Demo
+    # RAVENNAKIT Demo
     path_to_app = process_bundle(Path(app_artefacts_dir, str(build_config.value)), Path(f'{app_name}.app'))
     copy_into_archive(path_to_build / app_artefacts_dir)
 
@@ -124,7 +124,7 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
             os.makedirs(path_to_build_archive / sub_folder, exist_ok=True)
             shutil.copy(file, path_to_build_archive / sub_folder, follow_symlinks=True)
 
-    # RAVENNAKIT JUCE Demo application
+    # RAVENNAKIT Demo application
     path_to_desktop_receiver_app = path_to_build_x64 / app_artefacts_dir / str(build_config.value) / f'{app_name}.exe'
     copy_into_archive(path_to_build_x64 / app_artefacts_dir)
 
