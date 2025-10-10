@@ -88,6 +88,21 @@ set(JUCE_COMMON_TARGET_DEFINITIONS
         JUCE_ASIO=1
 )
 
+###################
+# Audio Resampler #
+###################
+
+add_library(audio-resampler STATIC
+        third_party/dbry/audio-resampler/biquad.h
+        third_party/dbry/audio-resampler/biquad.c
+        third_party/dbry/audio-resampler/decimator.h
+        third_party/dbry/audio-resampler/decimator.c
+        third_party/dbry/audio-resampler/resampler.h
+        third_party/dbry/audio-resampler/resampler.c
+)
+
+target_include_directories(audio-resampler PUBLIC third_party/dbry)
+
 ####################
 # Demo application #
 ####################
@@ -129,4 +144,5 @@ target_link_libraries(ravennakit_juce_demo
         juce::juce_gui_extra
         juce::juce_audio_utils
         ravennakit
+        audio-resampler
 )
