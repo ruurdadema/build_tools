@@ -153,8 +153,9 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
 
     // Positive means audio device is ahead of the PTP clock, negative means behind
     const auto drift = rav::WrappingUint32 (rtpNow).diff (*rtpTs_);
-    const auto ratio = static_cast<double> (deviceFormat_.sample_rate) /
-                       static_cast<double> (static_cast<int32_t> (deviceFormat_.sample_rate) + drift);
+    auto ratio = static_cast<double> (deviceFormat_.sample_rate) /
+                 static_cast<double> (static_cast<int32_t> (deviceFormat_.sample_rate) + drift);
+    ratio = std::clamp (ratio, 0.5, 1.5);
     const auto ratioFiltered = driftFilter_.update (ratio);
 
     TRACY_PLOT ("Sender drift", static_cast<double> (drift));
@@ -166,8 +167,8 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
         resampler_.get(),
         inputChannelData,
         numSamples,
-        resamplerOutputBuffer_.data(),
-        static_cast<int> (resamplerOutputBuffer_.num_frames()),
+        resamplerBuffer_.data(),
+        static_cast<int> (resamplerBuffer_.num_frames()),
         ratioFiltered);
 
     RAV_ASSERT_DEBUG (result.input_used == static_cast<uint32_t> (numSamples), "Num input frame mismatch");
@@ -175,7 +176,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     auto lock = realtimeSharedContext_.lock_realtime();
 
     for (const auto* sender : lock->senders)
-        sender->processBlock (resamplerOutputBuffer_.with_num_frames (result.output_generated).const_view(), *rtpTs_);
+        sender->processBlock (resamplerBuffer_.with_num_frames (result.output_generated).const_view(), *rtpTs_);
 
     *rtpTs_ += result.output_generated;
 }
@@ -190,10 +191,10 @@ void AudioSendersModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
         static_cast<uint32_t> (device->getActiveInputChannels().countNumberOfSetBits()),
     };
 
-    const auto numOutputChannels = static_cast<size_t> (device->getActiveOutputChannels().countNumberOfSetBits());
+    const auto numInputChannels = static_cast<size_t> (device->getActiveInputChannels().countNumberOfSetBits());
 
     const auto maxNumFramesPerBlock = static_cast<uint32_t> (device->getCurrentBufferSizeSamples());
-    resamplerOutputBuffer_.resize (numOutputChannels, maxNumFramesPerBlock * 2);
+    resamplerBuffer_.resize (numInputChannels, maxNumFramesPerBlock * 2);
 
     resampler_.reset (resampleInit (static_cast<int> (deviceFormat_.num_channels), 256, 320, 1.0, SUBSAMPLE_INTERPOLATE | BLACKMAN_HARRIS));
     if (resampler_ == nullptr)

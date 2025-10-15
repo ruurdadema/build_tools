@@ -142,8 +142,9 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
 
     // Positive means audio device is ahead of the PTP clock, negative means behind
     const auto drift = rav::WrappingUint32 (rtpNow).diff (*rtpTs_);
-    const auto ratio = static_cast<double> (static_cast<int32_t> (targetFormat_.sample_rate) + drift) /
-                       static_cast<double> (targetFormat_.sample_rate);
+    auto ratio = static_cast<double> (static_cast<int32_t> (targetFormat_.sample_rate) + drift) /
+                 static_cast<double> (targetFormat_.sample_rate);
+    ratio = std::clamp (ratio, 0.5, 1.5);
     const auto ratioFiltered = driftFilter_.update (ratio);
     TRACY_PLOT ("Receiver drift", static_cast<double> (drift));
     TRACY_PLOT ("Receiver asrc ratio", ratio);
@@ -164,7 +165,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
                                         .with_num_frames (requiredInputNumFrames);
 
-    auto resamplerInputBuffer = resamplerInputBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
+    auto resamplerInputBuffer = resamplerBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
                                     .with_num_frames (requiredInputNumFrames);
 
     resamplerInputBuffer.clear();
@@ -225,8 +226,8 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
         RAV_LOG_ERROR ("Failed to initialize resampler");
 
     const auto numOutputChannels = static_cast<size_t> (device->getActiveOutputChannels().countNumberOfSetBits());
-    intermediateBuffer_.resize (numOutputChannels, maxNumFramesPerBlock_ * 2);   // Times 2 to have room for asrc
-    resamplerInputBuffer_.resize (numOutputChannels, maxNumFramesPerBlock_ * 2); // Times 2 to have room for asrc
+    intermediateBuffer_.resize (numOutputChannels, maxNumFramesPerBlock_ * 2); // Times 2 to have room for asrc
+    resamplerBuffer_.resize (numOutputChannels, maxNumFramesPerBlock_ * 2);    // Times 2 to have room for asrc
 
     for (const auto& stream : receivers_)
         stream->prepareOutput (targetFormat_, maxNumFramesPerBlock_);

@@ -133,7 +133,7 @@ private:
     std::optional<uint32_t> rtpTs_ {};
     rav::AudioFormat deviceFormat_;
     rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
-    rav::AudioBuffer<float> resamplerOutputBuffer_ {};
+    rav::AudioBuffer<float> resamplerBuffer_ {};
     std::unique_ptr<Resample, decltype (&resampleFree)> resampler_ { nullptr, &resampleFree };
     DriftFilter driftFilter_;
 

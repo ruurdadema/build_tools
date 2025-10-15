@@ -178,7 +178,7 @@ private:
     // Audio thread:
     std::optional<uint32_t> rtpTs_ {};
     rav::AudioBuffer<float> intermediateBuffer_ {};
-    rav::AudioBuffer<float> resamplerInputBuffer_ {};
+    rav::AudioBuffer<float> resamplerBuffer_ {};
     std::unique_ptr<Resample, decltype (&resampleFree)> resampler_ { nullptr, &resampleFree };
     DriftFilter driftFilter_;
 
