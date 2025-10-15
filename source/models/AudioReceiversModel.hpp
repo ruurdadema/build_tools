@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include "audio-resampler/resampler.h"
 #include "ravennakit/core/audio/audio_buffer.hpp"
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
@@ -125,11 +126,15 @@ private:
     class Receiver : public rav::RavennaReceiver::Subscriber
     {
     public:
+        struct RealtimeSharedState
+        {
+            rav::AudioFormat inputFormat;
+            rav::AudioFormat outputFormat;
+            uint32_t delayFrames {};
+        };
+
         explicit Receiver (AudioReceiversModel& owner, rav::Id receiverId);
         ~Receiver() override;
-
-        [[nodiscard]] rav::Id getReceiverId() const;
-        [[nodiscard]] const ReceiverState& getState() const;
 
         void prepareInput (const rav::AudioFormat& format);
         void prepareOutput (const rav::AudioFormat& format, uint32_t maxNumFramesPerBlock);
@@ -147,11 +152,10 @@ private:
         void ravenna_receiver_stream_stats_updated (rav::Id receiver_id, size_t stream_index, const rav::rtp::PacketStats::Counters& stats)
             override;
 
-    private:
         AudioReceiversModel& owner_;
         rav::Id receiverId_;
         ReceiverState state_;
-        rav::RealtimeSharedObject<ReceiverState> realtimeSharedState_;
+        rav::RealtimeSharedObject<RealtimeSharedState> realtimeSharedState_;
         MessageThreadExecutor executor_;
 
         void updateRealtimeSharedState();
@@ -167,13 +171,16 @@ private:
     std::vector<std::unique_ptr<Receiver>> receivers_;
     rav::AudioFormat targetFormat_;
     uint32_t maxNumFramesPerBlock_ {};
-    rav::AudioBuffer<float> intermediateBuffer_ {};
     rav::SubscriberList<Subscriber> subscribers_;
     rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
-    MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
 
     // Audio thread:
-    std::optional<uint32_t> current_ts_ {};
+    std::optional<uint32_t> rtpTs_ {};
+    rav::AudioBuffer<float> intermediateBuffer_ {};
+    rav::AudioBuffer<float> resamplerInputBuffer_ {};
+    std::unique_ptr<Resample, decltype (&resampleFree)> resampler_ { nullptr, &resampleFree };
+
+    MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
 
     [[nodiscard]] Receiver* findReceiver (rav::Id receiverId) const;
     void updateRealtimeSharedContext();
