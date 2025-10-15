@@ -112,7 +112,11 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     [[maybe_unused]] const juce::AudioIODeviceCallbackContext& context)
 {
     const auto& localClock = ptpSubscriber_.get_local_clock();
-    const auto ptpNow = localClock.now();
+    auto ptpNow = localClock.now();
+
+    // If time information is available, use that
+    if (context.hostTimeNs != nullptr)
+        ptpNow = localClock.get_adjusted_time (*context.hostTimeNs);
 
     TRACY_ZONE_SCOPED;
 
@@ -142,10 +146,13 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
 
     // Positive means audio device is ahead of the PTP clock, negative means behind
     const auto drift = rav::WrappingUint32 (rtpNow).diff (*rtpTs_);
-    const auto ratio = static_cast<double> (static_cast<int32_t>(targetFormat_.sample_rate) + drift) / static_cast<double> (targetFormat_.sample_rate);
-
+    const auto ratio = static_cast<double> (static_cast<int32_t> (targetFormat_.sample_rate) + drift) /
+                       static_cast<double> (targetFormat_.sample_rate);
+    const auto ratioFiltered = driftFilter_.update (ratio);
     TRACY_PLOT ("Receiver drift", static_cast<double> (drift));
     TRACY_PLOT ("Receiver asrc ratio", ratio);
+    TRACY_PLOT ("Receiver asrc ratio filtered", ratioFiltered);
+    TRACY_PLOT ("Receiver asrc ratio confidence", driftFilter_.confidence);
 
     if (resampler_ == nullptr)
     {
@@ -153,7 +160,10 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
         return;
     }
 
-    const auto requiredInputNumFrames = resampleGetRequiredSamples (resampler_.get(), static_cast<int> (outputBuffer.num_frames()), ratio);
+    const auto requiredInputNumFrames = resampleGetRequiredSamples (
+        resampler_.get(),
+        static_cast<int> (outputBuffer.num_frames()),
+        ratioFiltered);
 
     const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
                                         .with_num_frames (requiredInputNumFrames);
@@ -165,10 +175,13 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
 
     const auto lock = realtimeSharedContext_.lock_realtime();
 
-    for (auto* receiver : lock->receivers)
+    if (intermediateBuffer.num_frames() > 0)
     {
-        if (receiver->processBlock (intermediateBuffer, *rtpTs_))
-            resamplerInputBuffer.add (intermediateBuffer);
+        for (auto* receiver : lock->receivers)
+        {
+            if (receiver->processBlock (intermediateBuffer, *rtpTs_))
+                resamplerInputBuffer.add (intermediateBuffer);
+        }
     }
 
     const auto result = resampleProcess (
@@ -177,7 +190,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
         static_cast<int> (resamplerInputBuffer.num_frames()),
         outputBuffer.data(),
         static_cast<int> (outputBuffer.num_frames()),
-        ratio);
+        ratioFiltered);
 
     RAV_ASSERT (result.input_used == requiredInputNumFrames, "Num input frame mismatch");
     RAV_ASSERT (result.output_generated == outputBuffer.num_frames(), "Num output frame mismatch");
@@ -210,6 +223,8 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
     maxNumFramesPerBlock_ = static_cast<uint32_t> (device->getCurrentBufferSizeSamples());
 
     resampler_.reset (resampleInit (static_cast<int> (targetFormat_.num_channels), 256, 320, 1.0, SUBSAMPLE_INTERPOLATE | BLACKMAN_HARRIS));
+
+    driftFilter_ = {};
 
     if (resampler_ == nullptr)
         RAV_LOG_ERROR ("Failed to initialize resampler");

@@ -14,6 +14,7 @@
 #include "ravennakit/core/audio/audio_buffer.hpp"
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
+#include "util/DriftFilter.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -50,7 +51,7 @@ public:
 
         virtual void onAudioReceiverStatsUpdated (
             const rav::Id receiverId,
-            size_t streamIndex,
+            const size_t streamIndex,
             const rav::rtp::PacketStats::Counters& stats)
         {
             std::ignore = receiverId;
@@ -179,6 +180,7 @@ private:
     rav::AudioBuffer<float> intermediateBuffer_ {};
     rav::AudioBuffer<float> resamplerInputBuffer_ {};
     std::unique_ptr<Resample, decltype (&resampleFree)> resampler_ { nullptr, &resampleFree };
+    DriftFilter driftFilter_;
 
     MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
 
