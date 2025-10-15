@@ -383,10 +383,6 @@ void AudioReceiversModel::Receiver::updateRealtimeSharedState()
     {
         RAV_LOG_ERROR ("Failed to update realtime shared state");
     }
-    else
-    {
-        RAV_LOG_TRACE ("State updated");
-    }
 }
 
 AudioReceiversModel::Receiver* AudioReceiversModel::findReceiver (const rav::Id receiverId) const
