@@ -10,7 +10,10 @@
 
 #pragma once
 
+#include "ravennakit/core/audio/audio_buffer.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
+#include "util/AudioResampler.hpp"
+#include "util/DriftFilter.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -119,16 +122,21 @@ private:
     struct RealtimeSharedContext
     {
         std::vector<Sender*> senders;
-        std::optional<uint32_t> current_ts {};
-        rav::AudioFormat deviceFormat;
     };
 
     rav::RavennaNode& node_;
     rav::ptp::Instance::Subscriber ptpSubscriber_;
-    rav::AudioFormat deviceFormat_;
     std::vector<std::unique_ptr<Sender>> senders_;
     rav::SubscriberList<Subscriber> subscribers_;
+
+    // Accessed by audio thread:
+    std::optional<uint32_t> rtpTs_ {};
+    rav::AudioFormat deviceFormat_;
     rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
+    rav::AudioBuffer<float> resamplerOutputBuffer_ {};
+    std::unique_ptr<Resample, decltype (&resampleFree)> resampler_ { nullptr, &resampleFree };
+    DriftFilter driftFilter_;
+
     MessageThreadExecutor executor_; // Keep last so that it's destroyed first
 
     [[nodiscard]] Sender* findSender (rav::Id senderId) const;

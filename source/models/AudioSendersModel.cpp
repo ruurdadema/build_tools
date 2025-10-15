@@ -116,51 +116,68 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     const float* const* inputChannelData,
     const int numInputChannels,
     float* const* outputChannelData,
-    int numOutputChannels,
+    const int numOutputChannels,
     const int numSamples,
     const juce::AudioIODeviceCallbackContext& context)
 {
-    TRACY_ZONE_SCOPED;
-
     std::ignore = outputChannelData;
     std::ignore = numOutputChannels;
     std::ignore = context;
 
+    const auto& localClock = ptpSubscriber_.get_local_clock();
+    auto ptpNow = localClock.now();
+
+    TRACY_ZONE_SCOPED;
+
+    // If time information is available, use that
+    if (context.hostTimeNs != nullptr)
+        ptpNow = localClock.get_adjusted_time (*context.hostTimeNs);
+
     const rav::AudioBufferView outputBuffer (outputChannelData, static_cast<size_t> (numOutputChannels), static_cast<size_t> (numSamples));
     outputBuffer.clear();
 
-    const rav::AudioBufferView buffer (inputChannelData, static_cast<size_t> (numInputChannels), static_cast<size_t> (numSamples));
+    if (!deviceFormat_.is_valid())
+        return;
+
+    if (!localClock.is_calibrated())
+        return;
+
+    const auto rtpNow = static_cast<uint32_t> (ptpNow.to_rtp_timestamp (deviceFormat_.sample_rate));
+
+    if (!rtpTs_.has_value())
+    {
+        if (!localClock.is_locked())
+            return;
+        rtpTs_ = rtpNow;
+    }
+
+    // Positive means audio device is ahead of the PTP clock, negative means behind
+    const auto drift = rav::WrappingUint32 (rtpNow).diff (*rtpTs_);
+    const auto ratio = static_cast<double> (deviceFormat_.sample_rate) /
+                       static_cast<double> (static_cast<int32_t> (deviceFormat_.sample_rate) + drift);
+    const auto ratioFiltered = driftFilter_.update (ratio);
+
+    TRACY_PLOT ("Sender drift", static_cast<double> (drift));
+    TRACY_PLOT ("Sender asrc ratio", ratio);
+    TRACY_PLOT ("Sender asrc ratio filtered", ratioFiltered);
+    TRACY_PLOT ("Sender asrc ratio confidence", driftFilter_.confidence);
+
+    const auto result = resampleProcess (
+        resampler_.get(),
+        inputChannelData,
+        numSamples,
+        resamplerOutputBuffer_.data(),
+        static_cast<int> (resamplerOutputBuffer_.num_frames()),
+        ratioFiltered);
+
+    RAV_ASSERT_DEBUG (result.input_used == static_cast<uint32_t> (numSamples), "Num input frame mismatch");
 
     auto lock = realtimeSharedContext_.lock_realtime();
 
-    if (!lock->deviceFormat.is_valid())
-        return;
-
-    const auto& local_clock = ptpSubscriber_.get_local_clock();
-    if (!local_clock.is_calibrated())
-        return;
-
-    auto ptp_ts = static_cast<uint32_t> (local_clock.now().to_rtp_timestamp (lock->deviceFormat.sample_rate));
-
-    if (!lock->current_ts.has_value())
-        lock->current_ts = ptp_ts;
-
-    // Positive means audio device is ahead of the PTP clock, negative means behind
-    auto drift = rav::WrappingUint32 (ptp_ts).diff (*lock->current_ts);
-
-    if (static_cast<uint32_t> (std::abs (drift)) > outputBuffer.num_frames() * 2)
-    {
-        lock->current_ts = ptp_ts;
-        RAV_LOG_WARNING ("Re-aligned senders to: {}", ptp_ts);
-        drift = 0;
-    }
-
-    TRACY_PLOT ("sender drift", static_cast<double> (drift));
-
     for (const auto* sender : lock->senders)
-        sender->processBlock (buffer, *lock->current_ts);
+        sender->processBlock (resamplerOutputBuffer_.with_num_frames (result.output_generated).const_view(), *rtpTs_);
 
-    *lock->current_ts += static_cast<uint32_t> (outputBuffer.num_frames());
+    *rtpTs_ += result.output_generated;
 }
 
 void AudioSendersModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
@@ -173,13 +190,27 @@ void AudioSendersModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
         static_cast<uint32_t> (device->getActiveInputChannels().countNumberOfSetBits()),
     };
 
+    const auto numOutputChannels = static_cast<size_t> (device->getActiveOutputChannels().countNumberOfSetBits());
+
+    const auto maxNumFramesPerBlock = static_cast<uint32_t> (device->getCurrentBufferSizeSamples());
+    resamplerOutputBuffer_.resize (numOutputChannels, maxNumFramesPerBlock * 2);
+
+    resampler_.reset (resampleInit (static_cast<int> (deviceFormat_.num_channels), 256, 320, 1.0, SUBSAMPLE_INTERPOLATE | BLACKMAN_HARRIS));
+    if (resampler_ == nullptr)
+        RAV_LOG_ERROR ("Failed to initialize resampler");
+
     for (const auto& sender : senders_)
         sender->prepareInput (deviceFormat_);
 
     updateRealtimeSharedContext();
 }
 
-void AudioSendersModel::audioDeviceStopped() {}
+void AudioSendersModel::audioDeviceStopped()
+{
+    rtpTs_.reset();
+    deviceFormat_ = {};
+    resampler_.reset();
+}
 
 void AudioSendersModel::audioDeviceError (const juce::String& errorMessage)
 {
@@ -200,7 +231,6 @@ void AudioSendersModel::updateRealtimeSharedContext()
     auto newContext = std::make_unique<RealtimeSharedContext>();
     for (const auto& sender : senders_)
         newContext->senders.push_back (sender.get());
-    newContext->deviceFormat = deviceFormat_;
     if (!realtimeSharedContext_.update (std::move (newContext)))
     {
         RAV_LOG_ERROR ("Failed to update realtime shared context");

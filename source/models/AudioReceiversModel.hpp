@@ -10,11 +10,11 @@
 
 #pragma once
 
-#include "audio-resampler/resampler.h"
 #include "ravennakit/core/audio/audio_buffer.hpp"
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
 #include "util/DriftFilter.hpp"
+#include "util/AudioResampler.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
 #include <juce_audio_devices/juce_audio_devices.h>

@@ -114,25 +114,21 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     const auto& localClock = ptpSubscriber_.get_local_clock();
     auto ptpNow = localClock.now();
 
+    TRACY_ZONE_SCOPED;
+
     // If time information is available, use that
     if (context.hostTimeNs != nullptr)
         ptpNow = localClock.get_adjusted_time (*context.hostTimeNs);
-
-    TRACY_ZONE_SCOPED;
 
     RAV_ASSERT (numInputChannels >= 0, "Num input channels must be >= 0");
     RAV_ASSERT (numOutputChannels >= 0, "Num output channels must be >= 0");
     RAV_ASSERT (numSamples >= 0, "Num samples must be >= 0");
 
     rav::AudioBufferView outputBuffer { outputChannelData, static_cast<uint32_t> (numOutputChannels), static_cast<uint32_t> (numSamples) };
-
     outputBuffer.clear();
 
     if (!targetFormat_.is_valid())
-    {
-        TRACY_MESSAGE ("Target format not valid");
         return;
-    }
 
     const auto rtpNow = static_cast<uint32_t> (ptpNow.to_rtp_timestamp (targetFormat_.sample_rate));
 
@@ -192,8 +188,8 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
         static_cast<int> (outputBuffer.num_frames()),
         ratioFiltered);
 
-    RAV_ASSERT (result.input_used == requiredInputNumFrames, "Num input frame mismatch");
-    RAV_ASSERT (result.output_generated == outputBuffer.num_frames(), "Num output frame mismatch");
+    RAV_ASSERT_DEBUG (result.input_used == requiredInputNumFrames, "Num input frame mismatch");
+    RAV_ASSERT_DEBUG (result.output_generated == outputBuffer.num_frames(), "Num output frame mismatch");
 
     *rtpTs_ += requiredInputNumFrames;
 }
@@ -219,12 +215,11 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
     }
 
     targetFormat_ = newFormat;
+    driftFilter_ = {};
 
     maxNumFramesPerBlock_ = static_cast<uint32_t> (device->getCurrentBufferSizeSamples());
 
     resampler_.reset (resampleInit (static_cast<int> (targetFormat_.num_channels), 256, 320, 1.0, SUBSAMPLE_INTERPOLATE | BLACKMAN_HARRIS));
-
-    driftFilter_ = {};
 
     if (resampler_ == nullptr)
         RAV_LOG_ERROR ("Failed to initialize resampler");
@@ -247,6 +242,7 @@ void AudioReceiversModel::audioDeviceStopped()
     rtpTs_.reset();
     maxNumFramesPerBlock_ = 0;
     targetFormat_ = {};
+    resampler_.reset();
 }
 
 AudioReceiversModel::Receiver::Receiver (AudioReceiversModel& owner, const rav::Id receiverId) : owner_ (owner), receiverId_ (receiverId)
