@@ -120,9 +120,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     const int numSamples,
     const juce::AudioIODeviceCallbackContext& context)
 {
-    std::ignore = outputChannelData;
-    std::ignore = numOutputChannels;
-    std::ignore = context;
+    std::ignore = numInputChannels;
 
     const auto& localClock = ptpSubscriber_.get_local_clock();
     auto ptpNow = localClock.now();
@@ -133,8 +131,8 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     if (context.hostTimeNs != nullptr)
         ptpNow = localClock.get_adjusted_time (*context.hostTimeNs);
 
-    const rav::AudioBufferView outputBuffer (outputChannelData, static_cast<size_t> (numOutputChannels), static_cast<size_t> (numSamples));
-    outputBuffer.clear();
+    // Clear output buffer
+    rav::AudioBufferView (outputChannelData, static_cast<size_t> (numOutputChannels), static_cast<size_t> (numSamples)).clear();
 
     if (!deviceFormat_.is_valid())
         return;
@@ -156,12 +154,9 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     auto ratio = static_cast<double> (deviceFormat_.sample_rate) /
                  static_cast<double> (static_cast<int32_t> (deviceFormat_.sample_rate) + drift);
     ratio = std::clamp (ratio, 0.5, 1.5);
-    const auto ratioFiltered = driftFilter_.update (ratio);
 
     TRACY_PLOT ("Sender drift", static_cast<double> (drift));
     TRACY_PLOT ("Sender asrc ratio", ratio);
-    TRACY_PLOT ("Sender asrc ratio filtered", ratioFiltered);
-    TRACY_PLOT ("Sender asrc ratio confidence", driftFilter_.confidence);
 
     const auto result = resampleProcess (
         resampler_.get(),
@@ -169,7 +164,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
         numSamples,
         resamplerBuffer_.data(),
         static_cast<int> (resamplerBuffer_.num_frames()),
-        ratioFiltered);
+        ratio);
 
     RAV_ASSERT_DEBUG (result.input_used == static_cast<uint32_t> (numSamples), "Num input frame mismatch");
 

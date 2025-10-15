@@ -135,7 +135,6 @@ private:
     rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
     rav::AudioBuffer<float> resamplerBuffer_ {};
     std::unique_ptr<Resample, decltype (&resampleFree)> resampler_ { nullptr, &resampleFree };
-    DriftFilter driftFilter_;
 
     MessageThreadExecutor executor_; // Keep last so that it's destroyed first
 

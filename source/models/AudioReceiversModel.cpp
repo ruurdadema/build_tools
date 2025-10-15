@@ -145,11 +145,8 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     auto ratio = static_cast<double> (static_cast<int32_t> (targetFormat_.sample_rate) + drift) /
                  static_cast<double> (targetFormat_.sample_rate);
     ratio = std::clamp (ratio, 0.5, 1.5);
-    const auto ratioFiltered = driftFilter_.update (ratio);
     TRACY_PLOT ("Receiver drift", static_cast<double> (drift));
     TRACY_PLOT ("Receiver asrc ratio", ratio);
-    TRACY_PLOT ("Receiver asrc ratio filtered", ratioFiltered);
-    TRACY_PLOT ("Receiver asrc ratio confidence", driftFilter_.confidence);
 
     if (resampler_ == nullptr)
     {
@@ -157,10 +154,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
         return;
     }
 
-    const auto requiredInputNumFrames = resampleGetRequiredSamples (
-        resampler_.get(),
-        static_cast<int> (outputBuffer.num_frames()),
-        ratioFiltered);
+    const auto requiredInputNumFrames = resampleGetRequiredSamples (resampler_.get(), static_cast<int> (outputBuffer.num_frames()), ratio);
 
     const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
                                         .with_num_frames (requiredInputNumFrames);
@@ -187,7 +181,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
         static_cast<int> (resamplerInputBuffer.num_frames()),
         outputBuffer.data(),
         static_cast<int> (outputBuffer.num_frames()),
-        ratioFiltered);
+        ratio);
 
     RAV_ASSERT_DEBUG (result.input_used == requiredInputNumFrames, "Num input frame mismatch");
     RAV_ASSERT_DEBUG (result.output_generated == outputBuffer.num_frames(), "Num output frame mismatch");
@@ -216,7 +210,6 @@ void AudioReceiversModel::audioDeviceAboutToStart (juce::AudioIODevice* device)
     }
 
     targetFormat_ = newFormat;
-    driftFilter_ = {};
 
     maxNumFramesPerBlock_ = static_cast<uint32_t> (device->getCurrentBufferSizeSamples());
 

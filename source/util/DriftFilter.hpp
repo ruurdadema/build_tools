@@ -13,7 +13,7 @@
 #include "ravennakit/core/assert.hpp"
 
 /**
- * Simple filter to reduce spikes in drift correction ratios.
+ * Experimental filter to reduce spikes in drift correction ratios.
  * It's easy to come up with something better, but for now this should do it.
  */
 struct DriftFilter
