@@ -419,17 +419,21 @@ void SendersContainer::Row::update (const AudioSendersModel::SenderState& state)
 
     numChannelsEditor_.setColour (juce::TextEditor::ColourIds::outlineColourId, findColour (juce::TextEditor::ColourIds::outlineColourId));
 
-    if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
-    {
-        statusMessage_.setText (fmt::format ("Sample rate mismatch ({})", state.inputFormat.sample_rate), juce::dontSendNotification);
-        statusMessage_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
-        sampleRateComboBox_.setColour (juce::ComboBox::ColourIds::outlineColourId, Constants::Colours::warning);
-    }
-    else if (state.senderConfiguration.audio_format.num_channels != state.inputFormat.num_channels)
+    if (state.senderConfiguration.audio_format.num_channels != state.inputFormat.num_channels)
     {
         statusMessage_.setText (fmt::format ("Channel count mismatch ({})", state.inputFormat.num_channels), juce::dontSendNotification);
         statusMessage_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
         numChannelsEditor_.setColour (juce::TextEditor::ColourIds::outlineColourId, Constants::Colours::warning);
+    }
+    else if (state.senderConfiguration.audio_format.sample_rate != state.inputFormat.sample_rate)
+    {
+        statusMessage_.setText (
+            fmt::format (
+                "Sample rate conversion engaged ({} to {})",
+                state.inputFormat.sample_rate,
+                state.senderConfiguration.audio_format.sample_rate),
+            juce::dontSendNotification);
+        statusMessage_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::textDisabled);
     }
     else
     {
