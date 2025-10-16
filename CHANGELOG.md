@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added drift correction between the local audio device and the PTP clock domain. Streaming now works without any
   glitches due to resyncs.
+- Added sample rate conversion to senders which are configured at a different sample rate than the input device.
 
 ## [v0.15.0] - September 8, 2025
 

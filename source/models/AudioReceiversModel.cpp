@@ -130,7 +130,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     if (!targetFormat_.is_valid())
         return;
 
-    const auto rtpNow = static_cast<uint32_t> (ptpNow.to_rtp_timestamp (targetFormat_.sample_rate));
+    const auto rtpNow = ptpNow.to_rtp_timestamp32 (targetFormat_.sample_rate);
 
     if (!rtpTs_.has_value())
     {
@@ -175,7 +175,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
         }
     }
 
-    const auto result = resampleProcess (
+    [[maybe_unused]] const auto result = resampleProcess (
         resampler_.get(),
         resamplerInputBuffer.data(),
         static_cast<int> (resamplerInputBuffer.num_frames()),
