@@ -77,7 +77,7 @@ void AudioReceiversModel::ravenna_receiver_added (const rav::RavennaReceiver& re
         if (targetFormat_.is_valid() && maxNumFramesPerBlock_ > 0)
             it->prepareOutput (targetFormat_, maxNumFramesPerBlock_);
         updateRealtimeSharedContext();
-        for (const auto& subscriber : subscribers_)
+        for (auto* subscriber : subscribers_)
             subscriber->onAudioReceiverUpdated (streamId, &it->state_);
     });
 }
@@ -98,7 +98,7 @@ void AudioReceiversModel::ravenna_receiver_removed (const rav::Id receiverId)
                 break;
             }
         }
-        for (const auto& subscriber : subscribers_)
+        for (auto* subscriber : subscribers_)
             subscriber->onAudioReceiverUpdated (receiverId, nullptr);
     });
 }
@@ -156,8 +156,8 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
 
     const auto requiredInputNumFrames = resampleGetRequiredSamples (resampler_.get(), static_cast<int> (outputBuffer.num_frames()), ratio);
 
-    const auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
-                                        .with_num_frames (requiredInputNumFrames);
+    auto intermediateBuffer = intermediateBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
+                                  .with_num_frames (requiredInputNumFrames);
 
     auto resamplerInputBuffer = resamplerBuffer_.with_num_channels (static_cast<size_t> (numOutputChannels))
                                     .with_num_frames (requiredInputNumFrames);
@@ -170,7 +170,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     {
         for (auto* receiver : lock->receivers)
         {
-            if (receiver->processBlock (intermediateBuffer, *rtpTs_))
+            if (receiver->processBlock (intermediateBuffer, *rtpTs_, ptpNow))
                 resamplerInputBuffer.add (intermediateBuffer);
         }
     }
@@ -265,32 +265,76 @@ void AudioReceiversModel::Receiver::prepareOutput (const rav::AudioFormat& forma
     RAV_ASSERT (format.is_valid(), "Invalid format");
     RAV_ASSERT (maxNumFramesPerBlock > 0, "Num samples must be > 0");
     state_.outputFormat = format;
+    state_.maxNumFramesPerBlock = maxNumFramesPerBlock;
+
+    for (auto* subscriber : owner_.subscribers_)
+        subscriber->onAudioReceiverUpdated (receiverId_, &state_);
+
     updateRealtimeSharedState();
 }
 
-std::optional<uint32_t> AudioReceiversModel::Receiver::processBlock (
-    const rav::AudioBufferView<float>& outputBuffer,
-    const uint32_t currentTs)
+bool AudioReceiversModel::Receiver::processBlock (
+    rav::AudioBufferView<float>& outputBuffer,
+    const uint32_t rtpTimestamp,
+    const rav::ptp::Timestamp ptpTimestamp)
 {
     TRACY_ZONE_SCOPED;
 
     outputBuffer.clear();
 
-    const auto state = realtimeSharedState_.lock_realtime();
+    auto lock = realtimeSharedState_.lock_realtime();
 
-    if (!state->inputFormat.is_valid())
-        return std::nullopt;
+    if (!lock->inputFormat.is_valid())
+        return false;
 
-    if (!state->outputFormat.is_valid())
-        return std::nullopt;
+    if (!lock->outputFormat.is_valid())
+        return false;
 
-    if (state->inputFormat.sample_rate != state->outputFormat.sample_rate)
+    // If no conversion is needed, take the shortcut
+    if (lock->inputFormat.sample_rate == lock->outputFormat.sample_rate)
+        return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, rtpTimestamp - lock->delayFrames, {}) != std::nullopt;
+
+    if (lock->resampler == nullptr)
+        return false;
+
+    if (lock->rtpTimestamp == std::nullopt)
     {
-        // Sample rate mismatch, can't process
-        return std::nullopt;
+        lock->rtpTimestamp = ptpTimestamp.from_rtp_timestamp32 (rtpTimestamp, lock->outputFormat.sample_rate)
+                                 .to_rtp_timestamp32 (lock->inputFormat.sample_rate);
     }
 
-    return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, currentTs - state->delayFrames, {});
+    // Check how much the timestamp at the input frequency differs from the one of the output frequency.
+    const auto diff = static_cast<int64_t> (ptpTimestamp.from_rtp_timestamp32 (*lock->rtpTimestamp, lock->inputFormat.sample_rate)
+                                                .to_rtp_timestamp32 (lock->outputFormat.sample_rate)) -
+                      static_cast<int64_t> (rtpTimestamp);
+
+    TRACY_PLOT ("Receiver timestamp diff", diff);
+
+    const auto requiredNumInputFrames = resampleGetRequiredSamples (
+        lock->resampler.get(),
+        static_cast<int> (outputBuffer.num_frames()),
+        0.0); // + 1;
+
+    auto resampleBuffer = lock->resampleBuffer.with_num_frames (requiredNumInputFrames);
+
+    if (!owner_.node_.read_audio_data_realtime (receiverId_, resampleBuffer, *lock->rtpTimestamp - lock->delayFrames, {}))
+        return false;
+
+    [[maybe_unused]] const auto result = resampleProcess (
+        lock->resampler.get(),
+        resampleBuffer.data(),
+        static_cast<int> (resampleBuffer.num_frames()),
+        outputBuffer.data(),
+        static_cast<int> (outputBuffer.num_frames()),
+        0.0);
+
+    RAV_ASSERT_DEBUG (result.input_used != 0, "No input used");
+
+    *lock->rtpTimestamp += result.input_used;
+
+    // The first call to the resampler seems to give back one frame less than expected consistently, in which case return false to skip this
+    // block.
+    return result.output_generated == outputBuffer.num_frames();
 }
 
 void AudioReceiversModel::Receiver::ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::ReaderParameters& parameters)
@@ -371,6 +415,21 @@ void AudioReceiversModel::Receiver::updateRealtimeSharedState()
     newState->delayFrames = state_.configuration.delay_frames;
     newState->inputFormat = state_.inputFormat;
     newState->outputFormat = state_.outputFormat;
+
+    if (newState->inputFormat.is_valid() && newState->outputFormat.is_valid() &&
+        newState->inputFormat.sample_rate != newState->outputFormat.sample_rate)
+    {
+        newState->resampler.reset (resampleFixedRatioInit (
+            static_cast<int> (state_.inputFormat.num_channels),
+            256,
+            320,
+            state_.inputFormat.sample_rate,
+            state_.outputFormat.sample_rate,
+            0,
+            SUBSAMPLE_INTERPOLATE | BLACKMAN_HARRIS | INCLUDE_LOWPASS));
+        const auto ratio = static_cast<double> (state_.inputFormat.sample_rate) / static_cast<double> (state_.outputFormat.sample_rate);
+        newState->resampleBuffer.resize (state_.inputFormat.num_channels, static_cast<uint32_t> (state_.maxNumFramesPerBlock * ratio) + 8);
+    }
 
     if (!realtimeSharedState_.update (std::move (newState)))
     {

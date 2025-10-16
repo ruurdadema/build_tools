@@ -13,7 +13,6 @@
 #include "ravennakit/core/audio/audio_buffer.hpp"
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
-#include "util/DriftFilter.hpp"
 #include "util/AudioResampler.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
@@ -37,6 +36,7 @@ public:
         std::vector<StreamState> streams;
         rav::AudioFormat inputFormat;
         rav::AudioFormat outputFormat;
+        uint32_t maxNumFramesPerBlock {};
     };
 
     class Subscriber
@@ -132,6 +132,9 @@ private:
             rav::AudioFormat inputFormat;
             rav::AudioFormat outputFormat;
             uint32_t delayFrames {};
+            std::unique_ptr<Resample, decltype (&resampleFree)> resampler { nullptr, &resampleFree };
+            rav::AudioBuffer<float> resampleBuffer;
+            std::optional<uint32_t> rtpTimestamp {};
         };
 
         explicit Receiver (AudioReceiversModel& owner, rav::Id receiverId);
@@ -140,7 +143,7 @@ private:
         void prepareInput (const rav::AudioFormat& format);
         void prepareOutput (const rav::AudioFormat& format, uint32_t maxNumFramesPerBlock);
 
-        std::optional<uint32_t> processBlock (const rav::AudioBufferView<float>& outputBuffer, uint32_t currentTs);
+        bool processBlock (rav::AudioBufferView<float>& outputBuffer, uint32_t rtpTimestamp, rav::ptp::Timestamp ptpTimestamp);
 
         // rav::rtp_stream_receiver::subscriber overrides
         void ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::ReaderParameters& parameters) override;
