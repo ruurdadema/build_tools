@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [unreleased]
+
+### Added
+
+- Added drift correction between the local audio device and the PTP clock domain. Streaming won't have glitches due to
+  resyncs.
+- Added sample rate conversion to senders and receivers which are configured at a different sample rate than the local
+  audio device.
+
 ## [v0.15.0] - September 8, 2025
 
 ### Added

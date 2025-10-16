@@ -339,16 +339,22 @@ void ReceiversContainer::Row::update (const AudioReceiversModel::ReceiverState& 
 
     sessionNameLabel_.setText (state.configuration.session_name, juce::dontSendNotification);
 
+    warningLabel_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::warning);
     if (state.configuration.sdp.session_name.empty())
         warningLabel_.setText ("Warning: no SDP available", juce::dontSendNotification);
     else if (!state.outputFormat.is_valid())
         warningLabel_.setText ("Warning: invalid audio device settings", juce::dontSendNotification);
     else if (!state.inputFormat.is_valid())
         warningLabel_.setText ("Warning: invalid input format", juce::dontSendNotification);
-    else if (state.inputFormat.sample_rate != state.outputFormat.sample_rate)
-        warningLabel_.setText ("Warning: sample rate mismatch", juce::dontSendNotification);
     else if (state.inputFormat.num_channels != state.outputFormat.num_channels)
         warningLabel_.setText ("Warning: channel count mismatch", juce::dontSendNotification);
+    else if (state.inputFormat.sample_rate != state.outputFormat.sample_rate)
+    {
+        warningLabel_.setText (
+            fmt::format ("Sample rate conversion engaged ({} to {})", state.inputFormat.sample_rate, state.outputFormat.sample_rate),
+            juce::dontSendNotification);
+        warningLabel_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::textDisabled);
+    }
     else
         warningLabel_.setText ({}, juce::dontSendNotification);
 

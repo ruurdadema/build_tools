@@ -13,6 +13,7 @@
 #include "ravennakit/core/audio/audio_buffer.hpp"
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
+#include "util/AudioResampler.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -35,6 +36,7 @@ public:
         std::vector<StreamState> streams;
         rav::AudioFormat inputFormat;
         rav::AudioFormat outputFormat;
+        uint32_t maxNumFramesPerBlock {};
     };
 
     class Subscriber
@@ -49,7 +51,7 @@ public:
 
         virtual void onAudioReceiverStatsUpdated (
             const rav::Id receiverId,
-            size_t streamIndex,
+            const size_t streamIndex,
             const rav::rtp::PacketStats::Counters& stats)
         {
             std::ignore = receiverId;
@@ -125,16 +127,23 @@ private:
     class Receiver : public rav::RavennaReceiver::Subscriber
     {
     public:
+        struct RealtimeSharedState
+        {
+            rav::AudioFormat inputFormat;
+            rav::AudioFormat outputFormat;
+            uint32_t delayFrames {};
+            std::unique_ptr<Resample, decltype (&resampleFree)> resampler { nullptr, &resampleFree };
+            rav::AudioBuffer<float> resampleBuffer;
+            std::optional<uint32_t> rtpTimestamp {};
+        };
+
         explicit Receiver (AudioReceiversModel& owner, rav::Id receiverId);
         ~Receiver() override;
-
-        [[nodiscard]] rav::Id getReceiverId() const;
-        [[nodiscard]] const ReceiverState& getState() const;
 
         void prepareInput (const rav::AudioFormat& format);
         void prepareOutput (const rav::AudioFormat& format, uint32_t maxNumFramesPerBlock);
 
-        std::optional<uint32_t> processBlock (const rav::AudioBufferView<float>& outputBuffer, uint32_t currentTs);
+        bool processBlock (rav::AudioBufferView<float>& outputBuffer, uint32_t rtpTimestamp, rav::ptp::Timestamp ptpTimestamp);
 
         // rav::rtp_stream_receiver::subscriber overrides
         void ravenna_receiver_parameters_updated (const rav::rtp::AudioReceiver::ReaderParameters& parameters) override;
@@ -147,11 +156,10 @@ private:
         void ravenna_receiver_stream_stats_updated (rav::Id receiver_id, size_t stream_index, const rav::rtp::PacketStats::Counters& stats)
             override;
 
-    private:
         AudioReceiversModel& owner_;
         rav::Id receiverId_;
         ReceiverState state_;
-        rav::RealtimeSharedObject<ReceiverState> realtimeSharedState_;
+        rav::RealtimeSharedObject<RealtimeSharedState> realtimeSharedState_;
         MessageThreadExecutor executor_;
 
         void updateRealtimeSharedState();
@@ -167,13 +175,16 @@ private:
     std::vector<std::unique_ptr<Receiver>> receivers_;
     rav::AudioFormat targetFormat_;
     uint32_t maxNumFramesPerBlock_ {};
-    rav::AudioBuffer<float> intermediateBuffer_ {};
     rav::SubscriberList<Subscriber> subscribers_;
     rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
-    MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
 
     // Audio thread:
-    std::optional<uint32_t> current_ts_ {};
+    std::optional<uint32_t> rtpTs_ {};
+    rav::AudioBuffer<float> intermediateBuffer_ {};
+    rav::AudioBuffer<float> resamplerBuffer_ {};
+    std::unique_ptr<Resample, decltype (&resampleFree)> resampler_ { nullptr, &resampleFree };
+
+    MessageThreadExecutor executor_; // Keep last so that it's destroyed first to prevent dangling pointers
 
     [[nodiscard]] Receiver* findReceiver (rav::Id receiverId) const;
     void updateRealtimeSharedContext();

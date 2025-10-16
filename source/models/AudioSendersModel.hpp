@@ -10,7 +10,9 @@
 
 #pragma once
 
+#include "ravennakit/core/audio/audio_buffer.hpp"
 #include "ravennakit/ravenna/ravenna_node.hpp"
+#include "util/AudioResampler.hpp"
 #include "util/MessageThreadExecutor.hpp"
 
 #include <juce_audio_devices/juce_audio_devices.h>
@@ -106,29 +108,49 @@ private:
 
         void ravenna_sender_configuration_updated (rav::Id sender_id, const rav::RavennaSender::Configuration& configuration) override;
 
-        void prepareInput (rav::AudioFormat inputFormat);
-        void processBlock (const rav::AudioBufferView<const float>& inputBuffer, uint32_t timestamp) const;
+        void prepareInput (rav::AudioFormat inputFormat, uint32_t maxNumFramesPerBlock);
+        void processBlock (const rav::AudioBufferView<const float>& inputBuffer, uint32_t rtpTimestamp, rav::ptp::Timestamp ptpTimestamp);
+        void resetInput();
 
     private:
+        struct RealtimeSharedContext
+        {
+            uint32_t inputSampleRate {};
+            uint32_t targetSampleRate {};
+            std::unique_ptr<Resample, decltype (&resampleFree)> resampler { nullptr, &resampleFree };
+            rav::AudioBuffer<float> resampleBuffer;
+            std::optional<uint32_t> rtpTimestamp {}; // Used only when resampler is active
+        };
         [[maybe_unused]] AudioSendersModel& owner_;
         rav::Id senderId_;
         SenderState state_;
+        uint32_t maxNumFramesPerBlock_ = 0;
+
+        rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
+
         MessageThreadExecutor executor_; // Keep last so that it's destroyed first
+
+        void updateRealtimeSharedContext();
     };
 
     struct RealtimeSharedContext
     {
         std::vector<Sender*> senders;
-        std::optional<uint32_t> current_ts {};
-        rav::AudioFormat deviceFormat;
     };
 
     rav::RavennaNode& node_;
     rav::ptp::Instance::Subscriber ptpSubscriber_;
-    rav::AudioFormat deviceFormat_;
     std::vector<std::unique_ptr<Sender>> senders_;
     rav::SubscriberList<Subscriber> subscribers_;
+
+    // Accessed by audio thread:
+    std::optional<uint32_t> rtpTs_ {};
+    rav::AudioFormat deviceFormat_;
+    uint32_t maxNumFramesPerBlock_ = 0;
     rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
+    rav::AudioBuffer<float> resamplerBuffer_ {};
+    std::unique_ptr<Resample, decltype (&resampleFree)> resampler_ { nullptr, &resampleFree };
+
     MessageThreadExecutor executor_; // Keep last so that it's destroyed first
 
     [[nodiscard]] Sender* findSender (rav::Id senderId) const;

@@ -51,12 +51,6 @@ pipelines:
         - step: *build-macos
         - step: *build-windows
         - step: *build-dist
-  branches:
-    main:
-      - parallel:
-        - step: *build-macos
-        - step: *build-windows
-        - step: *build-dist
   custom:
     all:
       - parallel:
