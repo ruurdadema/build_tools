@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "ravennakit/core/util/defer.hpp"
+
 #include <juce_events/juce_events.h>
 
 /**
@@ -76,13 +78,20 @@ public:
 private:
     std::mutex mutex_;
     std::vector<std::function<void()>> work_;
+    std::vector<std::function<void()>> tmp_;
 
     void handleAsyncUpdate() override
     {
-        const std::lock_guard lock (mutex_);
-        for (auto& work : work_)
+        {
+            const std::lock_guard lock (mutex_);
+            RAV_ASSERT (tmp_.empty(), "tmp expected to be empty");
+            std::swap (tmp_, work_);
+        }
+        rav::Defer cleanup ([this] {
+            tmp_.clear();
+        });
+        for (auto& work : tmp_)
             if (work)
                 work();
-        work_.clear();
     }
 };
