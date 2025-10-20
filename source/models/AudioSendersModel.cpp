@@ -279,11 +279,11 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
         }
 
         // Check how much the timestamp at the input frequency differs from the one of the output frequency.
-        const auto diff = static_cast<int64_t> (ptpNow.from_rtp_timestamp32 (*senderLock->rtpTimestamp, senderLock->targetSampleRate)
-                                                    .to_rtp_timestamp32 (deviceFormat_.sample_rate)) -
-                          static_cast<int64_t> (*rtpTs_);
-
-        TRACY_PLOT ("Sender timestamp diff", diff);
+        TRACY_PLOT (
+            "Sender timestamp diff",
+            static_cast<int64_t> (ptpNow.from_rtp_timestamp32 (*senderLock->rtpTimestamp, senderLock->targetSampleRate)
+                                      .to_rtp_timestamp32 (deviceFormat_.sample_rate)) -
+                static_cast<int64_t> (*rtpTs_));
 
         const auto resampleResult = resampleProcess (
             senderLock->resampler.get(),

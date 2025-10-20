@@ -302,11 +302,11 @@ bool AudioReceiversModel::Receiver::processBlock (
     }
 
     // Check how much the timestamp at the input frequency differs from the one of the output frequency.
-    const auto diff = static_cast<int64_t> (ptpTimestamp.from_rtp_timestamp32 (*lock->rtpTimestamp, lock->inputFormat.sample_rate)
-                                                .to_rtp_timestamp32 (lock->outputFormat.sample_rate)) -
-                      static_cast<int64_t> (rtpTimestamp);
-
-    TRACY_PLOT ("Receiver timestamp diff", diff);
+    TRACY_PLOT (
+        "Receiver timestamp diff",
+        static_cast<int64_t> (ptpTimestamp.from_rtp_timestamp32 (*lock->rtpTimestamp, lock->inputFormat.sample_rate)
+                                  .to_rtp_timestamp32 (lock->outputFormat.sample_rate)) -
+            static_cast<int64_t> (rtpTimestamp));
 
     const auto requiredNumInputFrames = resampleGetRequiredSamples (
         lock->resampler.get(),
