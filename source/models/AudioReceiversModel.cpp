@@ -9,6 +9,7 @@
  */
 
 #include "AudioReceiversModel.hpp"
+#include "util/Constants.hpp"
 
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/core/audio/audio_data.hpp"
@@ -144,7 +145,8 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     const auto drift = rav::WrappingUint32 (rtpNow).diff (*rtpTs_);
     auto ratio = static_cast<double> (static_cast<int32_t> (targetFormat_.sample_rate) + drift) /
                  static_cast<double> (targetFormat_.sample_rate);
-    ratio = std::clamp (ratio, 0.5, 1.5);
+    ratio = std::clamp (ratio, 1.0 - constants::jnd_pitch, 1.0 + constants::jnd_pitch);
+
     TRACY_PLOT ("Receiver drift", static_cast<double> (drift));
     TRACY_PLOT ("Receiver asrc ratio", ratio);
 
