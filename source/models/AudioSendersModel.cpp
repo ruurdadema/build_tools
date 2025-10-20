@@ -208,6 +208,10 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
 
     TRACY_ZONE_SCOPED;
 
+    RAV_ASSERT_DEBUG (numInputChannels >= 0, "Num input channels must be >= 0");
+    RAV_ASSERT_DEBUG (numOutputChannels >= 0, "Num output channels must be >= 0");
+    RAV_ASSERT_DEBUG (numSamples >= 0, "Num samples must be >= 0");
+
     // If time information is available, use that
     if (context.hostTimeNs != nullptr)
         ptpNow = localClock.get_adjusted_time (*context.hostTimeNs);
@@ -234,7 +238,6 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     const auto drift = rav::WrappingUint32 (rtpNow).diff (*rtpTs_);
     auto ratio = static_cast<double> (deviceFormat_.sample_rate) /
                  static_cast<double> (static_cast<int32_t> (deviceFormat_.sample_rate) + drift);
-
     ratio = std::clamp (ratio, 1.0 - constants::jnd_pitch, 1.0 + constants::jnd_pitch);
 
     TRACY_PLOT ("Sender drift", static_cast<double> (drift));
@@ -259,7 +262,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
         auto senderLock = sender->realtimeSharedContext_.lock_realtime();
 
         if (senderLock->targetSampleRate == 0)
-            continue; // TODO: Can this check be deleted? And senderLock->targetSampleRate altogether?
+            continue;
 
         if (deviceFormat_.sample_rate == senderLock->targetSampleRate)
         {
@@ -267,8 +270,7 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
             continue;
         }
 
-        if (senderLock->resampler == nullptr)
-            continue; // Unexpected
+        RAV_ASSERT_DEBUG (senderLock->resampler != nullptr, "Resampler should be valid");
 
         if (senderLock->rtpTimestamp == std::nullopt)
         {
