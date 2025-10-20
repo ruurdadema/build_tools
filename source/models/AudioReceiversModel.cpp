@@ -121,9 +121,9 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     if (context.hostTimeNs != nullptr)
         ptpNow = localClock.get_adjusted_time (*context.hostTimeNs);
 
-    RAV_ASSERT (numInputChannels >= 0, "Num input channels must be >= 0");
-    RAV_ASSERT (numOutputChannels >= 0, "Num output channels must be >= 0");
-    RAV_ASSERT (numSamples >= 0, "Num samples must be >= 0");
+    RAV_ASSERT_DEBUG (numInputChannels >= 0, "Num input channels must be >= 0");
+    RAV_ASSERT_DEBUG (numOutputChannels >= 0, "Num output channels must be >= 0");
+    RAV_ASSERT_DEBUG (numSamples >= 0, "Num samples must be >= 0");
 
     rav::AudioBufferView outputBuffer { outputChannelData, static_cast<uint32_t> (numOutputChannels), static_cast<uint32_t> (numSamples) };
     outputBuffer.clear();
@@ -150,11 +150,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     TRACY_PLOT ("Receiver drift", static_cast<double> (drift));
     TRACY_PLOT ("Receiver asrc ratio", ratio);
 
-    if (resampler_ == nullptr)
-    {
-        RAV_ASSERT_FALSE ("No resampler set");
-        return;
-    }
+    RAV_ASSERT_DEBUG (resampler_ != nullptr, "No resampler set");
 
     const auto requiredInputNumFrames = resampleGetRequiredSamples (resampler_.get(), static_cast<int> (outputBuffer.num_frames()), ratio);
 
@@ -173,7 +169,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
         for (auto* receiver : lock->receivers)
         {
             if (receiver->processBlock (intermediateBuffer, *rtpTs_, ptpNow))
-                resamplerInputBuffer.add (intermediateBuffer);
+                std::ignore = resamplerInputBuffer.add (intermediateBuffer);
         }
     }
 
@@ -330,7 +326,7 @@ bool AudioReceiversModel::Receiver::processBlock (
         static_cast<int> (outputBuffer.num_frames()),
         0.0);
 
-    RAV_ASSERT_DEBUG (result.input_used != 0, "No input used");
+    RAV_ASSERT_DEBUG (result.input_used != 0, "No input was used");
 
     *lock->rtpTimestamp += result.input_used;
 
