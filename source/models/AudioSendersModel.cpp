@@ -10,6 +10,61 @@
 
 #include "AudioSendersModel.hpp"
 
+#include "util/Constants.hpp"
+
+struct AudioSendersModel::Sender
+{
+    struct RealtimeSharedContext
+    {
+        uint32_t targetSampleRate {};
+        std::unique_ptr<Resample, decltype (&resampleFree)> resampler { nullptr, &resampleFree };
+        rav::AudioBuffer<float> resampleBuffer;
+        std::optional<uint32_t> rtpTimestamp {}; // Used only when resampler is active
+    };
+
+    rav::Id id;
+    SenderState state;
+    rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
+};
+
+namespace
+{
+void senderUpdateRealtimeSharedContext (AudioSendersModel::Sender& sender, const uint32_t maxNumFramesPerBlock)
+{
+    if (!sender.state.senderConfiguration.enabled || !sender.state.inputFormat.is_valid() ||
+        !sender.state.senderConfiguration.audio_format.is_valid() || maxNumFramesPerBlock == 0)
+    {
+        if (!sender.realtimeSharedContext_.reset())
+        {
+            RAV_LOG_ERROR ("Failed to update realtime shared context");
+        }
+        return;
+    }
+
+    auto newContext = std::make_unique<AudioSendersModel::Sender::RealtimeSharedContext>();
+    newContext->targetSampleRate = sender.state.senderConfiguration.audio_format.sample_rate;
+    if (sender.state.inputFormat.sample_rate != sender.state.senderConfiguration.audio_format.sample_rate)
+    {
+        newContext->resampler.reset (resampleFixedRatioInit (
+            static_cast<int> (sender.state.inputFormat.num_channels),
+            256,
+            320,
+            sender.state.inputFormat.sample_rate,
+            sender.state.senderConfiguration.audio_format.sample_rate,
+            0,
+            SUBSAMPLE_INTERPOLATE | BLACKMAN_HARRIS | INCLUDE_LOWPASS));
+        const auto ratio = static_cast<double> (sender.state.senderConfiguration.audio_format.sample_rate) /
+                           static_cast<double> (sender.state.inputFormat.sample_rate);
+        newContext->resampleBuffer.resize (sender.state.inputFormat.num_channels, static_cast<uint32_t> (maxNumFramesPerBlock * ratio) + 8);
+    }
+    if (!sender.realtimeSharedContext_.update (std::move (newContext)))
+    {
+        RAV_LOG_ERROR ("Failed to update realtime shared context");
+    }
+}
+
+} // namespace
+
 AudioSendersModel::AudioSendersModel (rav::RavennaNode& node) : node_ (node)
 {
     node_.subscribe (this).wait();
@@ -134,7 +189,7 @@ void AudioSendersModel::ravenna_sender_configuration_updated (
         sender->state.senderConfiguration = configuration;
         for (auto* subscriber : subscribers_)
             subscriber->onAudioSenderUpdated (sender_id, &sender->state);
-        senderUpdateRealtimeSharedContext (*sender);
+        senderUpdateRealtimeSharedContext (*sender, maxNumFramesPerBlock_);
     });
 }
 
@@ -179,7 +234,8 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
     const auto drift = rav::WrappingUint32 (rtpNow).diff (*rtpTs_);
     auto ratio = static_cast<double> (deviceFormat_.sample_rate) /
                  static_cast<double> (static_cast<int32_t> (deviceFormat_.sample_rate) + drift);
-    ratio = std::clamp (ratio, 0.5, 1.5);
+
+    ratio = std::clamp (ratio, 1.0 - constants::jnd_pitch, 1.0 + constants::jnd_pitch);
 
     TRACY_PLOT ("Sender drift", static_cast<double> (drift));
     TRACY_PLOT ("Sender asrc ratio", ratio);
@@ -245,8 +301,6 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
         *senderLock->rtpTimestamp += resampleResult.output_generated;
     }
 
-    // sender->processBlock (resamplerBuffer_.with_num_frames (result.output_generated).const_view(), *rtpTs_, ptpNow);
-
     *rtpTs_ += result.output_generated;
 }
 
@@ -285,7 +339,7 @@ void AudioSendersModel::audioDeviceStopped()
     for (const auto& sender : senders_)
     {
         sender->state.inputFormat = {};
-        senderUpdateRealtimeSharedContext (*sender);
+        senderUpdateRealtimeSharedContext (*sender, maxNumFramesPerBlock_);
     }
 }
 
@@ -321,41 +375,5 @@ void AudioSendersModel::senderPrepareInput (Sender& sender, const rav::AudioForm
     for (auto* subscriber : subscribers_)
         subscriber->onAudioSenderUpdated (sender.id, &sender.state);
 
-    senderUpdateRealtimeSharedContext (sender);
-}
-
-void AudioSendersModel::senderUpdateRealtimeSharedContext (Sender& sender) const
-{
-    if (!sender.state.senderConfiguration.enabled || !sender.state.inputFormat.is_valid() ||
-        !sender.state.senderConfiguration.audio_format.is_valid() || maxNumFramesPerBlock_ == 0)
-    {
-        if (!sender.realtimeSharedContext_.reset())
-        {
-            RAV_LOG_ERROR ("Failed to update realtime shared context");
-        }
-        return;
-    }
-
-    auto newContext = std::make_unique<Sender::RealtimeSharedContext>();
-    newContext->targetSampleRate = sender.state.senderConfiguration.audio_format.sample_rate;
-    if (sender.state.inputFormat.sample_rate != sender.state.senderConfiguration.audio_format.sample_rate)
-    {
-        newContext->resampler.reset (resampleFixedRatioInit (
-            static_cast<int> (sender.state.inputFormat.num_channels),
-            256,
-            320,
-            sender.state.inputFormat.sample_rate,
-            sender.state.senderConfiguration.audio_format.sample_rate,
-            0,
-            SUBSAMPLE_INTERPOLATE | BLACKMAN_HARRIS | INCLUDE_LOWPASS));
-        const auto ratio = static_cast<double> (sender.state.senderConfiguration.audio_format.sample_rate) /
-                           static_cast<double> (sender.state.inputFormat.sample_rate);
-        newContext->resampleBuffer.resize (
-            sender.state.inputFormat.num_channels,
-            static_cast<uint32_t> (maxNumFramesPerBlock_ * ratio) + 8);
-    }
-    if (!sender.realtimeSharedContext_.update (std::move (newContext)))
-    {
-        RAV_LOG_ERROR ("Failed to update realtime shared context");
-    }
+    senderUpdateRealtimeSharedContext (sender, maxNumFramesPerBlock_);
 }

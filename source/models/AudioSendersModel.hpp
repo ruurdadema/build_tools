@@ -99,23 +99,8 @@ public:
     void audioDeviceStopped() override;
     void audioDeviceError (const juce::String& errorMessage) override;
 
+    struct Sender;
 private:
-    class Sender
-    {
-    public:
-        struct RealtimeSharedContext
-        {
-            uint32_t targetSampleRate {};
-            std::unique_ptr<Resample, decltype (&resampleFree)> resampler { nullptr, &resampleFree };
-            rav::AudioBuffer<float> resampleBuffer;
-            std::optional<uint32_t> rtpTimestamp {}; // Used only when resampler is active
-        };
-
-        rav::Id id;
-        SenderState state;
-        rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
-    };
-
     struct RealtimeSharedContext
     {
         std::vector<Sender*> senders;
@@ -139,5 +124,4 @@ private:
     [[nodiscard]] Sender* findSender (rav::Id senderId) const;
     void updateRealtimeSharedContext();
     void senderPrepareInput (Sender& sender, rav::AudioFormat inputFormat);
-    void senderUpdateRealtimeSharedContext (Sender& sender) const;
 };
