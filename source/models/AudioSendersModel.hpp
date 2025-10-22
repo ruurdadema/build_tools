@@ -17,7 +17,7 @@
 
 #include <juce_audio_devices/juce_audio_devices.h>
 
-class AudioSendersModel : public rav::RavennaNode::Subscriber, public juce::AudioIODeviceCallback
+class AudioSendersModel : public rav::RavennaNode::Subscriber, public rav::RavennaSender::Subscriber, public juce::AudioIODeviceCallback
 {
 public:
     struct SenderState
@@ -78,11 +78,14 @@ public:
      * @param subscriber The subscriber to remove.
      * @return true if the subscriber was removed, or false if it was not in the list.
      */
-    [[nodiscard]] bool unsubscribe (Subscriber* subscriber);
+    [[nodiscard]] bool unsubscribe (const Subscriber* subscriber);
 
     // rav::RavennaNode::Subscriber overrides
     void ravenna_sender_added (const rav::RavennaSender& sender) override;
     void ravenna_sender_removed (rav::Id sender_id) override;
+
+    // rav::RavennaSender::Subscriber overrides
+    void ravenna_sender_configuration_updated (rav::Id sender_id, const rav::RavennaSender::Configuration& configuration) override;
 
     // juce::AudioIODeviceCallback overrides
     void audioDeviceIOCallbackWithContext (
@@ -96,43 +99,8 @@ public:
     void audioDeviceStopped() override;
     void audioDeviceError (const juce::String& errorMessage) override;
 
+    struct Sender;
 private:
-    class Sender : public rav::RavennaSender::Subscriber
-    {
-    public:
-        Sender (AudioSendersModel& owner, rav::Id senderId);
-        ~Sender() override;
-
-        [[nodiscard]] rav::Id getSenderId() const;
-        [[nodiscard]] const SenderState& getState() const;
-
-        void ravenna_sender_configuration_updated (rav::Id sender_id, const rav::RavennaSender::Configuration& configuration) override;
-
-        void prepareInput (rav::AudioFormat inputFormat, uint32_t maxNumFramesPerBlock);
-        void processBlock (const rav::AudioBufferView<const float>& inputBuffer, uint32_t rtpTimestamp, rav::ptp::Timestamp ptpTimestamp);
-        void resetInput();
-
-    private:
-        struct RealtimeSharedContext
-        {
-            uint32_t inputSampleRate {};
-            uint32_t targetSampleRate {};
-            std::unique_ptr<Resample, decltype (&resampleFree)> resampler { nullptr, &resampleFree };
-            rav::AudioBuffer<float> resampleBuffer;
-            std::optional<uint32_t> rtpTimestamp {}; // Used only when resampler is active
-        };
-        [[maybe_unused]] AudioSendersModel& owner_;
-        rav::Id senderId_;
-        SenderState state_;
-        uint32_t maxNumFramesPerBlock_ = 0;
-
-        rav::RealtimeSharedObject<RealtimeSharedContext> realtimeSharedContext_;
-
-        MessageThreadExecutor executor_; // Keep last so that it's destroyed first
-
-        void updateRealtimeSharedContext();
-    };
-
     struct RealtimeSharedContext
     {
         std::vector<Sender*> senders;
@@ -155,4 +123,5 @@ private:
 
     [[nodiscard]] Sender* findSender (rav::Id senderId) const;
     void updateRealtimeSharedContext();
+    void senderPrepareInput (Sender& sender, rav::AudioFormat inputFormat);
 };

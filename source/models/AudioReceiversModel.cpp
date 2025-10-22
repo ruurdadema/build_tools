@@ -9,6 +9,7 @@
  */
 
 #include "AudioReceiversModel.hpp"
+#include "util/Constants.hpp"
 
 #include "ravennakit/core/audio/audio_buffer_view.hpp"
 #include "ravennakit/core/audio/audio_data.hpp"
@@ -120,9 +121,9 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     if (context.hostTimeNs != nullptr)
         ptpNow = localClock.get_adjusted_time (*context.hostTimeNs);
 
-    RAV_ASSERT (numInputChannels >= 0, "Num input channels must be >= 0");
-    RAV_ASSERT (numOutputChannels >= 0, "Num output channels must be >= 0");
-    RAV_ASSERT (numSamples >= 0, "Num samples must be >= 0");
+    RAV_ASSERT_DEBUG (numInputChannels >= 0, "Num input channels must be >= 0");
+    RAV_ASSERT_DEBUG (numOutputChannels >= 0, "Num output channels must be >= 0");
+    RAV_ASSERT_DEBUG (numSamples >= 0, "Num samples must be >= 0");
 
     rav::AudioBufferView outputBuffer { outputChannelData, static_cast<uint32_t> (numOutputChannels), static_cast<uint32_t> (numSamples) };
     outputBuffer.clear();
@@ -144,15 +145,12 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
     const auto drift = rav::WrappingUint32 (rtpNow).diff (*rtpTs_);
     auto ratio = static_cast<double> (static_cast<int32_t> (targetFormat_.sample_rate) + drift) /
                  static_cast<double> (targetFormat_.sample_rate);
-    ratio = std::clamp (ratio, 0.5, 1.5);
+    ratio = std::clamp (ratio, 1.0 - constants::jnd_pitch, 1.0 + constants::jnd_pitch);
+
     TRACY_PLOT ("Receiver drift", static_cast<double> (drift));
     TRACY_PLOT ("Receiver asrc ratio", ratio);
 
-    if (resampler_ == nullptr)
-    {
-        RAV_ASSERT_FALSE ("No resampler set");
-        return;
-    }
+    RAV_ASSERT_DEBUG (resampler_ != nullptr, "No resampler set");
 
     const auto requiredInputNumFrames = resampleGetRequiredSamples (resampler_.get(), static_cast<int> (outputBuffer.num_frames()), ratio);
 
@@ -171,7 +169,7 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
         for (auto* receiver : lock->receivers)
         {
             if (receiver->processBlock (intermediateBuffer, *rtpTs_, ptpNow))
-                resamplerInputBuffer.add (intermediateBuffer);
+                std::ignore = resamplerInputBuffer.add (intermediateBuffer);
         }
     }
 
@@ -304,11 +302,11 @@ bool AudioReceiversModel::Receiver::processBlock (
     }
 
     // Check how much the timestamp at the input frequency differs from the one of the output frequency.
-    const auto diff = static_cast<int64_t> (ptpTimestamp.from_rtp_timestamp32 (*lock->rtpTimestamp, lock->inputFormat.sample_rate)
-                                                .to_rtp_timestamp32 (lock->outputFormat.sample_rate)) -
-                      static_cast<int64_t> (rtpTimestamp);
-
-    TRACY_PLOT ("Receiver timestamp diff", diff);
+    TRACY_PLOT (
+        "Receiver timestamp diff",
+        static_cast<int64_t> (ptpTimestamp.from_rtp_timestamp32 (*lock->rtpTimestamp, lock->inputFormat.sample_rate)
+                                  .to_rtp_timestamp32 (lock->outputFormat.sample_rate)) -
+            static_cast<int64_t> (rtpTimestamp));
 
     const auto requiredNumInputFrames = resampleGetRequiredSamples (
         lock->resampler.get(),
@@ -328,7 +326,7 @@ bool AudioReceiversModel::Receiver::processBlock (
         static_cast<int> (outputBuffer.num_frames()),
         0.0);
 
-    RAV_ASSERT_DEBUG (result.input_used != 0, "No input used");
+    RAV_ASSERT_DEBUG (result.input_used != 0, "No input was used");
 
     *lock->rtpTimestamp += result.input_used;
 
