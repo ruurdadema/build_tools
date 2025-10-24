@@ -10,6 +10,7 @@
 
 #include "DeveloperMainComponent.hpp"
 
+#include "application/Logging.hpp"
 #include "gui/lookandfeel/Constants.hpp"
 
 DeveloperMainComponent::DeveloperMainComponent()
@@ -46,6 +47,16 @@ DeveloperMainComponent::DeveloperMainComponent()
         throw std::runtime_error ("Exception has occurred");
     };
     addAndMakeVisible (crashByException_);
+
+    loggingLabel_.setText ("Logs", juce::dontSendNotification);
+    addAndMakeVisible (loggingLabel_);
+
+    revealLogs_.setButtonText ("Reveal log files");
+    revealLogs_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::green);
+    revealLogs_.onClick = [] {
+        logging::getLogFilesPath().revealToUser();
+    };
+    addAndMakeVisible (revealLogs_);
 }
 
 void DeveloperMainComponent::resized()
@@ -54,8 +65,10 @@ void DeveloperMainComponent::resized()
     crashLabel_.setBounds (b.removeFromTop (28));
 
     b.removeFromTop (10);
+
     constexpr auto w = 120;
-    auto row = b.removeFromTop (28);
+    constexpr auto h = 28;
+    auto row = b.removeFromTop (h);
     row.removeFromLeft (10);
     crashByAbort_.setBounds (row.removeFromLeft (w));
     row.removeFromLeft (10);
@@ -65,4 +78,9 @@ void DeveloperMainComponent::resized()
     row.removeFromLeft (10);
     crashByException_.setBounds (row.removeFromLeft (w));
     row.removeFromLeft (10);
+
+    b.removeFromTop (10);
+    loggingLabel_.setBounds (b.removeFromTop (h));
+    b.removeFromTop (10);
+    revealLogs_.setBounds (b.removeFromTop (h).withTrimmedLeft (10).withWidth (200));
 }

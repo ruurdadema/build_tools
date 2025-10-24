@@ -10,6 +10,8 @@
 
 #include "MainApplication.hpp"
 
+#include "Logging.hpp"
+
 namespace
 {
 class MainWindow final : public juce::DocumentWindow
@@ -302,4 +304,10 @@ const juce::File& MainApplication::getApplicationStateFile()
     return applicationStateFilePath;
 }
 
-START_JUCE_APPLICATION (MainApplication)
+JUCE_CREATE_APPLICATION_DEFINE(MainApplication);
+JUCE_MAIN_FUNCTION
+{
+    logging::setupLogging();
+    juce::JUCEApplicationBase::createInstance = &juce_CreateApplication;
+    return juce::JUCEApplicationBase::main (JUCE_MAIN_FUNCTION_ARGS);
+}
