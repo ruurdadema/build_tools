@@ -10,6 +10,7 @@
 
 #include "MainComponent.hpp"
 
+#include "developer/DeveloperMainComponent.hpp"
 #include "discovered/DiscoveredMainComponent.hpp"
 #include "nmos/NmosMainComponent.hpp"
 #include "ptp/PtpMainComponent.hpp"
@@ -38,6 +39,12 @@ MainComponent::MainComponent (ApplicationContext& context) : context_ (context),
     menu_.addItem ("Settings", "settings", [this] {
         showContent (std::make_unique<SettingsMainComponent> (context_));
     });
+    if (rav::get_env ("RAV_ENABLE_DEVELOPER_TOOLS"))
+    {
+        menu_.addItem ("Developer", "developer", [this] {
+            showContent (std::make_unique<DeveloperMainComponent>());
+        });
+    }
     addAndMakeVisible (menu_);
 
     addAndMakeVisible (topRightSection_);
