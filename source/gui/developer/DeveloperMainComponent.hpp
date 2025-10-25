@@ -26,7 +26,4 @@ private:
     juce::TextButton crashBySigsegv_;
     juce::TextButton crashByStackOverflow_;
     juce::TextButton crashByException_;
-
-    juce::Label loggingLabel_;
-    juce::TextButton revealLogs_;
 };

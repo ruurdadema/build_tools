@@ -47,8 +47,6 @@ private:
 } // namespace
 MainApplication::MainApplication()
 {
-    rav::do_system_checks();
-    rav::set_log_level_from_env();
 }
 
 const juce::String MainApplication::getApplicationName()
@@ -197,6 +195,11 @@ tl::expected<void, std::string> MainApplication::loadFromFile (const juce::File&
     return {};
 }
 
+std::string MainApplication::getApplicationStateJson()
+{
+    return boost::json::serialize (toBoostJson());
+}
+
 void MainApplication::addWindow()
 {
     std::optional<juce::Rectangle<int>> bounds;
@@ -304,9 +307,11 @@ const juce::File& MainApplication::getApplicationStateFile()
     return applicationStateFilePath;
 }
 
-JUCE_CREATE_APPLICATION_DEFINE(MainApplication);
+JUCE_CREATE_APPLICATION_DEFINE (MainApplication);
 JUCE_MAIN_FUNCTION
 {
+    rav::do_system_checks();
+    rav::set_log_level ("trace");
     logging::setupLogging();
     juce::JUCEApplicationBase::createInstance = &juce_CreateApplication;
     return juce::JUCEApplicationBase::main (JUCE_MAIN_FUNCTION_ARGS);

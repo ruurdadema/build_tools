@@ -49,16 +49,6 @@ DeveloperMainComponent::DeveloperMainComponent()
         throw std::runtime_error ("Exception has occurred");
     };
     addAndMakeVisible (crashByException_);
-
-    loggingLabel_.setText ("Logs", juce::dontSendNotification);
-    addAndMakeVisible (loggingLabel_);
-
-    revealLogs_.setButtonText ("Reveal log files");
-    revealLogs_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::green);
-    revealLogs_.onClick = [] {
-        logging::getLogFilesPath().revealToUser();
-    };
-    addAndMakeVisible (revealLogs_);
 }
 
 void DeveloperMainComponent::resized()
@@ -80,9 +70,4 @@ void DeveloperMainComponent::resized()
     row.removeFromLeft (10);
     crashByException_.setBounds (row.removeFromLeft (w));
     row.removeFromLeft (10);
-
-    b.removeFromTop (10);
-    loggingLabel_.setBounds (b.removeFromTop (h));
-    b.removeFromTop (10);
-    revealLogs_.setBounds (b.removeFromTop (h).withTrimmedLeft (10).withWidth (200));
 }
