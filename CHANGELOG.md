@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+### Added
+
+- Logs are now written to files.
+- Added a way of generating a diagnostics package.
+
 ### Fixed
 
 - Removed some realtime unsafe branches from realtime paths.
