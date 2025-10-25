@@ -54,10 +54,13 @@ void DiagnosticsFile::addFile (const juce::File& fileToAdd, const juce::String& 
 {
     if (fileToAdd.existsAsFile())
     {
-        builder_.addFile (
-            fileToAdd,
-            k_zip_compression_level,
-            fmt::format (PROJECT_PRODUCT_NAME " diagnostics/{}/{}", subFolder.toRawUTF8(), fileToAdd.getFileName().toRawUTF8()));
+        const auto path = subFolder.isNotEmpty()
+                        ? fmt::format (
+                              PROJECT_PRODUCT_NAME " diagnostics/{}/{}",
+                              subFolder.toRawUTF8(),
+                              fileToAdd.getFileName().toRawUTF8())
+                        : fmt::format (PROJECT_PRODUCT_NAME " diagnostics/{}", fileToAdd.getFileName().toRawUTF8());
+        builder_.addFile (fileToAdd, k_zip_compression_level, path);
     }
 }
 
