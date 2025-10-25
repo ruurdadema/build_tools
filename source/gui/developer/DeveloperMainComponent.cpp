@@ -13,6 +13,8 @@
 #include "application/Logging.hpp"
 #include "gui/lookandfeel/Constants.hpp"
 
+#include <csignal>
+
 DeveloperMainComponent::DeveloperMainComponent()
 {
     crashLabel_.setText ("Crash the application", juce::dontSendNotification);
