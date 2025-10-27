@@ -10,6 +10,8 @@
 
 #include "SettingsMainComponent.hpp"
 
+#include "gui/lookandfeel/Constants.hpp"
+
 SettingsMainComponent::SettingsMainComponent (ApplicationContext& context) : context_ (context)
 {
     networkSettingsLabel_.setText ("Network Settings", juce::dontSendNotification);
@@ -44,6 +46,24 @@ SettingsMainComponent::SettingsMainComponent (ApplicationContext& context) : con
 
     applicationVersionLabel_.setText (PROJECT_VERSION_STRING, juce::dontSendNotification);
     addAndMakeVisible (applicationVersionLabel_);
+
+    diagnosticsTitleLabel_.setText ("Diagnostics", juce::dontSendNotification);
+    diagnosticsTitleLabel_.setFont (juce::FontOptions (16.f, juce::Font::bold));
+    addAndMakeVisible (diagnosticsTitleLabel_);
+
+    saveDiagnosticsButton_.setButtonText ("Save diagnostics package");
+    saveDiagnosticsButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
+    saveDiagnosticsButton_.onClick = [&] {
+        saveDiagnosticsFile();
+    };
+    addAndMakeVisible (saveDiagnosticsButton_);
+
+    revealLogsButton_.setButtonText ("Reveal log files");
+    revealLogsButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
+    revealLogsButton_.onClick = [] {
+        logging::getLogFilesPath().revealToUser();
+    };
+    addAndMakeVisible (revealLogsButton_);
 
     updateNetworkInterfaces();
 
@@ -81,6 +101,15 @@ void SettingsMainComponent::resized()
 
     applicationVersionTitleLabel_.setBounds (row.removeFromLeft (left));
     applicationVersionLabel_.setBounds (row.withWidth (width));
+
+    b.removeFromTop (10);
+
+    diagnosticsTitleLabel_.setBounds (b.removeFromTop (28));
+    b.removeFromTop (10);
+    row = b.removeFromTop (28).withTrimmedLeft (5);
+    revealLogsButton_.setBounds (row.removeFromLeft (200));
+    row.removeFromLeft (10);
+    saveDiagnosticsButton_.setBounds (row.removeFromLeft (200));
 }
 
 void SettingsMainComponent::network_interface_config_updated (const rav::NetworkInterfaceConfig& config)
@@ -167,4 +196,40 @@ void SettingsMainComponent::selectNetworkInterfaces() const
         config.set_interface (rav::Rank::secondary().value(), networkInterfaces_[id - 1]);
 
     context_.getRavennaNode().set_network_interface_config (config).wait();
+}
+
+void SettingsMainComponent::saveDiagnosticsFile()
+{
+    diagnosticsFile_ = std::make_unique<DiagnosticsFile>();
+    diagnosticsFile_->addLogfiles();
+    diagnosticsFile_->addProjectAndBuildInfoFile();
+    diagnosticsFile_->addUserInformationFile();
+    diagnosticsFile_->addSystemInformationFile();
+    diagnosticsFile_->addTextFile (context_.getApplicationStateJson(), "application_state_in_memory.json");
+    diagnosticsFile_->addFile (context_.getApplicationStateFile(), {});
+
+    diagnosticsFile_->saveDiagnosticsFile ([this] (const bool success, const juce::File& file) {
+        if (success)
+        {
+            const auto options = juce::MessageBoxOptions()
+                                     .withIconType (juce::MessageBoxIconType::InfoIcon)
+                                     .withMessage ("Diagnostics file saved")
+                                     .withButton ("Ok")
+                                     .withButton ("Reveal");
+            juce::NativeMessageBox::showAsync (options, [file] (const int btn) {
+                if (btn == 1)
+                    file.revealToUser();
+            });
+        }
+        else
+        {
+            const auto options = juce::MessageBoxOptions()
+                                     .withIconType (juce::MessageBoxIconType::WarningIcon)
+                                     .withMessage ("There was an error saving the diagnostics file")
+                                     .withButton ("Ok");
+            juce::NativeMessageBox::showAsync (options, [file] (const int) {});
+        }
+
+        diagnosticsFile_.reset();
+    });
 }

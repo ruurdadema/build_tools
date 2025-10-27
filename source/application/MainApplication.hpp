@@ -43,6 +43,8 @@ public:
     AudioSendersModel& getAudioSenders() override;
     tl::expected<void, std::string> saveToFile (const juce::File& file) override;
     tl::expected<void, std::string> loadFromFile (const juce::File& file) override;
+    [[nodiscard]] std::string getApplicationStateJson() override;
+    [[nodiscard]] const juce::File& getApplicationStateFile() override;
 
 private:
     juce::AudioDeviceManager audioDeviceManager_;
@@ -55,6 +57,4 @@ private:
     void addWindow();
     boost::json::object toBoostJson() const;
     bool restoreFromBoostJson (const boost::json::value& json);
-
-    static const juce::File& getApplicationStateFile();
 };

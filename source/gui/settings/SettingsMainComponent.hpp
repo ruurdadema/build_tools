@@ -11,6 +11,7 @@
 #pragma once
 
 #include "application/ApplicationContext.hpp"
+#include "application/DiagnosticsFile.hpp"
 
 #include <juce_audio_utils/juce_audio_utils.h>
 #include <juce_gui_basics/juce_gui_basics.h>
@@ -42,6 +43,12 @@ private:
     juce::Label applicationVersionTitleLabel_;
     juce::Label applicationVersionLabel_;
 
+    juce::Label diagnosticsTitleLabel_;
+    juce::TextButton saveDiagnosticsButton_;
+    juce::TextButton revealLogsButton_;
+    std::unique_ptr<DiagnosticsFile> diagnosticsFile_;
+
     void updateNetworkInterfaces();
     void selectNetworkInterfaces() const;
+    void saveDiagnosticsFile();
 };

@@ -30,4 +30,6 @@ public:
     [[nodiscard]] virtual juce::AudioDeviceManager& getAudioDeviceManager() = 0;
     [[nodiscard]] virtual tl::expected<void, std::string> saveToFile (const juce::File& file) = 0;
     [[nodiscard]] virtual tl::expected<void, std::string> loadFromFile (const juce::File& file) = 0;
+    [[nodiscard]] virtual std::string getApplicationStateJson() = 0;
+    [[nodiscard]] virtual const juce::File& getApplicationStateFile() = 0;
 };

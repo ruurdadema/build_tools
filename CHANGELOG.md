@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+### Added
+
+- Logs are now written to files.
+- Added a way of generating a diagnostics package.
+- A page with developer tools (which can be enabled with the environment variable RAV_ENABLE_DEVELOPER_TOOLS).
+
 ### Fixed
 
 - Removed some realtime unsafe branches from realtime paths.
