@@ -25,9 +25,12 @@ public:
     void resized() override;
 
     void network_interface_config_updated (const rav::NetworkInterfaceConfig& config) override;
+    void ravenna_node_configuration_updated (const rav::RavennaNode::Configuration& configuration) override;
 
 private:
     [[maybe_unused]] ApplicationContext& context_;
+    rav::RavennaNode::Configuration node_configuration_;
+
     juce::Label networkSettingsLabel_;
 
     juce::Label primaryNetworkInterfaceLabel_;
@@ -37,6 +40,20 @@ private:
     juce::ComboBox secondaryNetworkInterfaceComboBox_;
 
     juce::Array<rav::NetworkInterface::Identifier> networkInterfaces_;
+
+    juce::Label bonjourSettingsLabel_;
+
+    juce::Label enableNodeAdvertisementLabel_;
+    juce::ToggleButton enableNodeAdvertisement_;
+
+    juce::Label enableSessionAdvertisementLabel_;
+    juce::ToggleButton enableSessionAdvertisement_;
+
+    juce::Label enableNodeDiscoveryLabel_;
+    juce::ToggleButton enableNodeDiscovery_;
+
+    juce::Label enableSessionDiscoveryLabel_;
+    juce::ToggleButton enableSessionDiscovery_;
 
     juce::Label buildInfoTitleLabel_;
 

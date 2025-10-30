@@ -37,11 +37,56 @@ SettingsMainComponent::SettingsMainComponent (ApplicationContext& context) : con
     };
     addAndMakeVisible (secondaryNetworkInterfaceComboBox_);
 
+    bonjourSettingsLabel_.setText ("Bonjour Settings", juce::dontSendNotification);
+    bonjourSettingsLabel_.setFont (juce::FontOptions (16.f, juce::Font::bold));
+    bonjourSettingsLabel_.setJustificationType (juce::Justification::topLeft);
+    addAndMakeVisible (bonjourSettingsLabel_);
+
+    enableNodeAdvertisementLabel_.setText ("Enable RAVENNA node advertisement", juce::dontSendNotification);
+    addAndMakeVisible (enableNodeAdvertisementLabel_);
+
+    enableNodeAdvertisement_.onClick = [this] {
+        auto config = node_configuration_;
+        config.enable_dnssd_node_advertisement = enableNodeAdvertisement_.getToggleState();
+        context_.getRavennaNode().set_configuration (config).wait();
+    };
+    addAndMakeVisible (enableNodeAdvertisement_);
+
+    enableSessionAdvertisementLabel_.setText ("Enable RAVENNA session advertisement", juce::dontSendNotification);
+    addAndMakeVisible (enableSessionAdvertisementLabel_);
+
+    enableSessionAdvertisement_.onClick = [this] {
+        auto config = node_configuration_;
+        config.enable_dnssd_session_advertisement = enableSessionAdvertisement_.getToggleState();
+        context_.getRavennaNode().set_configuration (config).wait();
+    };
+    addAndMakeVisible (enableSessionAdvertisement_);
+
+    enableNodeDiscoveryLabel_.setText ("Enable RAVENNA node discovery", juce::dontSendNotification);
+    addAndMakeVisible (enableNodeDiscoveryLabel_);
+
+    enableNodeDiscovery_.onClick = [this] {
+        auto config = node_configuration_;
+        config.enable_dnssd_node_discovery = enableNodeDiscovery_.getToggleState();
+        context_.getRavennaNode().set_configuration (config).wait();
+    };
+    addAndMakeVisible (enableNodeDiscovery_);
+
+    enableSessionDiscoveryLabel_.setText ("Enable RAVENNA session discovery", juce::dontSendNotification);
+    addAndMakeVisible (enableSessionDiscoveryLabel_);
+
+    enableSessionDiscovery_.onClick = [this] {
+        auto config = node_configuration_;
+        config.enable_dnssd_session_discovery = enableSessionDiscovery_.getToggleState();
+        context_.getRavennaNode().set_configuration (config).wait();
+    };
+    addAndMakeVisible (enableSessionDiscovery_);
+
     buildInfoTitleLabel_.setText ("Version", juce::dontSendNotification);
     buildInfoTitleLabel_.setFont (juce::FontOptions (16.f, juce::Font::bold));
     addAndMakeVisible (buildInfoTitleLabel_);
 
-    applicationVersionTitleLabel_.setText ("Application Version", juce::dontSendNotification);
+    applicationVersionTitleLabel_.setText ("Application Version:", juce::dontSendNotification);
     addAndMakeVisible (applicationVersionTitleLabel_);
 
     applicationVersionLabel_.setText (PROJECT_VERSION_STRING, juce::dontSendNotification);
@@ -80,7 +125,7 @@ void SettingsMainComponent::resized()
     auto b = getLocalBounds().reduced (10);
     networkSettingsLabel_.setBounds (b.removeFromTop (28));
 
-    constexpr int left = 200;
+    int left = 210;
     constexpr int width = 380;
 
     auto row = b.removeFromTop (28);
@@ -93,8 +138,29 @@ void SettingsMainComponent::resized()
     secondaryNetworkInterfaceLabel_.setBounds (row.removeFromLeft (left));
     secondaryNetworkInterfaceComboBox_.setBounds (row.withWidth (width));
 
-    b.removeFromTop (10);
+    b.removeFromTop (20);
 
+    left = 274;
+    bonjourSettingsLabel_.setBounds (b.removeFromTop (28));
+
+    row = b.removeFromTop (28);
+    enableNodeAdvertisementLabel_.setBounds (row.removeFromLeft (left));
+    enableNodeAdvertisement_.setBounds (row.removeFromLeft (width));
+
+    row = b.removeFromTop (28);
+    enableNodeDiscoveryLabel_.setBounds (row.removeFromLeft (left));
+    enableNodeDiscovery_.setBounds (row.removeFromLeft (width));
+
+    row = b.removeFromTop (28);
+    enableSessionAdvertisementLabel_.setBounds (row.removeFromLeft (left));
+    enableSessionAdvertisement_.setBounds (row.removeFromLeft (width));
+
+    row = b.removeFromTop (28);
+    enableSessionDiscoveryLabel_.setBounds (row.removeFromLeft (left));
+    enableSessionDiscovery_.setBounds (row.removeFromLeft (width));
+
+    b.removeFromTop (20);
+    left = 135;
     buildInfoTitleLabel_.setBounds (b.removeFromTop (28));
 
     row = b.removeFromTop (28);
@@ -102,7 +168,7 @@ void SettingsMainComponent::resized()
     applicationVersionTitleLabel_.setBounds (row.removeFromLeft (left));
     applicationVersionLabel_.setBounds (row.withWidth (width));
 
-    b.removeFromTop (10);
+    b.removeFromTop (20);
 
     diagnosticsTitleLabel_.setBounds (b.removeFromTop (28));
     b.removeFromTop (10);
@@ -126,13 +192,9 @@ void SettingsMainComponent::network_interface_config_updated (const rav::Network
         if (const auto* primary = config.get_interface_for_rank (rav::Rank::primary().value()))
         {
             if (auto* iface = networkInterfaces.get_interface (*primary))
-            {
                 safeThis->primaryNetworkInterfaceComboBox_.setText (iface->get_extended_display_name(), juce::dontSendNotification);
-            }
             else
-            {
                 safeThis->primaryNetworkInterfaceComboBox_.setText (*primary + " (not found)", juce::dontSendNotification);
-            }
         }
         else
         {
@@ -142,18 +204,31 @@ void SettingsMainComponent::network_interface_config_updated (const rav::Network
         if (const auto* secondary = config.get_interface_for_rank (rav::Rank::secondary().value()))
         {
             if (auto* iface = networkInterfaces.get_interface (*secondary))
-            {
                 safeThis->secondaryNetworkInterfaceComboBox_.setText (iface->get_extended_display_name(), juce::dontSendNotification);
-            }
             else
-            {
                 safeThis->secondaryNetworkInterfaceComboBox_.setText (*secondary + " (not found)", juce::dontSendNotification);
-            }
         }
         else
         {
             safeThis->secondaryNetworkInterfaceComboBox_.setSelectedId (0, juce::dontSendNotification);
         }
+    });
+}
+
+void SettingsMainComponent::ravenna_node_configuration_updated (const rav::RavennaNode::Configuration& configuration)
+{
+    RAV_ASSERT_NODE_MAINTENANCE_THREAD (context_.getRavennaNode());
+
+    SafePointer safeThis (this);
+    juce::MessageManager::callAsync ([safeThis, configuration] {
+        if (!safeThis)
+            return;
+
+        safeThis->node_configuration_ = configuration;
+        safeThis->enableNodeAdvertisement_.setToggleState (configuration.enable_dnssd_node_advertisement, juce::dontSendNotification);
+        safeThis->enableNodeDiscovery_.setToggleState (configuration.enable_dnssd_node_discovery, juce::dontSendNotification);
+        safeThis->enableSessionAdvertisement_.setToggleState (configuration.enable_dnssd_session_advertisement, juce::dontSendNotification);
+        safeThis->enableSessionDiscovery_.setToggleState (configuration.enable_dnssd_session_discovery, juce::dontSendNotification);
     });
 }
 
