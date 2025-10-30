@@ -12,10 +12,11 @@
 
 #include "application/ApplicationContext.hpp"
 #include "gui/window/WindowContext.hpp"
+#include "ravennakit/ravenna/ravenna_node.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
-class DiscoveredContainer : public juce::Component, public DiscoveredSessionsModel::Subscriber
+class DiscoveredContainer : public juce::Component, public DiscoveredSessionsModel::Subscriber, public rav::RavennaNode::Subscriber
 {
 public:
     explicit DiscoveredContainer (ApplicationContext& context, WindowContext& windowContext);
@@ -27,9 +28,12 @@ public:
     void onSessionUpdated (const std::string& sessionName, const DiscoveredSessionsModel::SessionState* state) override;
     void onNodeUpdated (const std::string& nodeName, const DiscoveredSessionsModel::NodeState* state) override;
 
+    void ravenna_node_configuration_updated (const rav::RavennaNode::Configuration& configuration) override;
+
 private:
     static constexpr int kRowHeight = 60;
     static constexpr int kMargin = 10;
+    static constexpr int kTextHeight = 28;
 
     class Row : public Component
     {
@@ -72,6 +76,11 @@ private:
     WindowContext& windowContext_;
     juce::OwnedArray<Row> rows_;
     juce::Label emptyLabel_;
+    juce::Label nodeDiscoveryNotEnabledLabel_;
+    juce::HyperlinkButton enableNodeDiscoveryButton_;
+    juce::Label sessionDiscoveryNotEnabledLabel_;
+    juce::HyperlinkButton enableSessionDiscoveryButton_;
+    rav::RavennaNode::Configuration ravenna_node_config_;
 
-    void updateGuiState();
+    void updateGui();
 };
