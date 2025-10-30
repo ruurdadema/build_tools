@@ -43,9 +43,6 @@ private:
 
     juce::Label bonjourSettingsLabel_;
 
-    juce::Label enableNodeAdvertisementLabel_;
-    juce::ToggleButton enableNodeAdvertisement_;
-
     juce::Label enableSessionAdvertisementLabel_;
     juce::ToggleButton enableSessionAdvertisement_;
 

@@ -14,12 +14,12 @@
 
 SettingsMainComponent::SettingsMainComponent (ApplicationContext& context) : context_ (context)
 {
-    networkSettingsLabel_.setText ("Network Settings", juce::dontSendNotification);
+    networkSettingsLabel_.setText ("Network Interfaces", juce::dontSendNotification);
     networkSettingsLabel_.setFont (juce::FontOptions (16.f, juce::Font::bold));
     networkSettingsLabel_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (networkSettingsLabel_);
 
-    primaryNetworkInterfaceLabel_.setText ("Primary Network Interface", juce::dontSendNotification);
+    primaryNetworkInterfaceLabel_.setText ("Primary", juce::dontSendNotification);
     addAndMakeVisible (primaryNetworkInterfaceLabel_);
 
     primaryNetworkInterfaceComboBox_.setTextWhenNothingSelected ("Primary Network Interface");
@@ -28,7 +28,7 @@ SettingsMainComponent::SettingsMainComponent (ApplicationContext& context) : con
     };
     addAndMakeVisible (primaryNetworkInterfaceComboBox_);
 
-    secondaryNetworkInterfaceLabel_.setText ("Secondary Network Interface", juce::dontSendNotification);
+    secondaryNetworkInterfaceLabel_.setText ("Secondary", juce::dontSendNotification);
     addAndMakeVisible (secondaryNetworkInterfaceLabel_);
 
     secondaryNetworkInterfaceComboBox_.setTextWhenNothingSelected ("Secondary Network Interface");
@@ -37,20 +37,10 @@ SettingsMainComponent::SettingsMainComponent (ApplicationContext& context) : con
     };
     addAndMakeVisible (secondaryNetworkInterfaceComboBox_);
 
-    bonjourSettingsLabel_.setText ("Bonjour Settings", juce::dontSendNotification);
+    bonjourSettingsLabel_.setText ("Bonjour", juce::dontSendNotification);
     bonjourSettingsLabel_.setFont (juce::FontOptions (16.f, juce::Font::bold));
     bonjourSettingsLabel_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (bonjourSettingsLabel_);
-
-    enableNodeAdvertisementLabel_.setText ("Enable RAVENNA node advertisement", juce::dontSendNotification);
-    addAndMakeVisible (enableNodeAdvertisementLabel_);
-
-    enableNodeAdvertisement_.onClick = [this] {
-        auto config = node_configuration_;
-        config.enable_dnssd_node_advertisement = enableNodeAdvertisement_.getToggleState();
-        context_.getRavennaNode().set_configuration (config).wait();
-    };
-    addAndMakeVisible (enableNodeAdvertisement_);
 
     enableSessionAdvertisementLabel_.setText ("Enable RAVENNA session advertisement", juce::dontSendNotification);
     addAndMakeVisible (enableSessionAdvertisementLabel_);
@@ -125,7 +115,7 @@ void SettingsMainComponent::resized()
     auto b = getLocalBounds().reduced (10);
     networkSettingsLabel_.setBounds (b.removeFromTop (28));
 
-    int left = 210;
+    int left = 84;
     constexpr int width = 380;
 
     auto row = b.removeFromTop (28);
@@ -144,20 +134,16 @@ void SettingsMainComponent::resized()
     bonjourSettingsLabel_.setBounds (b.removeFromTop (28));
 
     row = b.removeFromTop (28);
-    enableNodeAdvertisementLabel_.setBounds (row.removeFromLeft (left));
-    enableNodeAdvertisement_.setBounds (row.removeFromLeft (width));
-
-    row = b.removeFromTop (28);
     enableNodeDiscoveryLabel_.setBounds (row.removeFromLeft (left));
-    enableNodeDiscovery_.setBounds (row.removeFromLeft (width));
+    enableNodeDiscovery_.setBounds (row.removeFromLeft (28));
 
     row = b.removeFromTop (28);
     enableSessionAdvertisementLabel_.setBounds (row.removeFromLeft (left));
-    enableSessionAdvertisement_.setBounds (row.removeFromLeft (width));
+    enableSessionAdvertisement_.setBounds (row.removeFromLeft (28));
 
     row = b.removeFromTop (28);
     enableSessionDiscoveryLabel_.setBounds (row.removeFromLeft (left));
-    enableSessionDiscovery_.setBounds (row.removeFromLeft (width));
+    enableSessionDiscovery_.setBounds (row.removeFromLeft (28));
 
     b.removeFromTop (20);
     left = 135;
@@ -225,7 +211,6 @@ void SettingsMainComponent::ravenna_node_configuration_updated (const rav::Raven
             return;
 
         safeThis->node_configuration_ = configuration;
-        safeThis->enableNodeAdvertisement_.setToggleState (configuration.enable_dnssd_node_advertisement, juce::dontSendNotification);
         safeThis->enableNodeDiscovery_.setToggleState (configuration.enable_dnssd_node_discovery, juce::dontSendNotification);
         safeThis->enableSessionAdvertisement_.setToggleState (configuration.enable_dnssd_session_advertisement, juce::dontSendNotification);
         safeThis->enableSessionDiscovery_.setToggleState (configuration.enable_dnssd_session_discovery, juce::dontSendNotification);

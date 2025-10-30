@@ -48,6 +48,7 @@ void DiscoveredContainer::resizeToFitContent()
 {
     const auto calculateHeight = rows_.size() * kRowHeight + kMargin + kMargin * rows_.size();
     setSize (getWidth(), std::max (calculateHeight, 100)); // Min to leave space for the empty label
+    resized();
 }
 
 void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const DiscoveredSessionsModel::SessionState* state)
@@ -67,6 +68,7 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
+        updateGuiState();
         resizeToFitContent();
     }
     else
@@ -76,13 +78,12 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
             if (rows_.getUnchecked (i)->getSessionName() == juce::StringRef (sessionName))
             {
                 rows_.remove (i);
+                updateGuiState();
                 resizeToFitContent();
                 return;
             }
         }
     }
-
-    updateGuiState();
 }
 
 void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const DiscoveredSessionsModel::NodeState* state)
@@ -102,6 +103,7 @@ void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const Disc
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
+        updateGuiState();
         resizeToFitContent();
     }
     else
@@ -111,13 +113,12 @@ void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const Disc
             if (rows_.getUnchecked (i)->getSessionName() == juce::StringRef (nodeName))
             {
                 rows_.remove (i);
+                updateGuiState();
                 resizeToFitContent();
                 return;
             }
         }
     }
-
-    updateGuiState();
 }
 
 DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windowContext, const Type type) : type_ (type)
