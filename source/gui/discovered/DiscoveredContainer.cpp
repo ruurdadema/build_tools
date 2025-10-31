@@ -19,15 +19,43 @@ DiscoveredContainer::DiscoveredContainer (ApplicationContext& context, WindowCon
 {
     emptyLabel_.setText ("No discovered RAVENNA sessions.", juce::dontSendNotification);
     emptyLabel_.setColour (juce::Label::textColourId, juce::Colours::grey);
-    emptyLabel_.setJustificationType (juce::Justification::topLeft);
     addAndMakeVisible (emptyLabel_);
-    updateGuiState();
+
+    nodeDiscoveryNotEnabledLabel_.setText ("Node discovery is not enabled", juce::dontSendNotification);
+    nodeDiscoveryNotEnabledLabel_.setColour (juce::Label::textColourId, juce::Colours::grey);
+    addChildComponent (nodeDiscoveryNotEnabledLabel_);
+
+    enableNodeDiscoveryButton_.setButtonText ("enable");
+    enableNodeDiscoveryButton_.setFont (juce::FontOptions (15.f), false, juce::Justification::left);
+    enableNodeDiscoveryButton_.onClick = [this] {
+        auto config = ravenna_node_config_;
+        config.enable_dnssd_node_discovery = true;
+        appContext_.getRavennaNode().set_configuration (config).wait();
+    };
+    addChildComponent (enableNodeDiscoveryButton_);
+
+    sessionDiscoveryNotEnabledLabel_.setText ("Session discovery is not enabled", juce::dontSendNotification);
+    sessionDiscoveryNotEnabledLabel_.setColour (juce::Label::textColourId, juce::Colours::grey);
+    addChildComponent (sessionDiscoveryNotEnabledLabel_);
+
+    enableSessionDiscoveryButton_.setButtonText ("enable");
+    enableSessionDiscoveryButton_.setFont (juce::FontOptions (15.f), false, juce::Justification::left);
+    enableSessionDiscoveryButton_.onClick = [this] {
+        auto config = ravenna_node_config_;
+        config.enable_dnssd_session_discovery = true;
+        appContext_.getRavennaNode().set_configuration (config).wait();
+    };
+    addChildComponent (enableSessionDiscoveryButton_);
+
+    updateGui();
 
     appContext_.getSessions().addSubscriber (this);
+    appContext_.getRavennaNode().subscribe (this).wait();
 }
 
 DiscoveredContainer::~DiscoveredContainer()
 {
+    appContext_.getRavennaNode().unsubscribe (this).wait();
     appContext_.getSessions().removeSubscriber (this);
 }
 
@@ -35,7 +63,31 @@ void DiscoveredContainer::resized()
 {
     auto b = getLocalBounds().reduced (kMargin);
 
-    emptyLabel_.setBounds (b.reduced (kMargin));
+    bool addMargin = false;
+    if (ravenna_node_config_.enable_dnssd_node_discovery && ravenna_node_config_.enable_dnssd_session_discovery && rows_.isEmpty())
+    {
+        emptyLabel_.setBounds (b.removeFromTop (kTextHeight));
+        addMargin = true;
+    }
+
+    if (!ravenna_node_config_.enable_dnssd_node_discovery)
+    {
+        auto row = b.removeFromTop (kTextHeight);
+        nodeDiscoveryNotEnabledLabel_.setBounds (row.removeFromLeft (197));
+        enableNodeDiscoveryButton_.setBounds (row.withWidth (50));
+        addMargin = true;
+    }
+
+    if (!ravenna_node_config_.enable_dnssd_session_discovery)
+    {
+        auto row = b.removeFromTop (kTextHeight);
+        sessionDiscoveryNotEnabledLabel_.setBounds (row.removeFromLeft (211));
+        enableSessionDiscoveryButton_.setBounds (row.withWidth (50));
+        addMargin = true;
+    }
+
+    if (addMargin)
+        b.removeFromTop (kMargin);
 
     for (auto i = 0; i < rows_.size(); ++i)
     {
@@ -46,8 +98,32 @@ void DiscoveredContainer::resized()
 
 void DiscoveredContainer::resizeToFitContent()
 {
-    const auto calculateHeight = rows_.size() * kRowHeight + kMargin + kMargin * rows_.size();
+    auto calculateHeight = rows_.size() * kRowHeight + kMargin + kMargin * rows_.size();
+
+    bool addMargin = false;
+    if (ravenna_node_config_.enable_dnssd_node_discovery && ravenna_node_config_.enable_dnssd_session_discovery && rows_.isEmpty())
+    {
+        calculateHeight += kTextHeight;
+        addMargin = true;
+    }
+
+    if (!ravenna_node_config_.enable_dnssd_node_discovery)
+    {
+        calculateHeight += kTextHeight;
+        addMargin = true;
+    }
+
+    if (!ravenna_node_config_.enable_dnssd_session_discovery)
+    {
+        calculateHeight += kTextHeight;
+        addMargin = true;
+    }
+
+    if (addMargin)
+        calculateHeight += kMargin;
+
     setSize (getWidth(), std::max (calculateHeight, 100)); // Min to leave space for the empty label
+    resized();
 }
 
 void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, const DiscoveredSessionsModel::SessionState* state)
@@ -67,7 +143,7 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
-        resizeToFitContent();
+        updateGui();
     }
     else
     {
@@ -76,13 +152,11 @@ void DiscoveredContainer::onSessionUpdated (const std::string& sessionName, cons
             if (rows_.getUnchecked (i)->getSessionName() == juce::StringRef (sessionName))
             {
                 rows_.remove (i);
-                resizeToFitContent();
+                updateGui();
                 return;
             }
         }
     }
-
-    updateGuiState();
 }
 
 void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const DiscoveredSessionsModel::NodeState* state)
@@ -102,7 +176,7 @@ void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const Disc
         RAV_ASSERT (row != nullptr, "Failed to create row");
         row->update (*state);
         addAndMakeVisible (row);
-        resizeToFitContent();
+        updateGui();
     }
     else
     {
@@ -111,13 +185,24 @@ void DiscoveredContainer::onNodeUpdated (const std::string& nodeName, const Disc
             if (rows_.getUnchecked (i)->getSessionName() == juce::StringRef (nodeName))
             {
                 rows_.remove (i);
-                resizeToFitContent();
+                updateGui();
                 return;
             }
         }
     }
+}
 
-    updateGuiState();
+void DiscoveredContainer::ravenna_node_configuration_updated (const rav::RavennaNode::Configuration& configuration)
+{
+    RAV_ASSERT_NODE_MAINTENANCE_THREAD (appContext_.getRavennaNode());
+
+    SafePointer weakThis (this);
+    juce::MessageManager::callAsync ([weakThis, configuration] {
+        if (!weakThis)
+            return;
+        weakThis->ravenna_node_config_ = configuration;
+        weakThis->updateGui();
+    });
 }
 
 DiscoveredContainer::Row::Row (ApplicationContext& context, WindowContext& windowContext, const Type type) : type_ (type)
@@ -174,9 +259,18 @@ void DiscoveredContainer::Row::resized()
     description_.setBounds (b);
 }
 
-void DiscoveredContainer::updateGuiState()
+void DiscoveredContainer::updateGui()
 {
-    emptyLabel_.setVisible (rows_.isEmpty());
+    emptyLabel_.setVisible (
+        ravenna_node_config_.enable_dnssd_node_discovery && ravenna_node_config_.enable_dnssd_session_discovery && rows_.isEmpty());
+
+    nodeDiscoveryNotEnabledLabel_.setVisible (!ravenna_node_config_.enable_dnssd_node_discovery);
+    enableNodeDiscoveryButton_.setVisible (!ravenna_node_config_.enable_dnssd_node_discovery);
+
+    sessionDiscoveryNotEnabledLabel_.setVisible (!ravenna_node_config_.enable_dnssd_session_discovery);
+    enableSessionDiscoveryButton_.setVisible (!ravenna_node_config_.enable_dnssd_session_discovery);
+
+    resizeToFitContent();
 }
 
 void DiscoveredContainer::Row::update (const DiscoveredSessionsModel::SessionState& sessionState)
