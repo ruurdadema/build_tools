@@ -262,7 +262,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
     ttlEditor_.setInputRestrictions (3, "0123456789");
     ttlEditor_.onReturnKey = [this] {
         auto config = senderState_.senderConfiguration;
-        config.ttl = ttlEditor_.getText().getIntValue();
+        config.ttl = static_cast<uint8_t>(std::clamp(ttlEditor_.getText().getIntValue(), 0, 255));
         audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
