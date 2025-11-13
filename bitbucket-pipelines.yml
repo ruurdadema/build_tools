@@ -25,7 +25,7 @@ definitions:
           - python -m pip install pygit2 boto3 requests
           - python -u build.py --path-to-build build-windows --sign --build-number "$env:BITBUCKET_BUILD_NUMBER" --upload --spaces-key "$env:SPACES_KEY" --spaces-secret "$env:SPACES_SECRET"
         artifacts:
-          - build-windows/archive/*.exe
+          - build-windows/archive/*.zip
     - step: &build-dist
         runs-on:
           - 'self.hosted'
