@@ -1,6 +1,7 @@
 #!/usr/bin/env python3 -u
 import multiprocessing
 import platform
+import shutil
 from datetime import datetime
 from shutil import copytree, copy2
 
@@ -13,7 +14,7 @@ from ravennakit.submodules.build_tools.macos.dmg import DMGBuilder
 from ravennakit.submodules.build_tools.macos.productbuilder import ProductBuilder
 from ravennakit.submodules.build_tools.macos.universal import *
 from ravennakit.submodules.build_tools.windows.innosetup import InnoSetup
-from ravennakit.submodules.build_tools.windows.signtool import signtool_get_sign_command, signtool_verify
+from ravennakit.submodules.build_tools.windows.signtool import signtool_get_sign_command, signtool_verify, signtool_sign
 
 app_target_name = 'ravennakit_juce_demo'
 app_artefacts_dir = f'{app_target_name}_artefacts'
@@ -124,7 +125,6 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
 
     # RAVENNAKIT Demo application
     path_to_desktop_receiver_app = path_to_build_x64 / app_artefacts_dir / str(build_config.value) / f'{app_name}.exe'
-    copy_into_archive(path_to_build_x64 / app_artefacts_dir)
 
     # Create installer package
     innosetup = InnoSetup(appname=app_name, appversion=git_version, app_publisher=installer_publisher_name)
@@ -142,15 +142,32 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     desktop_send.set_run_after_install(True)
     innosetup.add_file(desktop_send)
 
-    installer_file_name = 'ravennakit-juce-demo-{}'.format(git_version).replace(' ', '-')
+    installer_file_name = 'ravennakit-demo-{}'.format(git_version).replace(' ', '-')
     innosetup.generate(path_to_build_archive / 'innosetup', installer_file_name)
     innosetup.build(path_to_build_archive)
 
     if args.sign:
         signtool_verify(path_to_build_archive / (installer_file_name + '.exe'))
 
+    # Sign the app
+    if args.sign:
+        signtool_sign(args.windows_code_sign_identity, path_to_desktop_receiver_app)
+
+    copy_into_archive(path_to_build_x64 / app_artefacts_dir)
+
+    # Create distribution zip
+    dist_path = path_to_build_archive / f'ravennakit-demo-{git_version}-windows'
+    dist_path.unlink(missing_ok=True)
+    dist_path.mkdir()
+    shutil.copy(path_to_desktop_receiver_app, dist_path)
+    dist_zip_path = Path(str(dist_path.with_suffix('.zip')))
+    dist_zip_path.unlink(missing_ok=True)
+
+    shutil.make_archive(str(dist_path), 'zip', dist_path)
+    shutil.rmtree(dist_path)
+
     # Create ZIP from archive
-    archive_path = args.path_to_build + '/ravennakit-juce-demo-' + git_version + '-' + args.build_number + '-windows'
+    archive_path = args.path_to_build + '/ravennakit-demo-' + git_version + '-windows-archive'
     zip_path = Path(archive_path + '.zip')
     zip_path.unlink(missing_ok=True)
 
