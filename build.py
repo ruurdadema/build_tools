@@ -99,7 +99,7 @@ def pack_and_sign_macos(args, path_to_build: Path, build_config: Config):
                       path_to_dmg)
 
     # Create ZIP from archive
-    archive_path = args.path_to_build + '/ravennakit-demo-' + git_version + '-archive-macos'
+    archive_path = args.path_to_build + '/ravennakit-demo-' + git_version + '-macos-archive'
     zip_path = Path(archive_path + '.zip')
     zip_path.unlink(missing_ok=True)
 
