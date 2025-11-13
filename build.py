@@ -128,6 +128,30 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     # RAVENNAKIT Demo application
     path_to_desktop_receiver_app = path_to_build_x64 / app_artefacts_dir / str(build_config.value) / f'{app_name}.exe'
 
+    # Create installer package
+    innosetup = InnoSetup(appname=app_name, appversion=git_version, app_publisher=installer_publisher_name)
+    innosetup.set_appid(installer_app_id)
+    innosetup.set_app_publisher_url(installer_publisher_url)
+    innosetup.set_allow_change_destination(False)
+
+    if args.sign:
+        innosetup.set_signtool_command(get_signtool_command(args))
+
+    # Desktop sender app
+    desktop_send = InnoSetup.File(path_to_desktop_receiver_app)
+    desktop_send.set_add_to_start_menu(True)
+    desktop_send.set_add_to_desktop(True)
+    desktop_send.set_run_after_install(True)
+    innosetup.add_file(desktop_send)
+
+    installer_file_name = 'ravennakit-demo-{}'.format(git_version).replace(' ', '-')
+    innosetup.generate(path_to_build_archive / 'innosetup', installer_file_name)
+    innosetup.build(path_to_build_archive)
+
+    if args.sign:
+        signtool_verify(path_to_build_archive / (installer_file_name + '.exe'))
+
+    # Sign the app
     if args.sign:
         signtool_sign(args.windows_code_sign_identity, path_to_desktop_receiver_app)
 
@@ -142,6 +166,7 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     dist_zip_path.unlink(missing_ok=True)
 
     shutil.make_archive(str(dist_path), 'zip', dist_path)
+    shutil.rmtree(dist_path)
 
     # Create ZIP from archive
     archive_path = args.path_to_build + '/ravennakit-demo-' + git_version + '-windows-archive'
