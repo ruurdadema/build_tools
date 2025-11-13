@@ -9,6 +9,7 @@ import boto3
 
 from ravennakit.submodules.build_tools.cmake import *
 from ravennakit.submodules.build_tools.macos.codesigning import *
+from ravennakit.submodules.build_tools.macos.dmg import DMGBuilder
 from ravennakit.submodules.build_tools.macos.productbuilder import ProductBuilder
 from ravennakit.submodules.build_tools.macos.universal import *
 from ravennakit.submodules.build_tools.windows.innosetup import InnoSetup
@@ -84,24 +85,19 @@ def pack_and_sign_macos(args, path_to_build: Path, build_config: Config):
     path_to_app = process_bundle(Path(app_artefacts_dir, str(build_config.value)), Path(f'{app_name}.app'))
     copy_into_archive(path_to_build / app_artefacts_dir)
 
-    # Create installer package
-    builder = ProductBuilder(title=app_name)
-
-    builder.add_component(path_to_app,
-                          install_location=Path('/Applications'),
-                          identifier=args.macos_notarization_bundle_id,
-                          title=app_name)
-
-    path_to_installer = path_to_build_archive / 'ravennakit-juce-demo-{}.pkg'.format(git_version)
-    builder.build(output_path=path_to_installer, developer_id_installer=args.macos_developer_id_installer)
+    builder = DMGBuilder(app_name)
+    builder.add_app_bundle(path_to_app)
+    builder.add_applications_link()
+    app_name_no_spaces = app_name.replace(' ', '-').lower()
+    path_to_dmg = builder.build(path_to_build_archive / f'{app_name_no_spaces}-{git_version}.dmg')
 
     # Notarize installer package
     if args.notarize:
         notarize_file(args.macos_notarization_username, args.macos_notarization_password, args.macos_development_team,
-                      path_to_installer)
+                      path_to_dmg)
 
     # Create ZIP from archive
-    archive_path = args.path_to_build + '/ravennakit-juce-demo-' + git_version + '-' + args.build_number + '-macos'
+    archive_path = args.path_to_build + '/ravennakit-demo-' + git_version + '-macos'
     zip_path = Path(archive_path + '.zip')
     zip_path.unlink(missing_ok=True)
 
