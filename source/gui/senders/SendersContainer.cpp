@@ -11,6 +11,7 @@
 #include "SendersContainer.hpp"
 
 #include "gui/lookandfeel/Constants.hpp"
+#include "gui/widgets/SdpViewerComponent.hpp"
 
 #include <bitset>
 
@@ -262,7 +263,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
     ttlEditor_.setInputRestrictions (3, "0123456789");
     ttlEditor_.onReturnKey = [this] {
         auto config = senderState_.senderConfiguration;
-        config.ttl = static_cast<uint8_t>(std::clamp(ttlEditor_.getText().getIntValue(), 0, 255));
+        config.ttl = static_cast<uint8_t> (std::clamp (ttlEditor_.getText().getIntValue(), 0, 255));
         audioSenders_.updateSenderConfiguration (senderId_, std::move (config));
         juce::TextEditor::unfocusAllComponents();
     };
@@ -372,6 +373,33 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         audioSenders_.removeSender (senderId_);
     };
     addAndMakeVisible (deleteButton_);
+
+    showSdpButton_.setButtonText ("SDP");
+    showSdpButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
+    showSdpButton_.onClick = [this] {
+        auto result = audioSenders_.getSdpForSender (senderId_);
+        if (!result)
+        {
+            RAV_LOG_ERROR ("Failed to generate SDP: {}", result.error());
+            return;
+        }
+
+        auto content = std::make_unique<SdpViewerComponent> (rav::sdp::to_string (*result).value_or ("No SDP available"));
+        content->setSize (400, 400);
+
+        juce::DialogWindow::LaunchOptions o;
+        o.dialogTitle = "SDP Text";
+        o.content.setOwned (content.release());
+        o.componentToCentreAround = getTopLevelComponent();
+        o.dialogBackgroundColour = Constants::Colours::windowBackground;
+        o.escapeKeyTriggersCloseButton = true;
+        o.useNativeTitleBar = true;
+        o.resizable = true;
+        o.useBottomRightCornerResizer = false;
+        if (auto* dialog = o.launchAsync())
+            dialog->setResizeLimits (400, 400, 99999, 99999);
+    };
+    addAndMakeVisible (showSdpButton_);
 }
 
 rav::Id SendersContainer::Row::getId() const
@@ -452,6 +480,8 @@ void SendersContainer::Row::resized()
     auto b = getLocalBounds().reduced (kMargin);
 
     auto buttons = b.withTrimmedTop (b.getHeight() - kButtonHeight);
+    showSdpButton_.setBounds (buttons.removeFromRight (65));
+    buttons.removeFromRight (kMargin);
     deleteButton_.setBounds (buttons.removeFromRight (65));
     buttons.removeFromRight (kMargin);
     onOffButton_.setBounds (buttons.removeFromRight (65));

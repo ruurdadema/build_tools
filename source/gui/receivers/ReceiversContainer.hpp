@@ -34,23 +34,6 @@ private:
     static constexpr int kMargin = 10;
     static constexpr int kButtonHeight = 30;
 
-    class SdpViewer : public Component
-    {
-    public:
-        rav::SafeFunction<void (rav::sdp::SessionDescription sdp)> onApply;
-
-        explicit SdpViewer (const std::string& sdpText);
-        ~SdpViewer() override;
-        void resized() override;
-
-    private:
-        juce::TextEditor sdpTextEditor_;
-        juce::TextButton closeButton_ { "Close" };
-        juce::TextButton applyButton_ { "Apply" };
-        juce::TextButton copyButton_ { "Copy" };
-        juce::Label errorLabel_ { "error" };
-    };
-
     class SessionInfoComponent : public Component
     {
     public:

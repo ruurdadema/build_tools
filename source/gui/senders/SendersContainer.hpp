@@ -75,6 +75,7 @@ private:
 
         juce::TextButton onOffButton_ { "Start" };
         juce::TextButton deleteButton_ { "Delete" };
+        juce::TextButton showSdpButton_ { "SDP" };
 
         juce::Label statusMessage_;
 

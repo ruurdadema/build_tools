@@ -80,6 +80,13 @@ public:
      */
     [[nodiscard]] bool unsubscribe (const Subscriber* subscriber);
 
+    /**
+     * Get the SDP for the sender with the given id. This function will generate the SDP based on the current state of the receiver.
+     * @param senderId The id of the sender to get the SDP for.
+     * @return The SDP for the sender.
+     */
+    tl::expected<rav::sdp::SessionDescription, std::string> getSdpForSender (rav::Id senderId) const;
+
     // rav::RavennaNode::Subscriber overrides
     void ravenna_sender_added (const rav::RavennaSender& sender) override;
     void ravenna_sender_removed (rav::Id sender_id) override;
