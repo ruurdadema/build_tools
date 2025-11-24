@@ -143,6 +143,7 @@ target_link_libraries(ravennakit_juce_demo
         juce::juce_core
         juce::juce_gui_extra
         juce::juce_audio_utils
+        juce::juce_cryptography
         ravennakit
         audio-resampler
 )

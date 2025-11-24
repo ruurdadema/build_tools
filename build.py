@@ -142,7 +142,7 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     desktop_send.set_run_after_install(True)
     innosetup.add_file(desktop_send)
 
-    installer_file_name = 'ravennakit-demo-{}'.format(git_version).replace(' ', '-')
+    installer_file_name = 'ravennakit-demo-{}-installer'.format(git_version).replace(' ', '-')
     innosetup.generate(path_to_build_archive / 'innosetup', installer_file_name)
     innosetup.build(path_to_build_archive)
 
