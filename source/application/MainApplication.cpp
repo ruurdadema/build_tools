@@ -244,6 +244,8 @@ boost::json::object MainApplication::toBoostJson() const
         windows.push_back (boost::json::object { { "state", window->getWindowStateAsString().toStdString() } });
     }
 
+    RAV_ASSERT (ravennaNode_ != nullptr, "ravennaNode is null");
+
     boost::json::object state {
         { "ravenna_node", ravennaNode_->to_boost_json().get() },
         { "windows", windows },
