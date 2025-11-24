@@ -11,7 +11,7 @@
 #include "MainApplication.hpp"
 
 #include "Logging.hpp"
-#include "ravennakit/core/util/paths.hpp"
+#include "ravennakit/core/util/common_paths.hpp"
 
 namespace
 {
@@ -328,14 +328,14 @@ bool MainApplication::restoreFromBoostJson (const boost::json::value& json)
 const juce::File& MainApplication::getApplicationStateFile()
 {
     const static auto applicationStateFilePath = juce::File (
-        (rav::paths::application_data() / PROJECT_COMPANY_NAME / PROJECT_PRODUCT_NAME / "application_state.json").c_str());
+        (rav::common_paths::application_data() / PROJECT_COMPANY_NAME / PROJECT_PRODUCT_NAME / "application_state.json").c_str());
     return applicationStateFilePath;
 }
 
 const juce::File& MainApplication::getEulaAcceptedFile()
 {
     const static auto eulaAcceptedFilePath = juce::File (
-        (rav::paths::application_data() / PROJECT_COMPANY_NAME / PROJECT_PRODUCT_NAME / "accepted_eula").c_str());
+        (rav::common_paths::application_data() / PROJECT_COMPANY_NAME / PROJECT_PRODUCT_NAME / "accepted_eula").c_str());
     return eulaAcceptedFilePath;
 }
 

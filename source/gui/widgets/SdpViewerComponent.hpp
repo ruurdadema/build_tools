@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include "ravennakit/core/util/safe_function.hpp"
 #include "ravennakit/sdp/sdp_session_description.hpp"
 
 #include <juce_gui_basics/juce_gui_basics.h>
