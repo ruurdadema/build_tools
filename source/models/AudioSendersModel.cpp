@@ -136,6 +136,11 @@ bool AudioSendersModel::unsubscribe (const Subscriber* subscriber)
     return subscribers_.remove (subscriber);
 }
 
+tl::expected<rav::sdp::SessionDescription, std::string> AudioSendersModel::getSdpForSender (const rav::Id senderId) const
+{
+    return node_.get_sdp_for_sender (senderId).get();
+}
+
 void AudioSendersModel::ravenna_sender_added (const rav::RavennaSender& sender)
 {
     RAV_ASSERT_NODE_MAINTENANCE_THREAD (node_);

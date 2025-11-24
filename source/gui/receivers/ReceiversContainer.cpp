@@ -12,6 +12,7 @@
 
 #include "gui/lookandfeel/Constants.hpp"
 #include "gui/lookandfeel/ThisLookAndFeel.hpp"
+#include "gui/widgets/SdpViewerComponent.hpp"
 #include "ravennakit/core/support.hpp"
 
 ReceiversContainer::ReceiversContainer (ApplicationContext& context) : context_ (context)
@@ -99,71 +100,6 @@ void ReceiversContainer::onAudioReceiverStatsUpdated (
     for (auto* row : rows_)
         if (row->getId() == receiverId)
             row->update (streamIndex, stats);
-}
-
-ReceiversContainer::SdpViewer::SdpViewer (const std::string& sdpText)
-{
-    applyButton_.onClick = [this] {
-        auto result = rav::sdp::parse_session_description (sdpTextEditor_.getText().toStdString());
-        if (!result)
-        {
-            errorLabel_.setText (result.error(), juce::dontSendNotification);
-            return;
-        }
-        errorLabel_.setText ("", juce::dontSendNotification);
-        onApply (std::move (*result));
-        if (auto* parent = findParentComponentOfClass<juce::DialogWindow>())
-            parent->exitModalState (1);
-    };
-    applyButton_.setButtonText ("Apply");
-    applyButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::green);
-    addAndMakeVisible (applyButton_);
-
-    closeButton_.onClick = [this] {
-        if (auto* parent = findParentComponentOfClass<juce::DialogWindow>())
-            parent->exitModalState (0);
-    };
-    closeButton_.setButtonText ("Close");
-    closeButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::red);
-    addAndMakeVisible (closeButton_);
-
-    copyButton_.onClick = [this] {
-        juce::SystemClipboard::copyTextToClipboard (sdpTextEditor_.getText());
-    };
-    copyButton_.setButtonText ("Copy");
-    copyButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
-    addAndMakeVisible (copyButton_);
-
-    errorLabel_.setColour (juce::Label::ColourIds::textColourId, Constants::Colours::red);
-    addAndMakeVisible (errorLabel_);
-
-    sdpTextEditor_.setMultiLine (true);
-    sdpTextEditor_.setReturnKeyStartsNewLine (true);
-    sdpTextEditor_.setText (sdpText, juce::dontSendNotification);
-    sdpTextEditor_.setTextToShowWhenEmpty ("Enter SDP text here...", juce::Colours::grey);
-    addAndMakeVisible (sdpTextEditor_);
-
-    setLookAndFeel (&rav::get_global_instance_of_type<ThisLookAndFeel>());
-}
-
-ReceiversContainer::SdpViewer::~SdpViewer()
-{
-    setLookAndFeel (nullptr);
-}
-
-void ReceiversContainer::SdpViewer::resized()
-{
-    auto b = getLocalBounds().reduced (kMargin);
-    auto bottom = b.removeFromBottom (27);
-    closeButton_.setBounds (bottom.removeFromRight (71));
-    bottom.removeFromRight (6);
-    applyButton_.setBounds (bottom.removeFromRight (71));
-    bottom.removeFromRight (6);
-    copyButton_.setBounds (bottom.removeFromRight (71));
-    b.removeFromBottom (kMargin);
-    errorLabel_.setBounds (b.removeFromBottom (16));
-    b.removeFromBottom (kMargin);
-    sdpTextEditor_.setBounds (b);
 }
 
 ReceiversContainer::SessionInfoComponent::SessionInfoComponent (const juce::String& title)
@@ -272,7 +208,7 @@ ReceiversContainer::Row::Row (AudioReceiversModel& audioReceivers, const rav::Id
     showSdpButton_.setButtonText ("SDP");
     showSdpButton_.setColour (juce::TextButton::ColourIds::buttonColourId, Constants::Colours::grey);
     showSdpButton_.onClick = [this] {
-        auto content = std::make_unique<SdpViewer> (rav::sdp::to_string (configuration_.sdp).value_or (""));
+        auto content = std::make_unique<SdpViewerComponent> (rav::sdp::to_string (configuration_.sdp).value_or (""));
         content->setSize (400, 400);
         content->onApply = [this] (rav::sdp::SessionDescription sdp) {
             auto config = configuration_;
