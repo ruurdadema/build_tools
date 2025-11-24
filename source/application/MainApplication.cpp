@@ -11,6 +11,7 @@
 #include "MainApplication.hpp"
 
 #include "Logging.hpp"
+#include "ravennakit/core/util/paths.hpp"
 
 namespace
 {
@@ -45,9 +46,7 @@ private:
 };
 
 } // namespace
-MainApplication::MainApplication()
-{
-}
+MainApplication::MainApplication() {}
 
 const juce::String MainApplication::getApplicationName()
 {
@@ -67,6 +66,29 @@ bool MainApplication::moreThanOneInstanceAllowed()
 void MainApplication::initialise (const juce::String& commandLine)
 {
     std::ignore = commandLine;
+
+    const auto eulaHash = getEulaAcceptedFile().loadFileAsString();
+
+    if (eulaHash != EulaAcceptWindow::getEulaHash())
+    {
+        eulaAcceptWindow_ = std::make_unique<EulaAcceptWindow> ("End User License Agreement");
+        eulaAcceptWindow_->setVisible (true);
+        eulaAcceptWindow_->centreWithSize (1000, 700);
+        eulaAcceptWindow_->onEulaAccepted = [this, commandLine] (const juce::String& hash) {
+            if (!getEulaAcceptedFile().replaceWithText (hash))
+            {
+                RAV_LOG_ERROR ("Failed to set EULA as excepted");
+                quit();
+            }
+            initialise (commandLine);
+        };
+        eulaAcceptWindow_->onEulaDeclined = [] {
+            quit();
+        };
+        return;
+    }
+
+    eulaAcceptWindow_.reset();
 
     ravennaNode_ = std::make_unique<rav::RavennaNode>();
     sessions_ = std::make_unique<DiscoveredSessionsModel> (*ravennaNode_);
@@ -93,8 +115,11 @@ void MainApplication::initialise (const juce::String& commandLine)
 
 void MainApplication::shutdown()
 {
-    if (const auto result = saveToFile (getApplicationStateFile()); !result)
-        RAV_LOG_ERROR ("Failed to save application state: {}", result.error());
+    if (ravennaNode_ != nullptr)
+    {
+        if (const auto result = saveToFile (getApplicationStateFile()); !result)
+            RAV_LOG_ERROR ("Failed to save application state: {}", result.error());
+    }
 
     audioDeviceManager_.removeAudioCallback (audioReceivers_.get());
     audioDeviceManager_.removeAudioCallback (audioSenders_.get());
@@ -300,11 +325,16 @@ bool MainApplication::restoreFromBoostJson (const boost::json::value& json)
 
 const juce::File& MainApplication::getApplicationStateFile()
 {
-    const static auto applicationStateFilePath = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-                                                     .getChildFile (PROJECT_COMPANY_NAME)
-                                                     .getChildFile (PROJECT_PRODUCT_NAME)
-                                                     .getChildFile ("application_state.json");
+    const static auto applicationStateFilePath = juce::File (
+        (rav::paths::application_data() / PROJECT_COMPANY_NAME / PROJECT_PRODUCT_NAME / "application_state.json").c_str());
     return applicationStateFilePath;
+}
+
+const juce::File& MainApplication::getEulaAcceptedFile()
+{
+    const static auto eulaAcceptedFilePath = juce::File (
+        (rav::paths::application_data() / PROJECT_COMPANY_NAME / PROJECT_PRODUCT_NAME / "accepted_eula").c_str());
+    return eulaAcceptedFilePath;
 }
 
 JUCE_CREATE_APPLICATION_DEFINE (MainApplication);

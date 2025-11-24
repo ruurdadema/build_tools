@@ -12,6 +12,7 @@
 
 #include "gui/MainComponent.hpp"
 #include "gui/lookandfeel/ThisLookAndFeel.hpp"
+#include "gui/window/EulaAcceptWindow.hpp"
 #include "models/AudioReceiversModel.hpp"
 #include "ravennakit/core/support.hpp"
 #include "ravennakit/core/system.hpp"
@@ -53,8 +54,10 @@ private:
     std::unique_ptr<AudioReceiversModel> audioReceivers_;
     std::unique_ptr<AudioSendersModel> audioSenders_;
     std::vector<std::unique_ptr<juce::ResizableWindow>> mainWindows_;
+    std::unique_ptr<EulaAcceptWindow> eulaAcceptWindow_;
 
     void addWindow();
     boost::json::object toBoostJson() const;
     bool restoreFromBoostJson (const boost::json::value& json);
+    [[nodiscard]] static const juce::File& getEulaAcceptedFile();
 };
