@@ -142,7 +142,7 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     desktop_send.set_run_after_install(True)
     innosetup.add_file(desktop_send)
 
-    installer_file_name = 'ravennakit-demo-{}-installer'.format(git_version).replace(' ', '-')
+    installer_file_name = 'ravennakit-demo-{}-windows-installer'.format(git_version).replace(' ', '-')
     innosetup.generate(path_to_build_archive / 'innosetup', installer_file_name)
     innosetup.build(path_to_build_archive)
 
@@ -156,7 +156,7 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     copy_into_archive(path_to_build_x64 / app_artefacts_dir)
 
     # Create distribution zip
-    dist_path = path_to_build_archive / f'ravennakit-demo-{git_version}-windows'
+    dist_path = path_to_build_archive / f'ravennakit-demo-{git_version}-windows-portable'
     dist_path.unlink(missing_ok=True)
     dist_path.mkdir()
     shutil.copy(path_to_desktop_receiver_app, dist_path)
@@ -167,7 +167,7 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     shutil.rmtree(dist_path)
 
     # Create ZIP from archive
-    archive_path = args.path_to_build + '/ravennakit-demo-' + git_version + '-windows-archive'
+    archive_path = args.path_to_build + f'/ravennakit-demo-{git_version}-windows-archive'
     zip_path = Path(archive_path + '.zip')
     zip_path.unlink(missing_ok=True)
 
