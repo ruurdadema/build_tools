@@ -23,11 +23,6 @@ This project requires the following dependencies:
 - [RAVENNAKIT](https://github.com/soundondigital/ravennakit) (AGPLv3 or commercial license)
 - [JUCE](https://github.com/juce-framework/JUCE), managed using CMake FetchContent (AGPLv3 or commercial license)
 
-### RAVENNAKIT dependency
-
-If you are using the distribution package of this demo (and not the repository), you will need to download 
-RAVENNAKIT separately and place the source inside the ravennakit folder.
-
 ## Prepare the build environment
 
 ### macOS

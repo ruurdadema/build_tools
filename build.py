@@ -142,7 +142,7 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     desktop_send.set_run_after_install(True)
     innosetup.add_file(desktop_send)
 
-    installer_file_name = 'ravennakit-demo-{}-installer'.format(git_version).replace(' ', '-')
+    installer_file_name = 'ravennakit-demo-{}-windows-installer'.format(git_version).replace(' ', '-')
     innosetup.generate(path_to_build_archive / 'innosetup', installer_file_name)
     innosetup.build(path_to_build_archive)
 
@@ -156,7 +156,7 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     copy_into_archive(path_to_build_x64 / app_artefacts_dir)
 
     # Create distribution zip
-    dist_path = path_to_build_archive / f'ravennakit-demo-{git_version}-windows'
+    dist_path = path_to_build_archive / f'ravennakit-demo-{git_version}-windows-portable'
     dist_path.unlink(missing_ok=True)
     dist_path.mkdir()
     shutil.copy(path_to_desktop_receiver_app, dist_path)
@@ -167,7 +167,7 @@ def pack_and_sign_windows(args, path_to_build_x64: Path, build_config: Config):
     shutil.rmtree(dist_path)
 
     # Create ZIP from archive
-    archive_path = args.path_to_build + '/ravennakit-demo-' + git_version + '-windows-archive'
+    archive_path = args.path_to_build + f'/ravennakit-demo-{git_version}-windows-archive'
     zip_path = Path(archive_path + '.zip')
     zip_path.unlink(missing_ok=True)
 
@@ -262,6 +262,7 @@ def build_dist(args):
 
     copytree('cmake', path_to_dist / 'cmake', dirs_exist_ok=True)
     copytree('source', path_to_dist / 'source', dirs_exist_ok=True)
+    copytree('ravennakit', path_to_dist / 'ravennakit', dirs_exist_ok=True)
     copy2('.clang-format', path_to_dist)
     copy2('.gitignore', path_to_dist)
     copy2('CMakeLists.txt', path_to_dist)
@@ -269,9 +270,6 @@ def build_dist(args):
     copy2('README.md', path_to_dist)
     copy2('CHANGELOG.md', path_to_dist)
     copy2('vcpkg.json', path_to_dist)
-
-    (path_to_dist / 'ravennakit').mkdir(exist_ok=True)
-    copy2('templates/RAVENNAKIT-README.md', path_to_dist / 'ravennakit' / 'README.md', )
 
     ravennakit_repo = pygit2.Repository(path='ravennakit')
     ravennakit_version = ravennakit_repo.describe(pattern='v*')
