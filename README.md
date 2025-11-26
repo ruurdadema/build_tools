@@ -20,8 +20,8 @@ To build and run this project you will need to install the following external de
 
 This project requires the following dependencies:
 
-- ravennakit (Proprietary License)
-- JUCE, managed using CMake FetchContent (GPLv3 License)
+- [RAVENNAKIT](https://github.com/soundondigital/ravennakit) (AGPLv3 or commercial license)
+- [JUCE](https://github.com/juce-framework/JUCE), managed using CMake FetchContent (AGPLv3 or commercial license)
 
 ### RAVENNAKIT dependency
 
@@ -83,15 +83,3 @@ Add the following CMake options:
 ```
 
 Note: change the triplet to match your cpu architecture.
-
-## CMake options
-
-Look at the RAVENNAKIT README.md for more information about the available CMake options.
-
-## Build and CMake options
-
-Look at the RAVENNAKIT README.md for more information about the available CMake options.
-
-## Environment variables
-
-Look at the RAVENNAKIT README.md for more information about the available environment variables.
