@@ -9,6 +9,7 @@ definitions:
           - 'macos'
         name: 'Build for macOS'
         script:
+          - git submodule set-url -- ravennakit git@bitbucket.org:soundondigital/ravennakit.git
           - git submodule update --recursive --init
           - brew install pkg-config
           - python3 -m pip install pygit2 boto3 requests
@@ -21,6 +22,7 @@ definitions:
           - 'windows'
         name: 'Build for Windows'
         script:
+          - git submodule set-url -- ravennakit git@bitbucket.org:soundondigital/ravennakit.git
           - git submodule update --recursive --init
           - python -m pip install pygit2 boto3 requests
           - python -u build.py --path-to-build build-windows --sign --build-number "$env:BITBUCKET_BUILD_NUMBER" --upload --spaces-key "$env:SPACES_KEY" --spaces-secret "$env:SPACES_SECRET"
@@ -33,6 +35,7 @@ definitions:
           - 'macos'
         name: 'Build distribution package'
         script:
+          - git submodule set-url -- ravennakit git@bitbucket.org:soundondigital/ravennakit.git
           - git submodule update --recursive --init
           - python3 -m pip install pygit2 boto3 requests
           - python3 -u build.py --dist --path-to-build build-dist --build-number $BITBUCKET_BUILD_NUMBER --upload --spaces-key $SPACES_KEY --spaces-secret $SPACES_SECRET
