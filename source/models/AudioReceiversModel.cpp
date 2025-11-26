@@ -162,11 +162,11 @@ void AudioReceiversModel::audioDeviceIOCallbackWithContext (
 
     resamplerInputBuffer.clear();
 
-    const auto lock = realtimeSharedContext_.lock_realtime();
+    const auto guard = realtimeSharedContext_.access_realtime();
 
     if (intermediateBuffer.num_frames() > 0)
     {
-        for (auto* receiver : lock->receivers)
+        for (auto* receiver : guard->receivers)
         {
             if (receiver->processBlock (intermediateBuffer, *rtpTs_, ptpNow))
                 std::ignore = resamplerInputBuffer.add (intermediateBuffer);
@@ -280,46 +280,46 @@ bool AudioReceiversModel::Receiver::processBlock (
 
     outputBuffer.clear();
 
-    auto lock = realtimeSharedState_.lock_realtime();
+    auto guard = realtimeSharedState_.access_realtime();
 
-    if (!lock->inputFormat.is_valid())
+    if (!guard->inputFormat.is_valid())
         return false;
 
-    if (!lock->outputFormat.is_valid())
+    if (!guard->outputFormat.is_valid())
         return false;
 
     // If no conversion is needed, take the shortcut
-    if (lock->inputFormat.sample_rate == lock->outputFormat.sample_rate)
-        return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, rtpTimestamp - lock->delayFrames, {}) != std::nullopt;
+    if (guard->inputFormat.sample_rate == guard->outputFormat.sample_rate)
+        return owner_.node_.read_audio_data_realtime (receiverId_, outputBuffer, rtpTimestamp - guard->delayFrames, {}) != std::nullopt;
 
-    if (lock->resampler == nullptr)
+    if (guard->resampler == nullptr)
         return false;
 
-    if (lock->rtpTimestamp == std::nullopt)
+    if (guard->rtpTimestamp == std::nullopt)
     {
-        lock->rtpTimestamp = ptpTimestamp.from_rtp_timestamp32 (rtpTimestamp, lock->outputFormat.sample_rate)
-                                 .to_rtp_timestamp32 (lock->inputFormat.sample_rate);
+        guard->rtpTimestamp = ptpTimestamp.from_rtp_timestamp32 (rtpTimestamp, guard->outputFormat.sample_rate)
+                                 .to_rtp_timestamp32 (guard->inputFormat.sample_rate);
     }
 
     // Check how much the timestamp at the input frequency differs from the one of the output frequency.
     TRACY_PLOT (
         "Receiver timestamp diff",
-        static_cast<int64_t> (ptpTimestamp.from_rtp_timestamp32 (*lock->rtpTimestamp, lock->inputFormat.sample_rate)
-                                  .to_rtp_timestamp32 (lock->outputFormat.sample_rate)) -
+        static_cast<int64_t> (ptpTimestamp.from_rtp_timestamp32 (*guard->rtpTimestamp, guard->inputFormat.sample_rate)
+                                  .to_rtp_timestamp32 (guard->outputFormat.sample_rate)) -
             static_cast<int64_t> (rtpTimestamp));
 
     const auto requiredNumInputFrames = resampleGetRequiredSamples (
-        lock->resampler.get(),
+        guard->resampler.get(),
         static_cast<int> (outputBuffer.num_frames()),
         0.0); // + 1;
 
-    auto resampleBuffer = lock->resampleBuffer.with_num_frames (requiredNumInputFrames);
+    auto resampleBuffer = guard->resampleBuffer.with_num_frames (requiredNumInputFrames);
 
-    if (!owner_.node_.read_audio_data_realtime (receiverId_, resampleBuffer, *lock->rtpTimestamp - lock->delayFrames, {}))
+    if (!owner_.node_.read_audio_data_realtime (receiverId_, resampleBuffer, *guard->rtpTimestamp - guard->delayFrames, {}))
         return false;
 
     [[maybe_unused]] const auto result = resampleProcess (
-        lock->resampler.get(),
+        guard->resampler.get(),
         resampleBuffer.data(),
         static_cast<int> (resampleBuffer.num_frames()),
         outputBuffer.data(),
@@ -328,7 +328,7 @@ bool AudioReceiversModel::Receiver::processBlock (
 
     RAV_ASSERT_DEBUG (result.input_used != 0, "No input was used");
 
-    *lock->rtpTimestamp += result.input_used;
+    *guard->rtpTimestamp += result.input_used;
 
     // The first call to the resampler seems to give back one frame less than expected consistently, in which case return false to skip this
     // block.
@@ -408,16 +408,16 @@ void AudioReceiversModel::Receiver::ravenna_receiver_stream_stats_updated (
 
 void AudioReceiversModel::Receiver::updateRealtimeSharedState()
 {
-    auto newState = std::make_unique<RealtimeSharedState>();
+    RealtimeSharedState newState;
 
-    newState->delayFrames = state_.configuration.delay_frames;
-    newState->inputFormat = state_.inputFormat;
-    newState->outputFormat = state_.outputFormat;
+    newState.delayFrames = state_.configuration.delay_frames;
+    newState.inputFormat = state_.inputFormat;
+    newState.outputFormat = state_.outputFormat;
 
-    if (newState->inputFormat.is_valid() && newState->outputFormat.is_valid() &&
-        newState->inputFormat.sample_rate != newState->outputFormat.sample_rate)
+    if (newState.inputFormat.is_valid() && newState.outputFormat.is_valid() &&
+        newState.inputFormat.sample_rate != newState.outputFormat.sample_rate)
     {
-        newState->resampler.reset (resampleFixedRatioInit (
+        newState.resampler.reset (resampleFixedRatioInit (
             static_cast<int> (state_.inputFormat.num_channels),
             256,
             320,
@@ -426,7 +426,7 @@ void AudioReceiversModel::Receiver::updateRealtimeSharedState()
             0,
             SUBSAMPLE_INTERPOLATE | BLACKMAN_HARRIS | INCLUDE_LOWPASS));
         const auto ratio = static_cast<double> (state_.inputFormat.sample_rate) / static_cast<double> (state_.outputFormat.sample_rate);
-        newState->resampleBuffer.resize (state_.inputFormat.num_channels, static_cast<uint32_t> (state_.maxNumFramesPerBlock * ratio) + 8);
+        newState.resampleBuffer.resize (state_.inputFormat.num_channels, static_cast<uint32_t> (state_.maxNumFramesPerBlock * ratio) + 8);
     }
 
     if (!realtimeSharedState_.update (std::move (newState)))
@@ -446,9 +446,9 @@ AudioReceiversModel::Receiver* AudioReceiversModel::findReceiver (const rav::Id 
 
 void AudioReceiversModel::updateRealtimeSharedContext()
 {
-    auto newContext = std::make_unique<RealtimeSharedContext>();
+    RealtimeSharedContext newContext;
     for (const auto& stream : receivers_)
-        newContext->receivers.push_back (stream.get());
+        newContext.receivers.push_back (stream.get());
     if (!realtimeSharedContext_.update (std::move (newContext)))
     {
         RAV_LOG_ERROR ("Failed to update realtime shared context");

@@ -161,8 +161,8 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
 
         for (auto& dst : destinations)
         {
-            RAV_ASSERT (dst.interface_by_rank.value() < 2, "Invalid interface rank");
-            dst.enabled = ports[dst.interface_by_rank.value()];
+            RAV_ASSERT (dst.interface_by_rank < 2, "Invalid interface rank");
+            dst.enabled = ports[dst.interface_by_rank];
         }
 
         auto config = senderState_.senderConfiguration;
@@ -180,7 +180,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         auto destinations = senderState_.senderConfiguration.destinations;
 
         const auto it = std::find_if (destinations.begin(), destinations.end(), [] (const rav::RavennaSender::Destination& dst) {
-            return dst.interface_by_rank == rav::Rank::primary();
+            return dst.interface_by_rank == rav::rank::primary;
         });
 
         if (it == destinations.end())
@@ -205,7 +205,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         juce::TextEditor::unfocusAllComponents();
     };
     primaryAddressEditor_.onEscapeKey = [this] {
-        primaryAddressEditor_.setText (getDestinationAddress (rav::Rank::primary()).to_string(), juce::dontSendNotification);
+        primaryAddressEditor_.setText (getDestinationAddress (rav::rank::primary).to_string(), juce::dontSendNotification);
         juce::TextEditor::unfocusAllComponents();
     };
     primaryAddressEditor_.onFocusLost = [this] {
@@ -222,7 +222,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         auto destinations = senderState_.senderConfiguration.destinations;
 
         const auto it = std::find_if (destinations.begin(), destinations.end(), [] (const rav::RavennaSender::Destination& dst) {
-            return dst.interface_by_rank == rav::Rank::secondary();
+            return dst.interface_by_rank == rav::rank::secondary;
         });
 
         if (it == destinations.end())
@@ -247,7 +247,7 @@ SendersContainer::Row::Row (AudioSendersModel& audioSenders, const rav::Id sende
         juce::TextEditor::unfocusAllComponents();
     };
     secondaryAddressEditor_.onEscapeKey = [this] {
-        secondaryAddressEditor_.setText (getDestinationAddress (rav::Rank::secondary()).to_string(), juce::dontSendNotification);
+        secondaryAddressEditor_.setText (getDestinationAddress (rav::rank::secondary).to_string(), juce::dontSendNotification);
         juce::TextEditor::unfocusAllComponents();
     };
     secondaryAddressEditor_.onFocusLost = [this] {
@@ -416,20 +416,20 @@ void SendersContainer::Row::update (const AudioSendersModel::SenderState& state)
 
     for (auto& dst : state.senderConfiguration.destinations)
     {
-        if (dst.interface_by_rank.value() >= ports.size())
+        if (dst.interface_by_rank >= ports.size())
             continue;
-        ports[dst.interface_by_rank.value()] = dst.enabled;
+        ports[dst.interface_by_rank] = dst.enabled;
     }
 
     txPortComboBox_.setSelectedId (static_cast<int> (ports.to_ulong()), juce::dontSendNotification);
 
     // Primary address editor
-    primaryAddressEditor_.setText (getDestinationAddress (rav::Rank::primary()).to_string(), juce::dontSendNotification);
+    primaryAddressEditor_.setText (getDestinationAddress (rav::rank::primary).to_string(), juce::dontSendNotification);
     primaryAddressEditor_.setEnabled (ports[0]);
     primaryAddressLabel_.setEnabled (ports[0]);
 
     // Secondary address editor
-    secondaryAddressEditor_.setText (getDestinationAddress (rav::Rank::secondary()).to_string(), juce::dontSendNotification);
+    secondaryAddressEditor_.setText (getDestinationAddress (rav::rank::secondary).to_string(), juce::dontSendNotification);
     secondaryAddressEditor_.setEnabled (ports[1]);
     secondaryAddressLabel_.setEnabled (ports[1]);
 
@@ -547,7 +547,7 @@ void SendersContainer::Row::resized()
     statusMessage_.setBounds (b);
 }
 
-boost::asio::ip::address_v4 SendersContainer::Row::getDestinationAddress (const rav::Rank rank) const
+boost::asio::ip::address_v4 SendersContainer::Row::getDestinationAddress (const uint8_t rank) const
 {
     for (auto& dst : senderState_.senderConfiguration.destinations)
         if (dst.interface_by_rank == rank)

@@ -41,11 +41,11 @@ void senderUpdateRealtimeSharedContext (AudioSendersModel::Sender& sender, const
         return;
     }
 
-    auto newContext = std::make_unique<AudioSendersModel::Sender::RealtimeSharedContext>();
-    newContext->targetSampleRate = sender.state.senderConfiguration.audio_format.sample_rate;
+    AudioSendersModel::Sender::RealtimeSharedContext newContext;
+    newContext.targetSampleRate = sender.state.senderConfiguration.audio_format.sample_rate;
     if (sender.state.inputFormat.sample_rate != sender.state.senderConfiguration.audio_format.sample_rate)
     {
-        newContext->resampler.reset (resampleFixedRatioInit (
+        newContext.resampler.reset (resampleFixedRatioInit (
             static_cast<int> (sender.state.inputFormat.num_channels),
             256,
             320,
@@ -55,7 +55,7 @@ void senderUpdateRealtimeSharedContext (AudioSendersModel::Sender& sender, const
             SUBSAMPLE_INTERPOLATE | BLACKMAN_HARRIS | INCLUDE_LOWPASS));
         const auto ratio = static_cast<double> (sender.state.senderConfiguration.audio_format.sample_rate) /
                            static_cast<double> (sender.state.inputFormat.sample_rate);
-        newContext->resampleBuffer.resize (sender.state.inputFormat.num_channels, static_cast<uint32_t> (maxNumFramesPerBlock * ratio) + 8);
+        newContext.resampleBuffer.resize (sender.state.inputFormat.num_channels, static_cast<uint32_t> (maxNumFramesPerBlock * ratio) + 8);
     }
     if (!sender.realtimeSharedContext_.update (std::move (newContext)))
     {
@@ -94,9 +94,9 @@ tl::expected<rav::Id, std::string> AudioSendersModel::createSender() const
     config.audio_format.encoding = rav::AudioEncoding::pcm_s16;
 
     config.destinations.emplace_back (
-        rav::RavennaSender::Destination { rav::Rank::primary(), { boost::asio::ip::address_v4::any(), 5004 }, true });
+        rav::RavennaSender::Destination { rav::rank::primary, { boost::asio::ip::address_v4::any(), 5004 }, true });
     config.destinations.emplace_back (
-        rav::RavennaSender::Destination { rav::Rank::secondary(), { boost::asio::ip::address_v4::any(), 5004 }, true });
+        rav::RavennaSender::Destination { rav::rank::secondary, { boost::asio::ip::address_v4::any(), 5004 }, true });
 
     return node_.create_sender (config).get();
 }
@@ -258,54 +258,54 @@ void AudioSendersModel::audioDeviceIOCallbackWithContext (
 
     RAV_ASSERT_DEBUG (result.input_used == static_cast<uint32_t> (numSamples), "Num input frame mismatch");
 
-    auto lock = realtimeSharedContext_.lock_realtime();
+    auto guard = realtimeSharedContext_.access_realtime();
 
-    for (auto* sender : lock->senders)
+    for (auto* sender : guard->senders)
     {
         auto resampleBuffer = resamplerBuffer_.with_num_frames (result.output_generated).const_view();
 
-        auto senderLock = sender->realtimeSharedContext_.lock_realtime();
+        auto senderGuard = sender->realtimeSharedContext_.access_realtime();
 
-        if (senderLock->targetSampleRate == 0)
+        if (senderGuard->targetSampleRate == 0)
             continue;
 
-        if (deviceFormat_.sample_rate == senderLock->targetSampleRate)
+        if (deviceFormat_.sample_rate == senderGuard->targetSampleRate)
         {
             std::ignore = node_.send_audio_data_realtime (sender->id, resampleBuffer, *rtpTs_);
             continue;
         }
 
-        RAV_ASSERT_DEBUG (senderLock->resampler != nullptr, "Resampler should be valid");
+        RAV_ASSERT_DEBUG (senderGuard->resampler != nullptr, "Resampler should be valid");
 
-        if (senderLock->rtpTimestamp == std::nullopt)
+        if (senderGuard->rtpTimestamp == std::nullopt)
         {
-            senderLock->rtpTimestamp = ptpNow.from_rtp_timestamp32 (*rtpTs_, deviceFormat_.sample_rate)
-                                           .to_rtp_timestamp32 (senderLock->targetSampleRate);
+            senderGuard->rtpTimestamp = ptpNow.from_rtp_timestamp32 (*rtpTs_, deviceFormat_.sample_rate)
+                                           .to_rtp_timestamp32 (senderGuard->targetSampleRate);
         }
 
         // Check how much the timestamp at the input frequency differs from the one of the output frequency.
         TRACY_PLOT (
             "Sender timestamp diff",
-            static_cast<int64_t> (ptpNow.from_rtp_timestamp32 (*senderLock->rtpTimestamp, senderLock->targetSampleRate)
+            static_cast<int64_t> (ptpNow.from_rtp_timestamp32 (*senderGuard->rtpTimestamp, senderGuard->targetSampleRate)
                                       .to_rtp_timestamp32 (deviceFormat_.sample_rate)) -
                 static_cast<int64_t> (*rtpTs_));
 
         const auto resampleResult = resampleProcess (
-            senderLock->resampler.get(),
+            senderGuard->resampler.get(),
             resampleBuffer.data(),
             static_cast<int> (resampleBuffer.num_frames()),
-            senderLock->resampleBuffer.data(),
-            static_cast<int> (senderLock->resampleBuffer.num_frames()),
+            senderGuard->resampleBuffer.data(),
+            static_cast<int> (senderGuard->resampleBuffer.num_frames()),
             0.0);
 
         RAV_ASSERT_DEBUG (resampleResult.input_used == resampleBuffer.num_frames(), "Input used mismatch");
 
         std::ignore = node_.send_audio_data_realtime (
             sender->id,
-            senderLock->resampleBuffer.with_num_frames (resampleResult.output_generated).const_view(),
-            *senderLock->rtpTimestamp);
+            senderGuard->resampleBuffer.with_num_frames (resampleResult.output_generated).const_view(),
+            *senderGuard->rtpTimestamp);
 
-        *senderLock->rtpTimestamp += resampleResult.output_generated;
+        *senderGuard->rtpTimestamp += resampleResult.output_generated;
     }
 
     *rtpTs_ += result.output_generated;
@@ -366,9 +366,9 @@ AudioSendersModel::Sender* AudioSendersModel::findSender (const rav::Id senderId
 
 void AudioSendersModel::updateRealtimeSharedContext()
 {
-    auto newContext = std::make_unique<RealtimeSharedContext>();
+    RealtimeSharedContext newContext;
     for (const auto& sender : senders_)
-        newContext->senders.push_back (sender.get());
+        newContext.senders.push_back (sender.get());
     if (!realtimeSharedContext_.update (std::move (newContext)))
     {
         RAV_LOG_ERROR ("Failed to update realtime shared context");
