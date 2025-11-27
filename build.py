@@ -91,7 +91,7 @@ def pack_and_sign_macos(args, path_to_build: Path, build_config: Config):
     builder.add_app_bundle(path_to_app)
     builder.add_applications_link()
     app_name_no_spaces = app_name.replace(' ', '-').lower()
-    path_to_dmg = builder.build(path_to_build_archive / f'{app_name_no_spaces}-{git_version}.dmg')
+    path_to_dmg = builder.build(path_to_build_archive / f'{app_name_no_spaces}-{git_version}-macos.dmg')
     sign_file(path_to_dmg, args.macos_developer_id_application)
 
     # Notarize installer package
