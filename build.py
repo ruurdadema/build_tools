@@ -53,11 +53,13 @@ def upload_to_spaces(args, file: Path):
                             aws_access_key_id=key,
                             aws_secret_access_key=secret)
 
-    folder = 'branches/' + git_branch
-
-    if git_branch == 'HEAD':
-        # If we're in head, we're most likely building from a tag in which case we want to archive the artifacts
-        folder = 'archive/' + git_version
+    if branch := os.getenv('CI_COMMIT_BRANCH'):
+        folder = 'branches/' + branch
+    elif tag := os.getenv('CI_COMMIT_TAG'):
+        folder = 'archive/' + tag
+    else:
+        print('WARNING: Not building on GitLab (no CI_COMMIT_BRANCH or CI_COMMIT_TAG available)')
+        folder = 'local/' + git_branch
 
     bucket = 'ravennakit-juce-demo'
     file_name = folder + '/' + file.name

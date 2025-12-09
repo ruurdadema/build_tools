@@ -1,0 +1,39 @@
+variables:
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_DEPTH: 50
+
+stages:
+  - build
+
+build-macos:
+  tags:
+    - macos
+  stage: build
+  script:
+    - brew install pkg-config
+    - python3 -m pip install pygit2 boto3 requests
+    - python3 -u build.py --path-to-build build-macos --notarize --macos-notarization-password $MACOS_NOTARIZATION_PASSWORD --build-number $CI_PIPELINE_IID --upload --spaces-key $SPACES_KEY --spaces-secret $SPACES_SECRET
+  artifacts:
+    paths:
+      - build-macos/archive
+    expire_in: 1 week
+
+build-windows:
+  tags:
+    - windows
+  stage: build
+  script:
+    - python -m pip install pygit2 boto3
+    - python -u build.py --path-to-build build-windows --sign --build-number "$env:CI_PIPELINE_IID" --upload --spaces-key "$env:SPACES_KEY" --spaces-secret "$env:SPACES_SECRET"
+  artifacts:
+    paths:
+      - build-windows/archive
+    expire_in: 1 week
+
+build-dist:
+  tags:
+    - macos
+  stage: build
+  script:
+    - python3 -m pip install pygit2 boto3 requests
+    - python3 -u build.py --dist --path-to-build build-dist --build-number $CI_PIPELINE_IID --upload --spaces-key $SPACES_KEY --spaces-secret $SPACES_SECRET
