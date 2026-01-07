@@ -86,9 +86,15 @@ void MainApplication::initialise (const juce::String& commandLine)
         eulaAcceptWindow_->setVisible (true);
         eulaAcceptWindow_->centreWithSize (1000, 700);
         eulaAcceptWindow_->onEulaAccepted = [commandLine] (const juce::String& hash) {
-            if (!getEulaAcceptedFile().replaceWithText (hash))
+            const auto& file = getEulaAcceptedFile();
+            if (const auto result = file.getParentDirectory().createDirectory(); result.failed())
             {
-                RAV_LOG_ERROR ("Failed to set EULA as excepted");
+                RAV_LOG_ERROR ("Failed to create directory");
+                quit();
+            }
+            if (!file.replaceWithText (hash))
+            {
+                RAV_LOG_ERROR ("Failed to accept EULA");
                 quit();
             }
 
