@@ -85,13 +85,17 @@ void MainApplication::initialise (const juce::String& commandLine)
         eulaAcceptWindow_ = std::make_unique<EulaAcceptWindow> ("End User License Agreement");
         eulaAcceptWindow_->setVisible (true);
         eulaAcceptWindow_->centreWithSize (1000, 700);
-        eulaAcceptWindow_->onEulaAccepted = [this, commandLine] (const juce::String& hash) {
+        eulaAcceptWindow_->onEulaAccepted = [commandLine] (const juce::String& hash) {
             if (!getEulaAcceptedFile().replaceWithText (hash))
             {
                 RAV_LOG_ERROR ("Failed to set EULA as excepted");
                 quit();
             }
-            initialise (commandLine);
+
+            juce::MessageManager::callAsync ([commandLine] {
+                if (auto* app = getInstance())
+                    app->initialise (commandLine);
+            });
         };
         eulaAcceptWindow_->onEulaDeclined = [] {
             quit();

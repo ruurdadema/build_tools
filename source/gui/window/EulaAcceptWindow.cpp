@@ -36,7 +36,7 @@ auto eulaTxt =
 
 Last updated: November 23, 2025
 
-This End-User License Agreement (“Agreement”) is a legal agreement between you (“You” or “User”) and [COMPANY NAME], a company organized under the laws of [COUNTRY] (“Company”), regarding your use of the [APP NAME] demo application (the “Software”).
+This End-User License Agreement (“Agreement”) is a legal agreement between you (“You” or “User”) and Sound on Digital, a company organized under the laws of The Netherlands (“Company”), regarding your use of the RAVENNAKIT demo application (the “Software”).
 
 By installing, copying, or otherwise using the Software, you agree to be bound by the terms of this Agreement. If you do not agree to these terms, do not install or use the Software.
 
@@ -49,7 +49,7 @@ Subject to your full and ongoing compliance with this Agreement, Company grants 
 You may not use the Software in any production environment, commercial service, or for providing services to third parties. The Software is intended only for evaluation, testing, and demonstration.
 
 1.3 No SDK License.
-The Software may incorporate or be built upon Company’s proprietary software development kit [SDK NAME] (the “SDK”). This Agreement does not grant you any license or rights to use the SDK independently of the Software, to integrate it into your own products, or to redistribute it in any form. Any such rights require a separate written agreement with Company.
+The Software may incorporate or be built upon Company’s proprietary software development kit RAVENNAKIT (the “SDK”). This Agreement does not grant you any license or rights to use the SDK independently of the Software, to integrate it into your own products, or to redistribute it in any form. Any such rights require a separate written agreement with Company.
 
 2. RESTRICTIONS
 
@@ -113,9 +113,9 @@ You agree to comply with all applicable export and import laws and regulations. 
 
 8. GOVERNING LAW AND JURISDICTION
 
-This Agreement shall be governed by and construed in accordance with the laws of [COUNTRY / STATE], without regard to its conflict of laws principles.
+This Agreement shall be governed by and construed in accordance with the laws of The Netherlands, without regard to its conflict of laws principles.
 
-You and Company agree that any dispute arising out of or in connection with this Agreement shall be submitted to the exclusive jurisdiction of the courts located in [CITY, COUNTRY], and you hereby consent to personal jurisdiction and venue in such courts.
+You and Company agree that any dispute arising out of or in connection with this Agreement shall be submitted to the exclusive jurisdiction of the courts located in Amsterdam, The Netherlands, and you hereby consent to personal jurisdiction and venue in such courts.
 
 9. GENERAL
 
