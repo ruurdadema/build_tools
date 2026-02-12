@@ -308,7 +308,7 @@ class InnoSetup:
 
         inno_setup_path = 'C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe'
 
-        cmd = [inno_setup_path, self._generated_iss_file, '/O' + str(build_path)]
+        cmd = [inno_setup_path, str(self._generated_iss_file), '/O' + str(build_path)]
 
         if self._signtool_command:
             cmd += ['/Ssigntool={} $f'.format(self._signtool_command)]
