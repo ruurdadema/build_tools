@@ -19,6 +19,7 @@
 # SOFTWARE.
 
 
+import configparser
 import subprocess
 from pathlib import Path
 
@@ -106,6 +107,7 @@ class InnoSetup:
         self._files = []
         self._install_delete = []
         self._signtool_command = None
+        self._aax_attrib_targets = []
 
     def set_appid(self, appid: str):
         """
@@ -162,6 +164,36 @@ class InnoSetup:
         :param file: The file to add.
         """
         self._files.append(file)
+
+    def add_aax_bundle(self, file: File):
+        """
+        Add an AAX plugin bundle to the installer with post-install attrib commands
+        to set the correct NTFS attributes for folder icon display.
+        Only sets attributes if desktop.ini is present in the bundle source directory.
+        :param file: The AAX bundle directory to add.
+        """
+        self.add_file(file)
+
+        desktop_ini_source = file.source / 'desktop.ini'
+        if not desktop_ini_source.exists():
+            return
+
+        # Read the icon filename from desktop.ini
+        config = configparser.ConfigParser()
+        config.read(desktop_ini_source)
+        icon_file = config.get('.ShellClassInfo', 'IconFile', fallback=None)
+        if icon_file is None:
+            return
+
+        if file.destination:
+            folder = f'{file.destination}\\{file.source.name}'
+        else:
+            folder = f'{{app}}\\{file.source.name}'
+
+        desktop_ini = f'{folder}\\desktop.ini'
+        icon_path = f'{folder}\\{icon_file}'
+
+        self._aax_attrib_targets.append((folder, desktop_ini, icon_path))
 
     def generate(self, generate_path: Path, installer_file_name: str):
         """
@@ -285,6 +317,13 @@ class InnoSetup:
                 if file.destination:
                     dst = f'{file.destination}\\{file.source.name}'
                 script += f'Filename: "{dst}"; Description: "Run {file.source.stem}"; Flags: postinstall shellexec skipifsilent\n'
+
+        for folder, desktop_ini, icon in self._aax_attrib_targets:
+            script += f'Filename: "attrib"; Parameters: "-r ""{folder}"""; Flags: runhidden\n'
+            script += f'Filename: "attrib"; Parameters: "-h -r -s ""{desktop_ini}"""; Flags: runhidden\n'
+            script += f'Filename: "attrib"; Parameters: "+h +r +s ""{desktop_ini}"""; Flags: runhidden\n'
+            script += f'Filename: "attrib"; Parameters: "+h +r +s ""{icon}"""; Flags: runhidden\n'
+            script += f'Filename: "attrib"; Parameters: "+r +s ""{folder}"""; Flags: runhidden\n'
 
         script += '\n'
 
