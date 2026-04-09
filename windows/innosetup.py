@@ -319,10 +319,8 @@ class InnoSetup:
                 script += f'Filename: "{dst}"; Description: "Run {file.source.stem}"; Flags: postinstall shellexec skipifsilent\n'
 
         for folder, desktop_ini, icon in self._aax_attrib_targets:
-            script += f'Filename: "attrib"; Parameters: "-r ""{folder}"""; Flags: runhidden\n'
-            script += f'Filename: "attrib"; Parameters: "-h -r -s ""{desktop_ini}"""; Flags: runhidden\n'
-            script += f'Filename: "attrib"; Parameters: "+h +r +s ""{desktop_ini}"""; Flags: runhidden\n'
-            script += f'Filename: "attrib"; Parameters: "+h +r +s ""{icon}"""; Flags: runhidden\n'
+            script += f'Filename: "attrib"; Parameters: "+r +s ""{desktop_ini}"""; Flags: runhidden\n'
+            script += f'Filename: "attrib"; Parameters: "+r +s ""{icon}"""; Flags: runhidden\n'
             script += f'Filename: "attrib"; Parameters: "+r +s ""{folder}"""; Flags: runhidden\n'
 
         script += '\n'
@@ -330,10 +328,10 @@ class InnoSetup:
         # [UninstallRun]
         if self._aax_attrib_targets:
             script += '[UninstallRun]\n'
-            for folder, desktop_ini, icon in self._aax_attrib_targets:
-                script += f'Filename: "attrib"; Parameters: "-r -s ""{folder}"""; Flags: runhidden\n'
-                script += f'Filename: "attrib"; Parameters: "-h -r -s ""{desktop_ini}"""; Flags: runhidden\n'
-                script += f'Filename: "attrib"; Parameters: "-h -r -s ""{icon}"""; Flags: runhidden\n'
+            for i, (folder, desktop_ini, icon) in enumerate(self._aax_attrib_targets):
+                script += f'Filename: "attrib"; Parameters: "-r -s ""{folder}"""; Flags: runhidden; RunOnceId: "aax_clear_folder_{i}"\n'
+                script += f'Filename: "attrib"; Parameters: "-r -s ""{desktop_ini}"""; Flags: runhidden; RunOnceId: "aax_clear_ini_{i}"\n'
+                script += f'Filename: "attrib"; Parameters: "-r -s ""{icon}"""; Flags: runhidden; RunOnceId: "aax_clear_icon_{i}"\n'
             script += '\n'
 
         # Generate the iss file
