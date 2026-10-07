@@ -8,14 +8,56 @@ from uuid import uuid4
 
 def signtool_get_path():
     """
-    :return: Returns the path to signtool, if found, otherwise throws an exception.
+    :return: Returns the path to the newest x64 signtool, if found, otherwise throws an exception.
     """
     results = glob.glob('C:\\Program Files (x86)\\Windows Kits\\10\\bin\\*\\x64\\signtool.exe')
 
     if not results:
         raise Exception('Failed to find signtool.exe')
 
-    return Path(results[0])
+    def version_key(path):
+        version = Path(path).parent.parent.name  # e.g. 10.0.22621.0
+        return tuple(int(p) if p.isdigit() else 0 for p in version.split('.'))
+
+    return Path(max(results, key=version_key))
+
+
+def signtool_get_artifact_signing_options(dlib: Path, metadata: Path, q='"'):
+    """
+    Returns the signtool options (without a file) for signing with Azure Artifact Signing.
+    See artifact_signing.artifact_signing_setup() for obtaining the dlib and metadata.
+    :param dlib: Path to Azure.CodeSigning.Dlib.dll (x64)
+    :param metadata: Path to metadata.json
+    :param q: The quote character to use around paths
+    """
+    return (
+        f'sign'
+        f' /v'
+        f' /fd SHA256'
+        f' /tr http://timestamp.acs.microsoft.com'
+        f' /td SHA256'
+        f' /dlib {q}{dlib}{q}'
+        f' /dmdf {q}{metadata}{q}'
+    )
+
+
+def signtool_get_globalsign_token_options(cert_file: Path, container_name: str, password: str, cert_thumbprint: str,
+                                          q='"'):
+    """
+    Returns the signtool options (without a file) for signing with a GlobalSign EV certificate on a SafeNet eToken,
+    unlocking the token non-interactively.
+    :param q: The quote character to use around values
+    """
+    return (
+        f'sign'
+        f' /f {q}{cert_file}{q}'
+        f' /csp {q}eToken Base Cryptographic Provider{q}'
+        f' /k {q}[{{{{{password}}}}}]={container_name}{q}'
+        f' /tr http://timestamp.globalsign.com/tsa/r6advanced1'
+        f' /td SHA256 /fd SHA256'
+        f' /sha1 {cert_thumbprint}'
+        f' /Debug'
+    )
 
 
 def signtool_get_sign_command(cert_thumbprint: str):
