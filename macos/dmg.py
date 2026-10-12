@@ -148,16 +148,13 @@ class DMGBuilder:
                         print(f"Creating symlink: {dest_path} -> {item.symlink_target}")
                     os.symlink(item.symlink_target, dest_path)
                 else:
-                    if item.source.is_dir():
-                        if debug:
-                            print(f"Copying directory: {item.source} -> {dest_path}")
-                        if dest_path.exists():
-                            shutil.rmtree(dest_path)
-                        shutil.copytree(item.source, dest_path)
-                    else:
-                        if debug:
-                            print(f"Copying file: {item.source} -> {dest_path}")
-                        shutil.copy2(item.source, dest_path)
+                    # ditto keeps symlinks (like those of an app's frameworks), extended attributes and resource forks: copying the
+                    # targets of symlinks as files would break code signatures
+                    if debug:
+                        print(f"Copying: {item.source} -> {dest_path}")
+                    if dest_path.is_dir() and not dest_path.is_symlink():
+                        shutil.rmtree(dest_path)
+                    subprocess.run(["ditto", str(item.source), str(dest_path)], check=True)
 
             # Build DMG using hdiutil
             cmd = [
