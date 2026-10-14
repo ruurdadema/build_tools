@@ -19,6 +19,7 @@
 # SOFTWARE.
 
 
+import plistlib
 import subprocess
 import tempfile
 from pathlib import Path
@@ -39,7 +40,7 @@ class ProductBuilder:
         """
 
         def __init__(self, path: Path, install_location: Path, identifier: str, title: str,
-                     must_close: [str], scripts: Path):
+                     must_close: [str], scripts: Path, relocatable: bool):
 
             if path and not install_location:
                 raise Exception('Need install_location when specifying path')
@@ -51,6 +52,7 @@ class ProductBuilder:
             self.must_close = must_close
             self.tmp_file = tempfile.NamedTemporaryFile()
             self.scripts = scripts.resolve() if scripts else None
+            self.relocatable = relocatable
 
     def __init__(self, title):
         self._title = title
@@ -58,7 +60,7 @@ class ProductBuilder:
         self._components = []
 
     def add_component(self, path_to_bundle: Path, install_location: Path, identifier: str, title: str,
-                      must_close=None, scripts: Path = None):
+                      must_close=None, scripts: Path = None, relocatable: bool = True):
         """
         Adds a component to the installer
         :param path_to_bundle: The path to the app bundle. Can be None in which case the --nopayload flag will be added. This requires scripts to be a valid path.
@@ -67,12 +69,14 @@ class ProductBuilder:
         :param title: The title of the component.
         :param must_close: A list of application bundle ids that must be closed before installing this component.
         :param scripts: Path to a directory containing scripts which should be added to the installer.
+        :param relocatable: Whether the installer may update the bundle where it finds it moved (or another copy of it, like one in a
+        build folder) instead of installing it at install_location. False always installs at install_location.
         :return:
         """
         if must_close is None:
             must_close = []
         self._components.append(
-            ProductBuilder.Component(path_to_bundle, install_location, identifier, title, must_close, scripts))
+            ProductBuilder.Component(path_to_bundle, install_location, identifier, title, must_close, scripts, relocatable))
 
     def add_license(self, path: Path):
         """
@@ -82,11 +86,11 @@ class ProductBuilder:
         """
         self._license = path.resolve()
 
-    def build(self, output_path: Path, developer_id_installer: str):
+    def build(self, output_path: Path, developer_id_installer: str = None):
         """
         Build the installer based on the current state.
         :param output_path: The path of the installer output.
-        :param developer_id_installer: The developer id to use for signing the installer
+        :param developer_id_installer: The developer id to use for signing the installer, or None to leave it unsigned
         :return:
         """
 
@@ -103,7 +107,23 @@ class ProductBuilder:
         for component in self._components:
             cmd = ['pkgbuild', '--identifier', component.identifier]
 
-            if component.path:
+            # A bundle which must not be relocated goes in from a root of its own, with a component plist which says so
+            root = tempfile.TemporaryDirectory()
+            component_plist = tempfile.NamedTemporaryFile(suffix='.plist')
+
+            if component.path and not component.relocatable:
+                bundle = Path(component.path)
+                subprocess.run(['ditto', bundle, Path(root.name) / bundle.name], check=True)
+                plistlib.dump([{
+                    'RootRelativeBundlePath': bundle.name,
+                    'BundleIsRelocatable': False,
+                    'BundleIsVersionChecked': True,
+                    'BundleHasStrictIdentifier': True,
+                    'BundleOverwriteAction': 'upgrade',
+                }], component_plist)
+                component_plist.flush()
+                cmd += ['--root', root.name, '--component-plist', component_plist.name]
+            elif component.path:
                 cmd += ['--component', component.path]
             else:
                 cmd += ['--nopayload']
@@ -195,8 +215,9 @@ class ProductBuilder:
             cmd += ['--package-path', Path(component.tmp_file.name).parent]
 
         cmd += ['--distribution', distribution_tmp_file.name]
-        cmd += ['--sign', developer_id_installer]
-        cmd += ['--timestamp']
+        if developer_id_installer:
+            cmd += ['--sign', developer_id_installer]
+            cmd += ['--timestamp']
         cmd += [str(output_path)]
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
