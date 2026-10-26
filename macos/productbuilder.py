@@ -57,6 +57,7 @@ class ProductBuilder:
     def __init__(self, title):
         self._title = title
         self._license = None
+        self._welcome = None
         self._components = []
 
     def add_component(self, path_to_bundle: Path, install_location: Path, identifier: str, title: str,
@@ -86,6 +87,15 @@ class ProductBuilder:
         :return:
         """
         self._license = path.resolve()
+
+    def add_welcome(self, path: Path):
+        """
+        Adds a welcome page, the installer's first page
+        :param path: The path to an HTML, RTF or plain text file. Everything in its folder goes into the installer's resources, so
+        give it a folder of its own.
+        :return:
+        """
+        self._welcome = path.resolve()
 
     def build(self, output_path: Path, developer_id_installer: str = None):
         """
@@ -147,6 +157,11 @@ class ProductBuilder:
         title = ElementTree.Element('title')
         title.text = self._title
         installer_gui_script.append(title)
+
+        # Welcome, by its name in the resources
+        if self._welcome is not None:
+            welcome = ElementTree.Element('welcome', {'file': self._welcome.name})
+            installer_gui_script.append(welcome)
 
         # License
         if self._license is not None:
@@ -218,6 +233,8 @@ class ProductBuilder:
             cmd += ['--package-path', Path(component.tmp_file.name).parent]
 
         cmd += ['--distribution', distribution_tmp_file.name]
+        if self._welcome is not None:
+            cmd += ['--resources', self._welcome.parent]
         if developer_id_installer:
             cmd += ['--sign', developer_id_installer]
             cmd += ['--timestamp']
