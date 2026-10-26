@@ -70,7 +70,8 @@ class ProductBuilder:
         :param must_close: A list of application bundle ids that must be closed before installing this component.
         :param scripts: Path to a directory containing scripts which should be added to the installer.
         :param relocatable: Whether the installer may update the bundle where it finds it moved (or another copy of it, like one in a
-        build folder) instead of installing it at install_location. False always installs at install_location.
+        build folder) instead of installing it at install_location. False always installs at install_location, even
+        over a newer version (so an older installer downgrades).
         :return:
         """
         if must_close is None:
@@ -117,7 +118,9 @@ class ProductBuilder:
                 plistlib.dump([{
                     'RootRelativeBundlePath': bundle.name,
                     'BundleIsRelocatable': False,
-                    'BundleIsVersionChecked': True,
+                    # Not version checked: otherwise an older bundle silently doesn't replace a newer one, while the installer
+                    # reports success
+                    'BundleIsVersionChecked': False,
                     'BundleHasStrictIdentifier': True,
                     'BundleOverwriteAction': 'upgrade',
                 }], component_plist)
