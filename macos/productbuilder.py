@@ -59,6 +59,7 @@ class ProductBuilder:
         self._license = None
         self._welcome = None
         self._components = []
+        self._minimum_macos = None
 
     def add_component(self, path_to_bundle: Path, install_location: Path, identifier: str, title: str,
                       must_close=None, scripts: Path = None, relocatable: bool = True):
@@ -96,6 +97,14 @@ class ProductBuilder:
         :return:
         """
         self._welcome = path.resolve()
+
+    def set_minimum_macos(self, version: str):
+        """
+        Makes the installer refuse older macOS versions, which the app wouldn't run on, instead of installing it
+        :param version: The oldest macOS it installs on, like '12.0': the app's deployment target.
+        :return:
+        """
+        self._minimum_macos = version
 
     def build(self, output_path: Path, developer_id_installer: str = None):
         """
@@ -174,6 +183,12 @@ class ProductBuilder:
         installer_gui_script_options.set('hostArchitectures', 'x86_64,arm64')
 
         installer_gui_script.append(installer_gui_script_options)
+
+        # The oldest macOS it installs on
+        if self._minimum_macos is not None:
+            allowed = ElementTree.Element('allowed-os-versions')
+            allowed.append(ElementTree.Element('os-version', {'min': self._minimum_macos}))
+            installer_gui_script.append(allowed)
 
         # Choice outline
         installer_gui_script_choices_outline = ElementTree.Element('choices-outline')
