@@ -108,6 +108,7 @@ class InnoSetup:
         self._install_delete = []
         self._signtool_command = None
         self._aax_attrib_targets = []
+        self._firewall_rules = []
 
     def set_appid(self, appid: str):
         """
@@ -164,6 +165,15 @@ class InnoSetup:
         :param file: The file to add.
         """
         self._files.append(file)
+
+    def allow_through_firewall(self, name: str, program: str):
+        """
+        Lets a program receive through Windows' firewall (an inbound rule for any profile), so that it asks nothing when it first
+        listens; installing again replaces the rule, and uninstalling removes it.
+        :param name: The rule's name, as Windows' firewall shows it, like "Tidemark probe".
+        :param program: Its path as Inno Setup knows it, like "{app}\\tidemark_probe.exe".
+        """
+        self._firewall_rules.append((name, program))
 
     def add_aax_bundle(self, file: File):
         """
@@ -311,6 +321,11 @@ class InnoSetup:
         # [Run]
         script += '[Run]\n'
 
+        for name, program in self._firewall_rules:
+            script += f'Filename: "netsh"; Parameters: "{_firewall_parameters("delete", name, program)}"; Flags: runhidden\n'
+            script += (f'Filename: "netsh"; Parameters: "{_firewall_parameters("add", name, program)} dir=in action=allow enable=yes"; '
+                       f'StatusMsg: "Allowing {name} through the firewall..."; Flags: runhidden\n')
+
         for file in self._files:
             if file.run_after_install:
                 dst = f'{{app}}\\{file.source.name}'
@@ -326,8 +341,11 @@ class InnoSetup:
         script += '\n'
 
         # [UninstallRun]
-        if self._aax_attrib_targets:
+        if self._aax_attrib_targets or self._firewall_rules:
             script += '[UninstallRun]\n'
+            for i, (name, program) in enumerate(self._firewall_rules):
+                script += (f'Filename: "netsh"; Parameters: "{_firewall_parameters("delete", name, program)}"; Flags: runhidden; '
+                           f'RunOnceId: "firewall_{i}"\n')
             for i, (folder, desktop_ini, icon) in enumerate(self._aax_attrib_targets):
                 script += f'Filename: "attrib"; Parameters: "-r -s ""{folder}"""; Flags: runhidden; RunOnceId: "aax_clear_folder_{i}"\n'
                 script += f'Filename: "attrib"; Parameters: "-r -s ""{desktop_ini}"""; Flags: runhidden; RunOnceId: "aax_clear_ini_{i}"\n'
@@ -378,6 +396,13 @@ class InnoSetup:
             if file.add_to_desktop:
                 return True
         return False
+
+
+def _firewall_parameters(verb: str, name: str, program: str):
+    """
+    :return: netsh's parameters to add or delete the firewall rule of a program, its quotes doubled as an Inno Setup string has them.
+    """
+    return f'advfirewall firewall {verb} rule name=""{name}"" program=""{program}""'
 
 
 def _generate_file_entry(file: InnoSetup.File):

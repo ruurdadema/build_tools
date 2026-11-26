@@ -24,7 +24,8 @@ A simple tool for creating installers on macOS using product builder.
 
 ### Innosetup
 
-A simple tool for generating and building Innosetup scripts.
+A simple tool for generating and building Innosetup scripts, which can also let programs through Windows' firewall
+(`allow_through_firewall()`).
 
 ### Signtool
 
